@@ -1,0 +1,54 @@
+{
+  "type": "Feature",
+  "stac_version": "1.1.0",
+  "stac_extensions": [
+    "https://stac.geodb.io/xpl/v0.1.0/schema.json",
+    "https://stac-extensions.github.io/file/v2.1.0/schema.json"
+  ],
+  "id": "drillhole-CR-24-017",
+  "collection": "drillhole-packages",
+  "geometry": {
+    "type": "Point",
+    "coordinates": [-116.5531, 43.1620]
+  },
+  "bbox": [-116.5531, 43.1620, -116.5531, 43.1620],
+  "properties": {
+    "title": "CR-24-017 drillhole package",
+    "description": "Collar, downhole survey, lithology, and assayed samples for diamond hole CR-24-017.",
+    "datetime": "2024-08-14T00:00:00Z",
+    "xpl:hole_id": "CR-24-017",
+    "xpl:hole_type": "DD",
+    "xpl:total_depth_m": 512.3,
+    "xpl:azimuth_deg": 135,
+    "xpl:dip_deg": -60,
+    "xpl:sample_count": 341
+  },
+  "assets": {
+    "collar": {
+      "href": "https://api.geodb.io/api/v2/drill-collars/?hole_id=CR-24-017",
+      "title": "Collar record (JSON)",
+      "type": "application/json",
+      "roles": ["data"]
+    },
+    "samples-geoparquet": {
+      "href": "https://api.geodb.io/api/v2/exports/8f1c.../download/",
+      "title": "Samples + merged assays (GeoParquet)",
+      "type": "application/vnd.apache.parquet",
+      "roles": ["data"],
+      "xpl:kind": "samples"
+    },
+    "assay-certificate": {
+      "href": "https://api.geodb.io/api/v2/stac/assets/document/9931/",
+      "title": "Lab certificate PDF",
+      "type": "application/pdf",
+      "roles": ["metadata"],
+      "file:size": 512000,
+      "xpl:laboratory": "ALS Global",
+      "xpl:certificate_number": "VA24123456"
+    }
+  },
+  "links": [
+    {"rel": "self", "type": "application/geo+json", "href": "https://api.geodb.io/api/v2/stac/collections/drillhole-packages/items/drillhole-CR-24-017/"},
+    {"rel": "root", "type": "application/json", "href": "https://api.geodb.io/api/v2/stac/"}
+  ]
+}

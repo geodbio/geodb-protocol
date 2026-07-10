@@ -1,0 +1,142 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://stac.geodb.io/xpl/v0.1.0/schema.json",
+  "title": "geoDB Open Exploration Protocol \u2014 xpl STAC extension",
+  "description": "The exploration vocabulary for STAC items: geophysical surveys, drillhole packages, and assay certificates. Part of the geoDB Open Exploration Protocol. All fields are OPTIONAL and only meaningful on the item profile(s) they belong to.",
+  "type": "object",
+  "properties": {
+    "type": {
+      "const": "Feature"
+    },
+    "properties": {
+      "type": "object",
+      "properties": {
+        "xpl:method": {
+          "type": "string",
+          "enum": [
+            "magnetics",
+            "gravity",
+            "em",
+            "ip",
+            "resistivity",
+            "radiometrics",
+            "mt",
+            "seismic",
+            "gpr",
+            "other"
+          ],
+          "title": "Geophysical method",
+          "description": "Physical measurement type of the survey."
+        },
+        "xpl:acquisition_type": {
+          "type": "string",
+          "enum": [
+            "ground",
+            "airborne",
+            "downhole"
+          ],
+          "title": "Acquisition platform",
+          "description": "How the survey was acquired (ground / airborne / downhole)."
+        },
+        "xpl:contractor": {
+          "type": "string",
+          "title": "Contractor",
+          "description": "Survey contractor / acquisition company."
+        },
+        "xpl:instrument": {
+          "type": "string",
+          "title": "Instrument",
+          "description": "Sensor / instrument used for acquisition."
+        },
+        "xpl:line_spacing_m": {
+          "type": "number",
+          "minimum": 0,
+          "title": "Nominal line spacing (m)",
+          "description": "Nominal survey line spacing in metres."
+        },
+        "xpl:survey_date_start": {
+          "type": "string",
+          "format": "date",
+          "title": "Survey start date",
+          "description": "First day of data acquisition (ISO 8601 date)."
+        },
+        "xpl:survey_date_end": {
+          "type": "string",
+          "format": "date",
+          "title": "Survey end date",
+          "description": "Last day of data acquisition (ISO 8601 date)."
+        },
+        "xpl:footprint_source": {
+          "type": "string",
+          "enum": [
+            "grid",
+            "vector",
+            "lines_hull",
+            "declared",
+            "drawn"
+          ],
+          "title": "Footprint provenance",
+          "description": "How the survey footprint polygon was derived."
+        },
+        "xpl:specs": {
+          "type": "object",
+          "title": "Method-specific acquisition parameters",
+          "description": "Free-form method-specific specs (frequency, base station, sample interval, tie-line spacing, ...)."
+        },
+        "xpl:hole_id": {
+          "type": "string",
+          "title": "Drillhole ID",
+          "description": "Collar / hole identifier of a drillhole package."
+        },
+        "xpl:hole_type": {
+          "type": "string",
+          "title": "Hole type",
+          "description": "Drilling method (e.g. DD diamond, RC reverse-circulation)."
+        },
+        "xpl:total_depth_m": {
+          "type": "number",
+          "minimum": 0,
+          "title": "Total depth (m)",
+          "description": "Final drilled depth of the hole in metres."
+        },
+        "xpl:azimuth_deg": {
+          "type": "number",
+          "title": "Collar azimuth (deg)",
+          "description": "Collar azimuth in degrees."
+        },
+        "xpl:dip_deg": {
+          "type": "number",
+          "minimum": -90,
+          "maximum": 90,
+          "title": "Collar dip (deg)",
+          "description": "Collar dip in degrees (negative = downward)."
+        },
+        "xpl:sample_count": {
+          "type": "integer",
+          "minimum": 0,
+          "title": "Sample count",
+          "description": "Number of samples in the drillhole package."
+        },
+        "xpl:laboratory": {
+          "type": "string",
+          "title": "Laboratory",
+          "description": "Assaying laboratory that issued the certificate."
+        },
+        "xpl:certificate_number": {
+          "type": "string",
+          "title": "Certificate number",
+          "description": "Lab certificate / job number (chain-of-custody anchor)."
+        },
+        "xpl:elements": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "Reported elements",
+          "description": "Element symbols reported on the certificate."
+        }
+      },
+      "additionalProperties": true
+    }
+  }
+}

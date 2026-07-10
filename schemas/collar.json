@@ -1,0 +1,104 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.geodb.io/exploration/v0.1.0/collar.json",
+  "title": "Drill collar",
+  "description": "The surface location and orientation of a drillhole \u2014 the anchor of every downhole record. Part of the geoDB Open Exploration Protocol (chain-of-custody records lane).",
+  "type": "object",
+  "required": [
+    "hole_id",
+    "project"
+  ],
+  "properties": {
+    "hole_id": {
+      "type": "string",
+      "description": "Collar / hole identifier (unique within project)."
+    },
+    "project": {
+      "type": "string",
+      "description": "Project natural key."
+    },
+    "hole_type": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Drilling method, e.g. DD (diamond), RC (reverse circ.)."
+    },
+    "total_depth": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "Final drilled depth (project length units)."
+    },
+    "azimuth": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "Collar azimuth (degrees)."
+    },
+    "dip": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "Collar dip (degrees; negative = downward)."
+    },
+    "elevation": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "Collar elevation (project length units)."
+    },
+    "latitude": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "ORIGINAL input coordinate in its source CRS (easting/northing for a projected import) \u2014 zero-data-loss."
+    },
+    "longitude": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "ORIGINAL input coordinate in its source CRS."
+    },
+    "epsg": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Source CRS (EPSG) of latitude/longitude."
+    },
+    "geometry": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "description": "WGS84 (EPSG:4326) GeoJSON Point. Canonical location; the native/original coordinate is preserved in latitude/longitude/epsg.",
+      "properties": {
+        "type": {
+          "const": "Point"
+        },
+        "coordinates": {
+          "type": "array",
+          "minItems": 2,
+          "items": {
+            "type": "number"
+          }
+        }
+      }
+    },
+    "date_drilled": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "ISO 8601 date the hole was drilled."
+    }
+  },
+  "additionalProperties": true
+}

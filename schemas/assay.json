@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.geodb.io/exploration/v0.1.0/assay.json",
+  "title": "Assay result",
+  "description": "A single element result for a sample, traceable to its certificate, method, and laboratory. Part of the geoDB Open Exploration Protocol (chain-of-custody records lane).",
+  "type": "object",
+  "required": [
+    "sample_name",
+    "element",
+    "value"
+  ],
+  "properties": {
+    "sample_name": {
+      "type": "string",
+      "description": "Sample identifier the result belongs to."
+    },
+    "element": {
+      "type": "string",
+      "description": "Element symbol (e.g. Au, Cu, Ag)."
+    },
+    "value": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "Reported value (in `unit`)."
+    },
+    "unit": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Unit of value (e.g. ppm, ppb, pct, g/t)."
+    },
+    "method": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Analytical method code."
+    },
+    "certificate_number": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Certificate this result came from."
+    },
+    "detection_limit": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "Lower detection limit for the method/element."
+    },
+    "is_below_detection": {
+      "type": [
+        "boolean",
+        "null"
+      ],
+      "description": "True when the value is below detection."
+    }
+  },
+  "additionalProperties": true
+}

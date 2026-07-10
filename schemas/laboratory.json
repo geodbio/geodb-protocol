@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.geodb.io/exploration/v0.1.0/laboratory.json",
+  "title": "Laboratory",
+  "description": "An assaying laboratory \u2014 the chain-of-custody endpoint that issues certificates. Part of the geoDB Open Exploration Protocol (chain-of-custody records lane).",
+  "type": "object",
+  "required": [
+    "name"
+  ],
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Laboratory name (e.g. 'ALS Global')."
+    },
+    "code": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Short lab code."
+    },
+    "address": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Lab location / address."
+    },
+    "accreditation": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Accreditation (e.g. ISO 17025)."
+    }
+  },
+  "additionalProperties": true
+}

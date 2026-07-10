@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.geodb.io/exploration/v0.1.0/qc-sample.json",
+  "title": "QC sample",
+  "description": "A quality-control sample inserted into a sample stream \u2014 a certified reference material (standard), blank, or duplicate \u2014 for QA/QC verification. Part of the geoDB Open Exploration Protocol (chain-of-custody records lane).",
+  "type": "object",
+  "required": [
+    "name",
+    "qc_type"
+  ],
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "QC sample identifier."
+    },
+    "qc_type": {
+      "type": "string",
+      "description": "standard | blank | duplicate | field_duplicate."
+    },
+    "reference_standard": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "CRM name when qc_type=standard."
+    },
+    "expected_value": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "Certified/expected value for the element."
+    },
+    "element": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Element the expectation applies to."
+    },
+    "unit": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Unit of expected_value."
+    }
+  },
+  "additionalProperties": true
+}

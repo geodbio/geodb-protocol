@@ -1,0 +1,64 @@
+{
+  "type": "Feature",
+  "stac_version": "1.1.0",
+  "stac_extensions": [
+    "https://stac.geodb.io/xpl/v0.1.0/schema.json",
+    "https://stac-extensions.github.io/file/v2.1.0/schema.json"
+  ],
+  "id": "survey-1042",
+  "collection": "geophysical-surveys",
+  "geometry": {
+    "type": "Polygon",
+    "coordinates": [[[-116.62, 43.10], [-116.48, 43.10], [-116.48, 43.22], [-116.62, 43.22], [-116.62, 43.10]]]
+  },
+  "bbox": [-116.62, 43.10, -116.48, 43.22],
+  "properties": {
+    "title": "Copper Ridge Airborne Magnetics 2024",
+    "description": "Helicopter-borne total-field magnetic survey over the Copper Ridge project.",
+    "datetime": null,
+    "start_datetime": "2024-06-03T00:00:00Z",
+    "end_datetime": "2024-06-11T00:00:00Z",
+    "xpl:method": "magnetics",
+    "xpl:acquisition_type": "airborne",
+    "xpl:contractor": "Fugro Airborne Surveys",
+    "xpl:instrument": "Cs-vapour magnetometer (0.001 nT)",
+    "xpl:line_spacing_m": 100,
+    "xpl:footprint_source": "grid",
+    "xpl:specs": {
+      "tie_line_spacing_m": 1000,
+      "nominal_terrain_clearance_m": 40,
+      "sample_interval_m": 5
+    }
+  },
+  "assets": {
+    "tmi-grid-cog": {
+      "href": "https://api.geodb.io/api/v2/stac/assets/cog/8801/",
+      "title": "Total Magnetic Intensity grid (Cloud-Optimized GeoTIFF)",
+      "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+      "roles": ["data", "cloud-optimized"],
+      "file:size": 41250304,
+      "xpl:kind": "grid"
+    },
+    "located-line-data": {
+      "href": "https://api.geodb.io/api/v2/stac/assets/survey-file/5521/",
+      "title": "Located line data (XYZ)",
+      "type": "text/plain",
+      "roles": ["data"],
+      "file:size": 189440512,
+      "xpl:kind": "line_data"
+    },
+    "acquisition-report": {
+      "href": "https://api.geodb.io/api/v2/stac/assets/survey-file/5522/",
+      "title": "Acquisition & processing report",
+      "type": "application/pdf",
+      "roles": ["metadata"],
+      "file:size": 7340032,
+      "xpl:kind": "report"
+    }
+  },
+  "links": [
+    {"rel": "self", "type": "application/geo+json", "href": "https://api.geodb.io/api/v2/stac/collections/geophysical-surveys/items/survey-1042/"},
+    {"rel": "collection", "type": "application/json", "href": "https://api.geodb.io/api/v2/stac/collections/geophysical-surveys/"},
+    {"rel": "root", "type": "application/json", "href": "https://api.geodb.io/api/v2/stac/"}
+  ]
+}

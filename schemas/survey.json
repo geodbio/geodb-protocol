@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.geodb.io/exploration/v0.1.0/survey.json",
+  "title": "Downhole survey station",
+  "description": "A downhole deviation survey station (azimuth/dip at a measured depth). Part of the geoDB Open Exploration Protocol (chain-of-custody records lane).",
+  "type": "object",
+  "required": [
+    "hole_id",
+    "depth_at"
+  ],
+  "properties": {
+    "hole_id": {
+      "type": "string",
+      "description": "Collar identifier this station belongs to."
+    },
+    "depth_at": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "Measured depth of the station (project length units)."
+    },
+    "azimuth": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "Measured azimuth at depth (degrees)."
+    },
+    "dip": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "Measured dip at depth (degrees)."
+    }
+  },
+  "additionalProperties": true
+}
