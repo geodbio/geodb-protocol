@@ -2,64 +2,187 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://spec.geodb.io/exploration/v0.1.0/assay.json",
   "title": "Assay result",
-  "description": "A single element result for a sample, traceable to its certificate, method, and laboratory. Part of the geoDB Open Exploration Protocol (chain-of-custody records lane).",
+  "description": "One sample's laboratory results: a row per sample carrying its analyte values in `elements[]`, each traceable to the method and certificate that produced it.\n\nGENERATED from the normative OpenAPI document (`spec/openapi.yaml`) — do not edit by hand; run `python scripts/regenerate.py`. The OpenAPI document is normative for the wire; this file is the same contract for one record type, readable on its own.",
+  "x-generated-by": "scripts/regenerate.py from spec/openapi.yaml (geoDB Open Exploration Protocol v0.1.0)",
+  "x-openapi-component": "AssayRead",
   "type": "object",
-  "required": [
-    "sample_name",
-    "element",
-    "value"
-  ],
   "properties": {
-    "sample_name": {
-      "type": "string",
-      "description": "Sample identifier the result belongs to."
+    "id": {
+      "type": "integer"
     },
-    "element": {
-      "type": "string",
-      "description": "Element symbol (e.g. Au, Cu, Ag)."
+    "name": {
+      "type": [
+        "string",
+        "null"
+      ]
     },
-    "value": {
+    "project": {
+      "type": "object",
+      "description": "The project this assay belongs to, as an identity object rather than a bare id, so a reference stays meaningful across exports.",
+      "properties": {
+        "id": {
+          "type": "integer"
+        },
+        "name": {
+          "type": "string"
+        },
+        "company": {
+          "type": "string"
+        }
+      }
+    },
+    "certificate": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "weight": {
       "type": [
         "number",
         "null"
       ],
-      "description": "Reported value (in `unit`)."
+      "format": "double"
     },
-    "unit": {
+    "detection_limit_per_sample": {
       "type": [
         "string",
         "null"
       ],
-      "description": "Unit of value (e.g. ppm, ppb, pct, g/t)."
+      "format": "decimal",
+      "pattern": "^-?\\d{0,6}(?:\\.\\d{0,4})?$",
+      "description": "Per-sample detection limit reported by the lab when a method has variable DL (Method.is_floating_dl=True). For BDL rows the AssayUnit stores value=-1 and this field carries the lab's reported '<X.XX' threshold."
     },
-    "method": {
+    "precision_per_sample": {
       "type": [
         "string",
         "null"
       ],
-      "description": "Analytical method code."
+      "format": "decimal",
+      "pattern": "^-?\\d{0,6}(?:\\.\\d{0,4})?$",
+      "description": "Per-sample analytical precision (1-sigma error) reported by the lab. Drives the strip-log error whisker on the Au track for photon-assay samples. NULL for fixed-DL methods that only report a method-level precision."
     },
-    "certificate_number": {
+    "analyte_mass_g": {
       "type": [
         "string",
         "null"
       ],
-      "description": "Certificate this result came from."
+      "format": "decimal",
+      "pattern": "^-?\\d{0,6}(?:\\.\\d{0,2})?$",
+      "description": "Actual sample mass loaded by the lab in grams. Distinct from the cutsheet's target mass — the lab reports what it really put on the instrument. Drives per-sample DL scaling on the photon-assay strip-log render."
     },
-    "detection_limit": {
+    "lab_status_code": {
+      "description": "Lab QC flag for this sample. BDL = below detection limit; HB / HET = heterogeneity flagged by lab (soft-warn, row imports normally); IS = insufficient sample (AssayUnit lands with value NULL); SNR = sample not received. Empty for samples with no flag.\n\n* `BDL` - Below Detection Limit\n* `HB` - Heterogeneity bias flagged by lab\n* `HET` - Heterogeneous\n* `IS` - Insufficient sample\n* `SNR` - Sample not received",
+      "oneOf": [
+        {
+          "enum": [
+            "BDL",
+            "HB",
+            "HET",
+            "IS",
+            "SNR"
+          ],
+          "type": "string",
+          "description": "* `BDL` - Below Detection Limit\n* `HB` - Heterogeneity bias flagged by lab\n* `HET` - Heterogeneous\n* `IS` - Insufficient sample\n* `SNR` - Sample not received"
+        },
+        {
+          "enum": [
+            ""
+          ]
+        }
+      ]
+    },
+    "elements": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "element": {
+            "type": "string"
+          },
+          "value": {
+            "type": "string",
+            "format": "decimal",
+            "pattern": "^-?\\d{0,6}(?:\\.\\d{0,4})?$",
+            "description": "The analyte value, as a DECIMAL STRING rather than a JSON number — precision is preserved exactly as the laboratory reported it, and parsing it as a float will silently round it. Parse it with a decimal type. Its units are the sibling `units` field: units are per VALUE, not per sample and not per element, because one sample can carry values from two laboratories at different units."
+          },
+          "units": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Units for this value (e.g. `ppm`, `ppb`, `pct`, `g/t`, `oz/ton`). Per value — always read it beside the value rather than assuming a project-wide unit."
+          },
+          "detection_limit": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Lower detection limit for the method that produced this value, in the same units. A value at or below it is reported with `above_det_limit: false`."
+          },
+          "upper_limit": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Upper reporting limit for the method that produced this value, in the same units."
+          },
+          "above_det_limit": {
+            "type": "boolean"
+          },
+          "method": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "certificate": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "above_det_limit",
+          "certificate",
+          "detection_limit",
+          "element",
+          "method",
+          "units",
+          "upper_limit",
+          "value"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "date_created": {
       "type": [
-        "number",
+        "string",
         "null"
       ],
-      "description": "Lower detection limit for the method/element."
+      "format": "date"
     },
-    "is_below_detection": {
+    "qaqc_status": {
       "type": [
-        "boolean",
+        "string",
         "null"
-      ],
-      "description": "True when the value is below detection."
+      ]
     }
   },
-  "additionalProperties": true
+  "required": [
+    "analyte_mass_g",
+    "certificate",
+    "date_created",
+    "detection_limit_per_sample",
+    "elements",
+    "id",
+    "lab_status_code",
+    "name",
+    "precision_per_sample",
+    "project",
+    "qaqc_status",
+    "weight"
+  ],
+  "additionalProperties": false
 }

@@ -2,37 +2,40 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://spec.geodb.io/exploration/v0.1.0/laboratory.json",
   "title": "Laboratory",
-  "description": "An assaying laboratory \u2014 the chain-of-custody endpoint that issues certificates. Part of the geoDB Open Exploration Protocol (chain-of-custody records lane).",
+  "description": "An assaying laboratory — the chain-of-custody endpoint that issues certificates.\n\nGENERATED from the normative OpenAPI document (`spec/openapi.yaml`) — do not edit by hand; run `python scripts/regenerate.py`. The OpenAPI document is normative for the wire; this file is the same contract for one record type, readable on its own.",
+  "x-generated-by": "scripts/regenerate.py from spec/openapi.yaml (geoDB Open Exploration Protocol v0.1.0)",
+  "x-openapi-component": "LaboratoryRead",
   "type": "object",
-  "required": [
-    "name"
-  ],
   "properties": {
+    "id": {
+      "type": "integer"
+    },
     "name": {
-      "type": "string",
-      "description": "Laboratory name (e.g. 'ALS Global')."
+      "type": [
+        "string",
+        "null"
+      ]
     },
-    "code": {
+    "date_created": {
       "type": [
         "string",
         "null"
       ],
-      "description": "Short lab code."
+      "format": "date"
     },
-    "address": {
+    "last_edited": {
       "type": [
         "string",
         "null"
       ],
-      "description": "Lab location / address."
-    },
-    "accreditation": {
-      "type": [
-        "string",
-        "null"
-      ],
-      "description": "Accreditation (e.g. ISO 17025)."
+      "format": "date"
     }
   },
-  "additionalProperties": true
+  "required": [
+    "date_created",
+    "id",
+    "last_edited",
+    "name"
+  ],
+  "additionalProperties": false
 }

@@ -1,18 +1,76 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://spec.geodb.io/exploration/v0.1.0/collar.json",
-  "title": "Drill collar",
-  "description": "The surface location and orientation of a drillhole — the anchor every downhole record references.\n\nGENERATED from the normative OpenAPI document (`spec/openapi.yaml`) — do not edit by hand; run `python scripts/regenerate.py`. The OpenAPI document is normative for the wire; this file is the same contract for one record type, readable on its own.",
+  "$id": "https://spec.geodb.io/exploration/v0.1.0/point-sample.json",
+  "title": "Point sample",
+  "description": "A sample collected at a location on surface — soil, rock chip, stream sediment — and sent to a laboratory.\n\nGENERATED from the normative OpenAPI document (`spec/openapi.yaml`) — do not edit by hand; run `python scripts/regenerate.py`. The OpenAPI document is normative for the wire; this file is the same contract for one record type, readable on its own.",
   "x-generated-by": "scripts/regenerate.py from spec/openapi.yaml (geoDB Open Exploration Protocol v0.1.0)",
-  "x-openapi-component": "DrillCollarRead",
+  "x-openapi-component": "PointSampleRead",
   "type": "object",
   "properties": {
     "id": {
       "type": "integer"
     },
     "name": {
-      "type": "string",
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Lab sample bag ID. Set when sample is physically collected.",
+      "maxLength": 150
+    },
+    "sequence_number": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Planning reference ID (e.g., SS-001). Used for navigation and display.",
       "maxLength": 50
+    },
+    "status": {
+      "enum": [
+        "PL",
+        "AS",
+        "CO",
+        "SK"
+      ],
+      "type": "string",
+      "description": "* `PL` - Planned\n* `AS` - Assigned\n* `CO` - Collected\n* `SK` - Skipped"
+    },
+    "status_notes": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Reason for skipping, access issues, etc."
+    },
+    "lab_status": {
+      "description": "Lab workflow status (Planned, Collected, Submitted, Analyzed) — separate from the field-collection status.\n\n* `PL` - Planned\n* `CO` - Collected\n* `SU` - Submitted\n* `AN` - Analyzed",
+      "oneOf": [
+        {
+          "enum": [
+            "PL",
+            "CO",
+            "SU",
+            "AN"
+          ],
+          "type": "string",
+          "description": "* `PL` - Planned\n* `CO` - Collected\n* `SU` - Submitted\n* `AN` - Analyzed"
+        },
+        {
+          "enum": [
+            ""
+          ]
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "display_name": {
+      "type": [
+        "string",
+        "null"
+      ]
     },
     "project": {
       "type": [
@@ -22,74 +80,87 @@
       "additionalProperties": true,
       "description": "Natural key of the project: `{\"name\", \"company\"}`."
     },
-    "pad": {
+    "sample_type": {
+      "oneOf": [
+        {
+          "enum": [
+            "SL",
+            "RK",
+            "OC",
+            "DP",
+            "ST",
+            "BG",
+            "OT"
+          ],
+          "type": "string",
+          "description": "* `SL` - Soil\n* `RK` - Rock Chip\n* `OC` - Outcrop\n* `DP` - Dump\n* `ST` - Stream Sediment\n* `BG` - BLEG\n* `OT` - Other"
+        },
+        {
+          "enum": [
+            ""
+          ]
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "ps_type": {
+      "type": [
+        "integer",
+        "null"
+      ]
+    },
+    "lithology": {
+      "type": [
+        "integer",
+        "null"
+      ]
+    },
+    "alteration": {
+      "type": [
+        "integer",
+        "null"
+      ]
+    },
+    "assay": {
       "type": [
         "string",
         "null"
       ]
     },
-    "hole_type": {
-      "type": [
-        "string",
-        "null"
-      ],
-      "description": "How the hole was drilled — the project's own drilling-method code (diamond core, reverse circulation, auger, and so on). Read the enum on this field for the values this server emits."
-    },
-    "hole_status": {
-      "type": [
-        "string",
-        "null"
-      ]
-    },
-    "hole_size": {
-      "type": [
-        "string",
-        "null"
-      ]
-    },
-    "date_completed": {
-      "type": [
-        "string",
-        "null"
-      ],
-      "format": "date"
-    },
-    "total_depth": {
+    "target_latitude": {
       "type": [
         "number",
         "null"
       ],
       "format": "double",
-      "description": "The final drilled depth of the hole, in `length_units`. The depth measured ALONG the hole, not a vertical depth."
+      "description": "Planned collection latitude (WGS84)"
     },
-    "total_depth_label": {
-      "type": [
-        "string",
-        "null"
-      ]
-    },
-    "azimuth": {
+    "target_longitude": {
       "type": [
         "number",
         "null"
       ],
       "format": "double",
-      "description": "Azimuth in DEGREES, clockwise from grid north (0–360). On a collar it is the orientation the hole was set up to drill; on a downhole survey station it is the measured orientation at that depth."
+      "description": "Planned collection longitude (WGS84)"
     },
-    "dip": {
+    "target_elevation": {
       "type": [
         "number",
         "null"
       ],
       "format": "double",
-      "description": "Dip in DEGREES from horizontal. ⚠️ NEGATIVE IS DOWNWARD: a vertical hole drilled straight down is -90, a horizontal hole is 0. On a collar it is the set-up inclination; on a survey station it is the measured inclination at that depth."
+      "description": "Planned collection elevation"
     },
-    "display_units": {
+    "target_epsg": {
       "type": [
-        "string",
+        "integer",
         "null"
       ],
-      "description": "Units the *_display strings on this record are formatted in, from the project's display preference. Presentation only: the stored values remain in `length_units`."
+      "maximum": 2147483647,
+      "minimum": -2147483648,
+      "description": "EPSG code of original target coordinates"
     },
     "latitude": {
       "type": [
@@ -124,22 +195,13 @@
       "format": "double",
       "description": "Elevation of the collar, in `elevation_units`. See `elevation_source` for whether it was surveyed, taken from a DEM, or entered by hand."
     },
-    "elevation_source": {
+    "length_units": {
       "enum": [
-        "surveyed",
-        "dem",
-        "manual",
-        "unknown"
+        "M",
+        "FT"
       ],
       "type": "string",
-      "description": "Source of elevation data for quality tracking\n\n* `surveyed` - Surveyed\n* `dem` - DEM\n* `manual` - Manual Entry\n* `unknown` - Unknown"
-    },
-    "length_units": {
-      "type": [
-        "string",
-        "null"
-      ],
-      "description": "Units the record's DEPTH and LENGTH values are stored in: `M` (metres) or `FT` (feet). Stored units, not a display preference — read every depth against this."
+      "description": "* `M` - Meters\n* `FT` - Feet"
     },
     "xy_units": {
       "type": [
@@ -238,6 +300,140 @@
       ],
       "description": "Get Proj4 local grid elevation units (M or FT)."
     },
+    "distance_from_target_meters": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "format": "double"
+    },
+    "assigned_to": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "properties": {
+        "id": {
+          "type": "integer"
+        },
+        "email": {
+          "type": "string",
+          "format": "email"
+        },
+        "first_name": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "last_name": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "email",
+        "first_name",
+        "id",
+        "last_name"
+      ],
+      "additionalProperties": false
+    },
+    "assigned_by": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "properties": {
+        "id": {
+          "type": "integer"
+        },
+        "email": {
+          "type": "string",
+          "format": "email"
+        },
+        "first_name": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "last_name": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "email",
+        "first_name",
+        "id",
+        "last_name"
+      ],
+      "additionalProperties": false
+    },
+    "assigned_date": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
+    },
+    "due_date": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date",
+      "description": "Target date for collection"
+    },
+    "submittal": {
+      "type": [
+        "integer",
+        "null"
+      ]
+    },
+    "submittal_name": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "package_number": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "sample_package": {
+      "type": [
+        "integer",
+        "null"
+      ]
+    },
+    "sample_package_detail": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "date_collected": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date"
+    },
+    "collected_by": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 50
+    },
     "notes": {
       "type": [
         "string",
@@ -250,14 +446,6 @@
         "null"
       ],
       "description": "The derived WGS84 location as an EWKT string: `SRID=4326;POINT Z (lon lat elev)` — longitude first, then latitude, then elevation in metres (`POINT` without `Z` when no elevation is recorded). Always EPSG 4326, whatever `epsg` says.\n\nThis is the reprojected value. The original coordinate the customer supplied is `source_coordinate`. For a parsed object rather than a string, read `geometry_geojson`."
-    },
-    "documents": {
-      "type": "array",
-      "items": {
-        "type": "object",
-        "additionalProperties": true
-      },
-      "description": "Attached records, each as an object carrying its id, its natural key and display metadata. Soft-deleted attachments are omitted."
     },
     "images": {
       "type": "array",
@@ -352,14 +540,41 @@
       ],
       "additionalProperties": true,
       "description": "The project's coordinate-system settings (declared EPSG, optional local-grid proj4 string, units). Present on every record whose model carries a location. Advisory metadata for clients that reproject; the per-record CRS is always the record's own `epsg`."
+    },
+    "metal_equivalent_config": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Name of the price deck behind the metal-equivalent column. The number never travels without its deck."
+    },
+    "metal_equivalent_target": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Target element of the metal-equivalent calculation."
+    },
+    "metal_equivalent_blank_reason": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Machine-readable reason a metal-equivalent value is blank, when it is."
     }
   },
   "patternProperties": {
     "^cf_[a-z0-9_]+$": {
       "description": "Custom field. Any number of `cf_*` keys may be present: they are the project's user-defined fields, flattened to top level. The set of keys and their types vary BY PROJECT and BY MODEL — discover them at `/api/v2/model-schemas/?project_id=<id>`, never by assuming a fixed set. Values are whatever the customer stored (string, number, boolean or null). Calculated custom fields appear under the same prefix and are read-only."
+    },
+    "^[A-Z][a-z]?Eq(\\s.+)?$": {
+      "description": "Metal-equivalent value (e.g. `AuEq ppm`), present only when the project has a price deck. The key names the target element and its units; the accompanying `metal_equivalent_*` keys name the deck behind it."
     }
   },
   "required": [
+    "assay",
+    "assigned_by",
+    "assigned_to",
     "crs_easting",
     "crs_elevation",
     "crs_elevation_units",
@@ -367,19 +582,14 @@
     "crs_northing",
     "crs_xy_units",
     "date_created",
-    "display_units",
-    "documents",
+    "display_name",
+    "distance_from_target_meters",
     "geometry",
     "geometry_geojson",
-    "hole_size",
-    "hole_status",
-    "hole_type",
     "id",
     "images",
     "last_edited",
-    "length_units",
-    "name",
-    "pad",
+    "package_number",
     "proj4_easting",
     "proj4_elevation",
     "proj4_elevation_units",
@@ -387,8 +597,11 @@
     "proj4_string",
     "proj4_xy_units",
     "project",
+    "sample_package",
+    "sample_package_detail",
     "source_coordinate",
-    "total_depth_label",
+    "submittal",
+    "submittal_name",
     "xy_units"
   ],
   "additionalProperties": false

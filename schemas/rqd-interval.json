@@ -1,0 +1,469 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://spec.geodb.io/exploration/v0.1.0/rqd-interval.json",
+  "title": "Geotechnical interval",
+  "description": "Core recovery and rock-mass character over a depth interval: RQD, discontinuities, strength and weathering.\n\nGENERATED from the normative OpenAPI document (`spec/openapi.yaml`) — do not edit by hand; run `python scripts/regenerate.py`. The OpenAPI document is normative for the wire; this file is the same contract for one record type, readable on its own.",
+  "x-generated-by": "scripts/regenerate.py from spec/openapi.yaml (geoDB Open Exploration Protocol v0.1.0)",
+  "x-openapi-component": "DrillRQDRead",
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "integer"
+    },
+    "project": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "additionalProperties": true,
+      "description": "Natural key of the project: `{\"name\", \"company\"}`."
+    },
+    "bhid": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "additionalProperties": true,
+      "description": "Natural key of the drill hole: `{\"hole_id\", \"project\", \"company\"}`."
+    },
+    "depth_from": {
+      "type": "number",
+      "format": "double",
+      "description": "Start depth of interval"
+    },
+    "depth_to": {
+      "type": "number",
+      "format": "double",
+      "description": "End depth of interval"
+    },
+    "display_units": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Units the *_display strings on this record are formatted in, from the project's display preference. Presentation only: the stored values remain in `length_units`."
+    },
+    "xyz_from": {
+      "type": [
+        "array",
+        "null"
+      ],
+      "items": {
+        "type": "number"
+      },
+      "description": "Desurveyed position at `depth_from`, as `[x, y, z]` on the PROJECT LOCAL GRID in metres — not WGS84, and not the record's own `epsg`. Null when the hole has no survey to desurvey against."
+    },
+    "xyz_to": {
+      "type": [
+        "array",
+        "null"
+      ],
+      "items": {
+        "type": "number"
+      },
+      "description": "Desurveyed position at `depth_to`, as `[x, y, z]` on the project local grid in metres. Null when the hole has no survey."
+    },
+    "recovery_length": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "format": "double",
+      "description": "Total length of core recovered"
+    },
+    "recovery_percent": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "format": "double",
+      "maximum": 150,
+      "minimum": 0,
+      "description": "Total Core Recovery percentage (TCR). 150% cap allows for super-recovery due to core expansion."
+    },
+    "rqd_length": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "format": "double",
+      "description": "Sum of intact core pieces >= 10cm (4 inches)"
+    },
+    "rqd_percent": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "format": "double",
+      "maximum": 100,
+      "minimum": 0,
+      "description": "Rock Quality Designation percentage"
+    },
+    "rqd_classification": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "interval_length": {
+      "type": "number",
+      "format": "double"
+    },
+    "magnetic_susceptibility": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "format": "double",
+      "description": "Magnetic susceptibility (SI x 10^-3)"
+    },
+    "weathering_grade": {
+      "description": "ISRM Weathering Grade (W1-W5)\n\n* `W1` - W1 - Fresh\n* `W2` - W2 - Slightly Weathered\n* `W3` - W3 - Moderately Weathered\n* `W4` - W4 - Highly Weathered\n* `W5` - W5 - Completely Weathered",
+      "oneOf": [
+        {
+          "enum": [
+            "W1",
+            "W2",
+            "W3",
+            "W4",
+            "W5"
+          ],
+          "type": "string",
+          "description": "* `W1` - W1 - Fresh\n* `W2` - W2 - Slightly Weathered\n* `W3` - W3 - Moderately Weathered\n* `W4` - W4 - Highly Weathered\n* `W5` - W5 - Completely Weathered"
+        },
+        {
+          "enum": [
+            ""
+          ]
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "strength_grade": {
+      "description": "ISRM Field Estimated Strength (R0-R6)\n\n* `R0` - R0 - Extremely Weak (<1 MPa)\n* `R1` - R1 - Very Weak (1-5 MPa)\n* `R2` - R2 - Weak (5-25 MPa)\n* `R3` - R3 - Medium Strong (25-50 MPa)\n* `R4` - R4 - Strong (50-100 MPa)\n* `R5` - R5 - Very Strong (100-250 MPa)\n* `R6` - R6 - Extremely Strong (>250 MPa)",
+      "oneOf": [
+        {
+          "enum": [
+            "R0",
+            "R1",
+            "R2",
+            "R3",
+            "R4",
+            "R5",
+            "R6"
+          ],
+          "type": "string",
+          "description": "* `R0` - R0 - Extremely Weak (<1 MPa)\n* `R1` - R1 - Very Weak (1-5 MPa)\n* `R2` - R2 - Weak (5-25 MPa)\n* `R3` - R3 - Medium Strong (25-50 MPa)\n* `R4` - R4 - Strong (50-100 MPa)\n* `R5` - R5 - Very Strong (100-250 MPa)\n* `R6` - R6 - Extremely Strong (>250 MPa)"
+        },
+        {
+          "enum": [
+            ""
+          ]
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "fracture_frequency": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "format": "double",
+      "description": "Number of natural fractures per meter"
+    },
+    "discontinuity_type": {
+      "description": "Dominant discontinuity type in this interval\n\n* `JNT` - Joint\n* `FLT` - Fault\n* `SHR` - Shear\n* `BED` - Bedding\n* `FOL` - Foliation\n* `VNH` - Vein Healed\n* `VNO` - Vein Open\n* `CON` - Contact\n* `NON` - None / Massive Rock",
+      "oneOf": [
+        {
+          "enum": [
+            "JNT",
+            "FLT",
+            "SHR",
+            "BED",
+            "FOL",
+            "VNH",
+            "VNO",
+            "CON",
+            "NON"
+          ],
+          "type": "string",
+          "description": "* `JNT` - Joint\n* `FLT` - Fault\n* `SHR` - Shear\n* `BED` - Bedding\n* `FOL` - Foliation\n* `VNH` - Vein Healed\n* `VNO` - Vein Open\n* `CON` - Contact\n* `NON` - None / Massive Rock"
+        },
+        {
+          "enum": [
+            ""
+          ]
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "zone_type": {
+      "description": "Rock mass zone type for this interval\n\n* `MRK` - Massive Rock\n* `JRK` - Jointed Rock\n* `FOL` - Foliated Rock\n* `BRK` - Broken Core\n* `RUB` - Rubble\n* `FLT` - Fault\n* `DISK` - Disking\n* `LOST` - Lost Core\n* `SOIL` - Soil Like",
+      "oneOf": [
+        {
+          "enum": [
+            "MRK",
+            "JRK",
+            "FOL",
+            "BRK",
+            "RUB",
+            "FLT",
+            "DISK",
+            "LOST",
+            "SOIL"
+          ],
+          "type": "string",
+          "description": "* `MRK` - Massive Rock\n* `JRK` - Jointed Rock\n* `FOL` - Foliated Rock\n* `BRK` - Broken Core\n* `RUB` - Rubble\n* `FLT` - Fault\n* `DISK` - Disking\n* `LOST` - Lost Core\n* `SOIL` - Soil Like"
+        },
+        {
+          "enum": [
+            ""
+          ]
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "jn": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "format": "double",
+      "description": "Q-system Joint Set Number (Jn)"
+    },
+    "jr": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "format": "double",
+      "description": "Q-system Joint Roughness Number (Jr)"
+    },
+    "ja": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "format": "double",
+      "description": "Q-system Joint Alteration Number (Ja)"
+    },
+    "joint_count_0_30": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "maximum": 2147483647,
+      "minimum": 0,
+      "description": "Fracture count: 0-30 degrees to core axis"
+    },
+    "joint_count_30_60": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "maximum": 2147483647,
+      "minimum": 0,
+      "description": "Fracture count: 30-60 degrees to core axis"
+    },
+    "joint_count_60_90": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "maximum": 2147483647,
+      "minimum": 0,
+      "description": "Fracture count: 60-90 degrees to core axis"
+    },
+    "joint_count_random": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "maximum": 2147483647,
+      "minimum": 0,
+      "description": "Fracture count: random orientation"
+    },
+    "core_size": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Core diameter code (NQ, HQ, PQ, BQ, etc.)",
+      "maxLength": 10
+    },
+    "q_prime": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "format": "double"
+    },
+    "weighted_joint_density": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "format": "double"
+    },
+    "block_volume": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "format": "double"
+    },
+    "block_diameter": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "format": "double"
+    },
+    "average_spacing_mm": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "format": "double"
+    },
+    "rqd_rating": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "format": "double"
+    },
+    "irs_rating": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "format": "double"
+    },
+    "spacing_rating": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "format": "double"
+    },
+    "rmr89": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "format": "double"
+    },
+    "gsi": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "format": "double"
+    },
+    "reference_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Reference ID (box number, sample ID, etc.)",
+      "maxLength": 50
+    },
+    "collected_by": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 50
+    },
+    "date_collected": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date"
+    },
+    "logged_by": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "logged_date": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date"
+    },
+    "notes": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Additional observations or remarks"
+    },
+    "length_units": {
+      "enum": [
+        "M",
+        "FT"
+      ],
+      "type": "string",
+      "description": "Units for depth values\n\n* `M` - Meters\n* `FT` - Feet"
+    },
+    "date_created": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date"
+    },
+    "last_edited": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date"
+    }
+  },
+  "patternProperties": {
+    "^cf_[a-z0-9_]+$": {
+      "description": "Custom field. Any number of `cf_*` keys may be present: they are the project's user-defined fields, flattened to top level. The set of keys and their types vary BY PROJECT and BY MODEL — discover them at `/api/v2/model-schemas/?project_id=<id>`, never by assuming a fixed set. Values are whatever the customer stored (string, number, boolean or null). Calculated custom fields appear under the same prefix and are read-only."
+    }
+  },
+  "required": [
+    "average_spacing_mm",
+    "bhid",
+    "block_diameter",
+    "block_volume",
+    "date_created",
+    "depth_from",
+    "depth_to",
+    "display_units",
+    "gsi",
+    "id",
+    "interval_length",
+    "irs_rating",
+    "last_edited",
+    "logged_by",
+    "logged_date",
+    "project",
+    "q_prime",
+    "rmr89",
+    "rqd_classification",
+    "rqd_rating",
+    "spacing_rating",
+    "weighted_joint_density",
+    "xyz_from",
+    "xyz_to"
+  ],
+  "additionalProperties": false
+}

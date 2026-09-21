@@ -1,11 +1,16 @@
 name: CI
 
 # Everything here runs on a bare checkout of this repository. It deliberately
-# does NOT run scripts/regenerate.py --check: regeneration needs a geoDB
-# checkout and a configured Django project to emit spec/openapi.yaml and
-# stac/xpl/schema.json from the reference implementation. That drift check runs
-# in our own CI, where the implementation is available; GitHub only ever sees
-# the committed artifacts, so here we validate them rather than re-derive them.
+# does NOT run scripts/regenerate.py --check in full: regenerating
+# spec/openapi.yaml and stac/xpl/schema.json needs a geoDB checkout and a
+# configured Django project. That half of the drift check runs in our own CI,
+# where the implementation is available.
+#
+# ⭐ The half that CAN run here does: scripts/validate.py re-derives schemas/
+# and PROFILE.md from the COMMITTED spec and fails if either has drifted from
+# it (ruling R4). So the guarantee "no file in this repo contradicts the
+# normative document" is enforced on every push, by GitHub, with no
+# credentials — which is the guarantee the audit found broken.
 #
 # Several steps are guarded with `if [ -f ... ]` / `if [ -d ... ]` on purpose.
 # The examples tree, the id checker and the conformance suite land in later

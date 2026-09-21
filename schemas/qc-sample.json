@@ -2,49 +2,260 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://spec.geodb.io/exploration/v0.1.0/qc-sample.json",
   "title": "QC sample",
-  "description": "A quality-control sample inserted into a sample stream \u2014 a certified reference material (standard), blank, or duplicate \u2014 for QA/QC verification. Part of the geoDB Open Exploration Protocol (chain-of-custody records lane).",
+  "description": "A quality-control sample inserted into a sample stream — a certified reference material, a blank, or a duplicate.\n\nGENERATED from the normative OpenAPI document (`spec/openapi.yaml`) — do not edit by hand; run `python scripts/regenerate.py`. The OpenAPI document is normative for the wire; this file is the same contract for one record type, readable on its own.",
+  "x-generated-by": "scripts/regenerate.py from spec/openapi.yaml (geoDB Open Exploration Protocol v0.1.0)",
+  "x-openapi-component": "QCSampleRead",
   "type": "object",
-  "required": [
-    "name",
-    "qc_type"
-  ],
   "properties": {
+    "id": {
+      "type": "integer"
+    },
     "name": {
-      "type": "string",
-      "description": "QC sample identifier."
+      "type": [
+        "string",
+        "null"
+      ]
     },
-    "qc_type": {
-      "type": "string",
-      "description": "standard | blank | duplicate | field_duplicate."
+    "project": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "additionalProperties": true,
+      "description": "Natural key of the project: `{\"name\", \"company\"}`."
     },
-    "reference_standard": {
+    "sample_type": {
+      "oneOf": [
+        {
+          "enum": [
+            "BLN",
+            "STD",
+            "DUP",
+            "BLB",
+            "SLB",
+            "DLB"
+          ],
+          "type": "string",
+          "description": "* `BLN` - Blank - Operator\n* `STD` - Standard - Operator\n* `DUP` - Duplicate - Operator\n* `BLB` - Blank - Lab\n* `SLB` - Standard - Lab\n* `DLB` - Duplicate - Lab"
+        },
+        {
+          "enum": [
+            ""
+          ]
+        }
+      ]
+    },
+    "category": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "bhid": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Id of the drill hole this record belongs to. ⚠️ This one is a numeric id, not a name: read the hole's NAME from the sibling `bhid_name` on the same record. (On the drill-interval endpoints — samples, surveys, lithologies, structures, RQD — the same key is an OBJECT carrying `hole_id` instead. Check the type before reading it.)"
+    },
+    "bhid_name": {
       "type": [
         "string",
         "null"
       ],
-      "description": "CRM name when qc_type=standard."
+      "description": "Name of the drill hole named by `bhid` — the hole as a geologist writes it, so a row can be labelled without a second request. Null when the record is not associated with a hole."
     },
-    "expected_value": {
+    "standard": {
+      "type": [
+        "integer",
+        "null"
+      ]
+    },
+    "standard_detail": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "ds_duplicate": {
+      "type": [
+        "integer",
+        "null"
+      ]
+    },
+    "ds_duplicate_detail": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "ps_duplicate": {
+      "type": [
+        "integer",
+        "null"
+      ]
+    },
+    "ps_duplicate_detail": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "sample_package": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Field collection programme this QC sample belongs to (the surface twin of bhid: bhid anchors a QC row to a drill hole, sample_package anchors it to a soil/surface programme). Same FK name and target as PointSample.sample_package so a QC row and the primaries it accompanies share one anchor.\n\nNOT to be confused with the sibling `package` FK below: sample_package = FIELD COLLECTION batch (lifecycle stage PL->CO); `package`/SubmittalPackage = LAB SHIPMENT box (stage CO->SU). Different stages of one lifecycle, deliberately separate fields."
+    },
+    "sample_package_detail": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "qc_type": {
+      "type": [
+        "integer",
+        "null"
+      ]
+    },
+    "qc_type_detail": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "weight": {
       "type": [
         "number",
         "null"
       ],
-      "description": "Certified/expected value for the element."
+      "format": "double"
     },
-    "element": {
+    "date_collected": {
       "type": [
         "string",
         "null"
       ],
-      "description": "Element the expectation applies to."
+      "format": "date"
     },
-    "unit": {
+    "collected_by": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "notes": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "lab_status": {
+      "enum": [
+        "PL",
+        "CO",
+        "SU",
+        "AN",
+        null
+      ],
       "type": [
         "string",
         "null"
       ],
-      "description": "Unit of expected_value."
+      "description": "Lab workflow status (Collected, Submitted, Analyzed)\n\n* `PL` - Planned\n* `CO` - Collected\n* `SU` - Submitted\n* `AN` - Analyzed"
+    },
+    "submittal": {
+      "type": [
+        "integer",
+        "null"
+      ]
+    },
+    "submittal_name": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "package_number": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "date_created": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date"
+    },
+    "last_edited": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date"
+    },
+    "metal_equivalent_config": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Name of the price deck behind the metal-equivalent column. The number never travels without its deck."
+    },
+    "metal_equivalent_target": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Target element of the metal-equivalent calculation."
+    },
+    "metal_equivalent_blank_reason": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Machine-readable reason a metal-equivalent value is blank, when it is."
     }
   },
-  "additionalProperties": true
+  "patternProperties": {
+    "^cf_[a-z0-9_]+$": {
+      "description": "Custom field. Any number of `cf_*` keys may be present: they are the project's user-defined fields, flattened to top level. The set of keys and their types vary BY PROJECT and BY MODEL — discover them at `/api/v2/model-schemas/?project_id=<id>`, never by assuming a fixed set. Values are whatever the customer stored (string, number, boolean or null). Calculated custom fields appear under the same prefix and are read-only."
+    },
+    "^[A-Z][a-z]?Eq(\\s.+)?$": {
+      "description": "Metal-equivalent value (e.g. `AuEq ppm`), present only when the project has a price deck. The key names the target element and its units; the accompanying `metal_equivalent_*` keys name the deck behind it."
+    }
+  },
+  "required": [
+    "bhid",
+    "bhid_name",
+    "category",
+    "collected_by",
+    "date_collected",
+    "date_created",
+    "ds_duplicate",
+    "ds_duplicate_detail",
+    "id",
+    "lab_status",
+    "last_edited",
+    "name",
+    "notes",
+    "package_number",
+    "project",
+    "ps_duplicate",
+    "ps_duplicate_detail",
+    "qc_type",
+    "qc_type_detail",
+    "sample_package",
+    "sample_package_detail",
+    "sample_type",
+    "standard",
+    "standard_detail",
+    "submittal",
+    "submittal_name",
+    "weight"
+  ],
+  "additionalProperties": false
 }

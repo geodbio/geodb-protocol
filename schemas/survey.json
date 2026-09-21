@@ -2,38 +2,110 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://spec.geodb.io/exploration/v0.1.0/survey.json",
   "title": "Downhole survey station",
-  "description": "A downhole deviation survey station (azimuth/dip at a measured depth). Part of the geoDB Open Exploration Protocol (chain-of-custody records lane).",
+  "description": "Azimuth and dip measured at a depth down a hole. The stations are what bend a hole away from its collar orientation.\n\nGENERATED from the normative OpenAPI document (`spec/openapi.yaml`) — do not edit by hand; run `python scripts/regenerate.py`. The OpenAPI document is normative for the wire; this file is the same contract for one record type, readable on its own.",
+  "x-generated-by": "scripts/regenerate.py from spec/openapi.yaml (geoDB Open Exploration Protocol v0.1.0)",
+  "x-openapi-component": "DrillSurveyRead",
   "type": "object",
-  "required": [
-    "hole_id",
-    "depth_at"
-  ],
   "properties": {
-    "hole_id": {
-      "type": "string",
-      "description": "Collar identifier this station belongs to."
+    "id": {
+      "type": "integer"
+    },
+    "project": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "additionalProperties": true,
+      "description": "Natural key of the project: `{\"name\", \"company\"}`."
+    },
+    "bhid": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "additionalProperties": true,
+      "description": "Natural key of the drill hole: `{\"hole_id\", \"project\", \"company\"}`."
     },
     "depth_at": {
+      "type": "number",
+      "format": "double",
+      "description": "Depth of this measurement ALONG the hole from the collar, in `length_units` — not a vertical depth, and not a distance from surface once the hole deviates."
+    },
+    "display_units": {
       "type": [
-        "number",
+        "string",
         "null"
       ],
-      "description": "Measured depth of the station (project length units)."
+      "description": "Units the *_display strings on this record are formatted in, from the project's display preference. Presentation only: the stored values remain in `length_units`."
     },
     "azimuth": {
-      "type": [
-        "number",
-        "null"
-      ],
-      "description": "Measured azimuth at depth (degrees)."
+      "type": "number",
+      "format": "double",
+      "description": "Azimuth in DEGREES, clockwise from grid north (0–360). On a collar it is the orientation the hole was set up to drill; on a downhole survey station it is the measured orientation at that depth."
     },
     "dip": {
+      "type": "number",
+      "format": "double",
+      "description": "Dip in DEGREES from horizontal. ⚠️ NEGATIVE IS DOWNWARD: a vertical hole drilled straight down is -90, a horizontal hole is 0. On a collar it is the set-up inclination; on a survey station it is the measured inclination at that depth."
+    },
+    "date_collected": {
       "type": [
-        "number",
+        "string",
         "null"
       ],
-      "description": "Measured dip at depth (degrees)."
+      "format": "date"
+    },
+    "collected_by": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 50
+    },
+    "notes": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "length_units": {
+      "enum": [
+        "M",
+        "FT"
+      ],
+      "type": "string",
+      "description": "* `M` - Meters\n* `FT` - Feet"
+    },
+    "date_created": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date"
+    },
+    "last_edited": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date"
     }
   },
-  "additionalProperties": true
+  "patternProperties": {
+    "^cf_[a-z0-9_]+$": {
+      "description": "Custom field. Any number of `cf_*` keys may be present: they are the project's user-defined fields, flattened to top level. The set of keys and their types vary BY PROJECT and BY MODEL — discover them at `/api/v2/model-schemas/?project_id=<id>`, never by assuming a fixed set. Values are whatever the customer stored (string, number, boolean or null). Calculated custom fields appear under the same prefix and are read-only."
+    }
+  },
+  "required": [
+    "azimuth",
+    "bhid",
+    "date_created",
+    "depth_at",
+    "dip",
+    "display_units",
+    "id",
+    "last_edited",
+    "project"
+  ],
+  "additionalProperties": false
 }

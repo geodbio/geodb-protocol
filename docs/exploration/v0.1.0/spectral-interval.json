@@ -1,0 +1,199 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://spec.geodb.io/exploration/v0.1.0/spectral-interval.json",
+  "title": "Spectral interval",
+  "description": "A spectral scan over a depth interval, with the mineral or geounit abundances it resolved.\n\nGENERATED from the normative OpenAPI document (`spec/openapi.yaml`) — do not edit by hand; run `python scripts/regenerate.py`. The OpenAPI document is normative for the wire; this file is the same contract for one record type, readable on its own.",
+  "x-generated-by": "scripts/regenerate.py from spec/openapi.yaml (geoDB Open Exploration Protocol v0.1.0)",
+  "x-openapi-component": "DrillSpectralIntervalRead",
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "integer"
+    },
+    "project": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "additionalProperties": true,
+      "description": "Natural key of the project: `{\"name\", \"company\"}`."
+    },
+    "bhid": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "additionalProperties": true,
+      "description": "Natural key of the drill hole: `{\"hole_id\", \"project\", \"company\"}`."
+    },
+    "scheme": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Id of the related lookup row. Resolve its name from the corresponding lookup endpoint."
+    },
+    "depth_from": {
+      "type": "number",
+      "format": "double",
+      "description": "Top of this interval, measured ALONG the hole from the collar, in `length_units`."
+    },
+    "depth_to": {
+      "type": "number",
+      "format": "double",
+      "description": "Base of this interval, measured ALONG the hole from the collar, in `length_units`."
+    },
+    "display_units": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Units the *_display strings on this record are formatted in, from the project's display preference. Presentation only: the stored values remain in `length_units`."
+    },
+    "length_units": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 10,
+      "description": "Units the record's DEPTH and LENGTH values are stored in: `M` (metres) or `FT` (feet). Stored units, not a display preference — read every depth against this."
+    },
+    "xyz_from": {
+      "type": [
+        "array",
+        "null"
+      ],
+      "items": {
+        "type": "number"
+      },
+      "description": "Desurveyed position at `depth_from`, as `[x, y, z]` on the PROJECT LOCAL GRID in metres — not WGS84, and not the record's own `epsg`. Null when the hole has no survey to desurvey against."
+    },
+    "xyz_to": {
+      "type": [
+        "array",
+        "null"
+      ],
+      "items": {
+        "type": "number"
+      },
+      "description": "Desurveyed position at `depth_to`, as `[x, y, z]` on the project local grid in metres. Null when the hole has no survey."
+    },
+    "abundances": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "description": "Nested abundance row — geounit code/label/color + the cell value.",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "geounit": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "geounit_code": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "geounit_label": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "geounit_color": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "is_non_mineral": {
+            "type": "boolean"
+          },
+          "abundance": {
+            "type": "string",
+            "format": "decimal",
+            "pattern": "^-?\\d{0,3}(?:\\.\\d{0,4})?$",
+            "description": "Fraction 0.0–1.0"
+          }
+        },
+        "required": [
+          "abundance",
+          "geounit_code",
+          "geounit_color",
+          "geounit_label",
+          "id",
+          "is_non_mineral"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "images": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true
+      },
+      "description": "Attached records, each as an object carrying its id, its natural key and display metadata. Soft-deleted attachments are omitted."
+    },
+    "notes": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "date_collected": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date"
+    },
+    "collected_by": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 50
+    },
+    "date_created": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date"
+    },
+    "last_edited": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date"
+    }
+  },
+  "patternProperties": {
+    "^cf_[a-z0-9_]+$": {
+      "description": "Custom field. Any number of `cf_*` keys may be present: they are the project's user-defined fields, flattened to top level. The set of keys and their types vary BY PROJECT and BY MODEL — discover them at `/api/v2/model-schemas/?project_id=<id>`, never by assuming a fixed set. Values are whatever the customer stored (string, number, boolean or null). Calculated custom fields appear under the same prefix and are read-only."
+    }
+  },
+  "required": [
+    "abundances",
+    "bhid",
+    "date_created",
+    "depth_from",
+    "depth_to",
+    "display_units",
+    "id",
+    "images",
+    "last_edited",
+    "project",
+    "scheme",
+    "xyz_from",
+    "xyz_to"
+  ],
+  "additionalProperties": false
+}

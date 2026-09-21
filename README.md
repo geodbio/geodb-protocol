@@ -12,6 +12,16 @@ project's data **pullable as a feed**: adopt the standards the geospatial world
 already agreed on (STAC 1.1, COG, GeoParquet, OpenAPI 3), and contribute only the
 missing *exploration* vocabulary.
 
+> **[`spec/openapi.yaml`](spec/openapi.yaml) is NORMATIVE for the wire.** Where any
+> other file here disagrees with it, the OpenAPI document is right — and
+> `schemas/` and [`PROFILE.md`](PROFILE.md) are generated from it so they cannot.
+>
+> **[`PROFILE.md`](PROFILE.md) names the core profile:** the 47 operations a
+> second implementer must serve. Every operation in the spec carries either
+> `x-protocol-core: true` or `x-geodb-extension: true` — extensions are real
+> and supported, and are not part of the contract anyone else is asked to
+> implement.
+
 - **Spec + docs:** CC-BY-4.0 · **Schemas + code:** Apache-2.0
 - **Version:** `0.1.0` (pre-1.0 — the shape is stable, field details may still move)
 - **Reference implementation:** the geoDB API itself (this is not a paper standard)
@@ -21,7 +31,7 @@ missing *exploration* vocabulary.
 
 | Lane | What | Transport |
 |---|---|---|
-| **Records** | Relational, chain-of-custody data (collar / survey / interval / assay / QC / certificate / laboratory) — the first-in-category part | Read-only REST (OpenAPI 3), bulk as **GeoParquet** / CSV |
+| **Records** | Relational, chain-of-custody data (collar / survey / the eight typed downhole interval families / samples / assay / QC / certificate / laboratory) — the first-in-category part | Read-only REST (OpenAPI 3), bulk as **GeoParquet** / CSV |
 | **Assets** | Surveys, rasters, documents as catalog items with footprints + checksums; grids also as **COG** | A per-project **STAC 1.1** catalog + the `xpl:` exploration extension |
 
 ## Auth model (read this first)
@@ -48,14 +58,19 @@ Existing first-party clients (mobile, QGIS, Blender) keep using Knox tokens
 ## What's in this repo
 
 ```
-spec/openapi.yaml          OpenAPI 3 for the read surface (generated; regen script below)
-schemas/                   Chain-of-custody JSON Schemas (collar, survey, interval,
-                           assay, certificate, laboratory, qc-sample) — the vocabulary
-                           Evo/OMF don't define
+spec/openapi.yaml          OpenAPI 3 for the read surface — NORMATIVE for the wire
+                           (generated from the reference implementation; regen below)
+PROFILE.md                 Which operations are the protocol and which are geoDB's
+                           own (generated from the spec's x-protocol-core flags)
+schemas/                   One JSON Schema per core record type — the exploration
+                           vocabulary Evo/OMF don't define, readable one file at a
+                           time. GENERATED from the spec's core-profile components,
+                           so they cannot contradict it
 stac/xpl/schema.json       The xpl: STAC extension JSON Schema (generated)
 stac/xpl/README.md         The xpl: extension — fields, profiles, item examples
 stac/xpl/examples/         Worked STAC items (airborne-mag survey, drillhole package)
-scripts/regenerate.py      Re-emit openapi.yaml + xpl/schema.json from a geoDB checkout
+scripts/regenerate.py      Re-emit openapi.yaml + xpl/schema.json from a geoDB
+                           checkout, then schemas/ + PROFILE.md from the spec
 scripts/validate.py        Validate schemas, spec, and examples offline (no checkout needed)
 CHANGELOG.md               Version history
 CONTRIBUTING.md            How to file a useful issue; how decisions get made
@@ -66,6 +81,10 @@ LICENSE-docs (CC-BY-4.0)   Spec + documentation
 
 ## Quickstart (20 lines to DataFrames)
 
+Every call below is in the [core profile](PROFILE.md), so this runs against any
+conforming server, not only ours. (A test in the client repo runs exactly this
+against a mock that implements the core profile and nothing else.)
+
 ```python
 import geodb
 
@@ -73,7 +92,12 @@ gx = geodb.Client(token="gdbg_...", base_url="https://api.geodb.io")
 
 collars = gx.collars().to_dataframe()        # every drill collar → pandas
 assays  = gx.assays().to_dataframe()         # merged assay values → pandas
-surveys = gx.surveys().to_dataframe()        # geophysical surveys + footprints
+stations = gx.drill_surveys().to_dataframe() # downhole azimuth/dip stations
+
+# ⚠️ collars carry the ORIGINAL imported coordinate: for a projected project,
+# `longitude` is the EASTING and `latitude` the NORTHING, in the CRS named by
+# `epsg`. Read `geometry` when you want WGS84.
+print(collars[["name", "latitude", "longitude", "epsg"]].head())
 
 # Walk the STAC catalog and pull a Cloud-Optimized GeoTIFF
 for item in gx.stac().items("rasters"):
@@ -86,6 +110,9 @@ for item in gx.stac().items("rasters"):
 job = gx.export("drill_samples", format="geoparquet")
 path = job.wait().download("samples.parquet")
 ```
+
+`gx.surveys()` reads GEOPHYSICAL surveys and is a geoDB extension, not core —
+one keystroke from `gx.drill_surveys()` and an entirely different table.
 
 ## The `xpl:` STAC extension
 

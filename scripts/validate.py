@@ -7,6 +7,10 @@ Validate the repo's schemas + examples offline (no network, no geoDB checkout).
 - spec/openapi.yaml parses as YAML and declares an OpenAPI version.
 - Every STAC example under stac/xpl/examples/ validates against stac/xpl/schema.json
   (the xpl: properties) and carries the STAC Item required fields.
+- Every schema in schemas/ is what spec/openapi.yaml currently emits (ruling
+  R4: the OpenAPI document is normative and the schemas are generated from its
+  core-profile components, so a schema that disagrees with the spec is the
+  audit's finding A1 coming back and fails here).
 - The docs/ tree GitHub Pages serves is byte-identical to the source schemas, so
   a schema edit that never reached docs/ fails here instead of serving a stale
   copy at its own `$id`.
@@ -27,6 +31,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.dirname(HERE)
 sys.path.insert(0, HERE)
 from regenerate import publish as _publish_docs  # noqa: E402
+import emit_schemas  # noqa: E402
 
 STAC_ITEM_REQUIRED = ('type', 'stac_version', 'id', 'geometry', 'properties',
                       'links', 'assets')
@@ -76,7 +81,23 @@ def main():
         else:
             print(f'[OK] example valid: {rel}')
 
-    # 4. The served docs/ copies match their source (GitHub Pages serves docs/;
+    # 4. Every schema is what the normative spec emits right now (R4). A file
+    #    that drifted from the spec is the audit's A1 finding regenerating
+    #    itself, so it fails here rather than reaching a vendor.
+    try:
+        schema_stale = emit_schemas.stale_schemas(emit_schemas.load_spec())
+    except Exception as exc:  # noqa: BLE001
+        failures.append(f'schemas/: could not compare against the spec: {exc}')
+    else:
+        if schema_stale:
+            for name in schema_stale:
+                failures.append(f'{name}: does not match spec/openapi.yaml — '
+                                f'run `python scripts/regenerate.py --emit-only`')
+        else:
+            print(f'[OK] schemas/ matches spec/openapi.yaml '
+                  f'({len(emit_schemas.SCHEMA_FOR_COMPONENT)} core schemas)')
+
+    # 5. The served docs/ copies match their source (GitHub Pages serves docs/;
     #    every `$id` resolves there, so a stale copy is a wrong published schema).
     stale = _publish_docs(check_only=True)
     if stale:

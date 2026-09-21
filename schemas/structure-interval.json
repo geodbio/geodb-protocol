@@ -1,0 +1,317 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://spec.geodb.io/exploration/v0.1.0/structure-interval.json",
+  "title": "Downhole structural measurement",
+  "description": "A structural observation at a depth in a hole — orientation relative to the core axis, and the feature observed.\n\nGENERATED from the normative OpenAPI document (`spec/openapi.yaml`) — do not edit by hand; run `python scripts/regenerate.py`. The OpenAPI document is normative for the wire; this file is the same contract for one record type, readable on its own.",
+  "x-generated-by": "scripts/regenerate.py from spec/openapi.yaml (geoDB Open Exploration Protocol v0.1.0)",
+  "x-openapi-component": "DrillStructureRead",
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "integer"
+    },
+    "project": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "additionalProperties": true,
+      "description": "Natural key of the project: `{\"name\", \"company\"}`."
+    },
+    "bhid": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "additionalProperties": true,
+      "description": "Natural key of the drill hole: `{\"hole_id\", \"project\", \"company\"}`."
+    },
+    "depth_at": {
+      "type": "number",
+      "format": "double",
+      "title": "Depth at center of feature",
+      "description": "Depth of this measurement ALONG the hole from the collar, in `length_units` — not a vertical depth, and not a distance from surface once the hole deviates."
+    },
+    "depth_from": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "format": "double",
+      "description": "Top of this interval, measured ALONG the hole from the collar, in `length_units`."
+    },
+    "depth_to": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "format": "double",
+      "description": "Base of this interval, measured ALONG the hole from the collar, in `length_units`."
+    },
+    "display_units": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Units the *_display strings on this record are formatted in, from the project's display preference. Presentation only: the stored values remain in `length_units`."
+    },
+    "xyz_at": {
+      "type": [
+        "array",
+        "null"
+      ],
+      "items": {
+        "type": "number"
+      },
+      "description": "Desurveyed position at `depth_at`, as `[x, y, z]` on the project local grid in metres. Null when the hole has no survey."
+    },
+    "xyz_from": {
+      "type": [
+        "array",
+        "null"
+      ],
+      "items": {
+        "type": "number"
+      },
+      "description": "Desurveyed position at `depth_from`, as `[x, y, z]` on the PROJECT LOCAL GRID in metres — not WGS84, and not the record's own `epsg`. Null when the hole has no survey to desurvey against."
+    },
+    "xyz_to": {
+      "type": [
+        "array",
+        "null"
+      ],
+      "items": {
+        "type": "number"
+      },
+      "description": "Desurveyed position at `depth_to`, as `[x, y, z]` on the project local grid in metres. Null when the hole has no survey."
+    },
+    "angle_to_ca": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "format": "double",
+      "title": "Angle to Core Axis"
+    },
+    "alpha": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "format": "double",
+      "description": "Core-to-structure angle (0-90 degrees)"
+    },
+    "beta": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "format": "double",
+      "description": "Rotation angle around core axis from reference line (0-360 degrees)"
+    },
+    "gamma": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "format": "double",
+      "description": "Orientation mark reference angle"
+    },
+    "confidence": {
+      "enum": [
+        0,
+        1,
+        2,
+        null
+      ],
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Orientation measurement confidence\n\n* `0` - No Orientation\n* `1` - Solid Line\n* `2` - Inferred Line",
+      "minimum": 0,
+      "maximum": 32767
+    },
+    "jrc": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "format": "double",
+      "description": "Joint Roughness Coefficient (Barton scale, 0-20)"
+    },
+    "wall_strength": {
+      "description": "ISRM strength of joint wall surface\n\n* `R0` - R0 - Extremely Weak (<1 MPa)\n* `R1` - R1 - Very Weak (1-5 MPa)\n* `R2` - R2 - Weak (5-25 MPa)\n* `R3` - R3 - Medium Strong (25-50 MPa)\n* `R4` - R4 - Strong (50-100 MPa)\n* `R5` - R5 - Very Strong (100-250 MPa)\n* `R6` - R6 - Extremely Strong (>250 MPa)",
+      "oneOf": [
+        {
+          "enum": [
+            "R0",
+            "R1",
+            "R2",
+            "R3",
+            "R4",
+            "R5",
+            "R6"
+          ],
+          "type": "string",
+          "description": "* `R0` - R0 - Extremely Weak (<1 MPa)\n* `R1` - R1 - Very Weak (1-5 MPa)\n* `R2` - R2 - Weak (5-25 MPa)\n* `R3` - R3 - Medium Strong (25-50 MPa)\n* `R4` - R4 - Strong (50-100 MPa)\n* `R5` - R5 - Very Strong (100-250 MPa)\n* `R6` - R6 - Extremely Strong (>250 MPa)"
+        },
+        {
+          "enum": [
+            ""
+          ]
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "infill": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Infill mineral code or description",
+      "maxLength": 50
+    },
+    "infill_thickness": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "format": "double",
+      "description": "Infill/aperture thickness in mm"
+    },
+    "feature_type": {
+      "type": "string",
+      "description": "Legacy 2-letter code, derived on save from feature_type_fk when set. Retained for one release to enable trivial rollback; feature_type_fk is the source of truth.",
+      "maxLength": 2
+    },
+    "feature_type_fk": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "strike": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "format": "double"
+    },
+    "dip": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "format": "double",
+      "description": "Dip in DEGREES from horizontal. ⚠️ NEGATIVE IS DOWNWARD: a vertical hole drilled straight down is -90, a horizontal hole is 0. On a collar it is the set-up inclination; on a survey station it is the measured inclination at that depth."
+    },
+    "dip_direction": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "format": "double"
+    },
+    "trend": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "format": "double"
+    },
+    "plunge": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "format": "double"
+    },
+    "rake": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "format": "double"
+    },
+    "rake_direction": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 50
+    },
+    "images": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true
+      },
+      "description": "Attached records, each as an object carrying its id, its natural key and display metadata. Soft-deleted attachments are omitted."
+    },
+    "notes": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "date_collected": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date"
+    },
+    "collected_by": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 50
+    },
+    "length_units": {
+      "enum": [
+        "M",
+        "FT"
+      ],
+      "type": "string",
+      "description": "* `M` - Meters\n* `FT` - Feet"
+    },
+    "date_created": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date"
+    },
+    "last_edited": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date"
+    }
+  },
+  "patternProperties": {
+    "^cf_[a-z0-9_]+$": {
+      "description": "Custom field. Any number of `cf_*` keys may be present: they are the project's user-defined fields, flattened to top level. The set of keys and their types vary BY PROJECT and BY MODEL — discover them at `/api/v2/model-schemas/?project_id=<id>`, never by assuming a fixed set. Values are whatever the customer stored (string, number, boolean or null). Calculated custom fields appear under the same prefix and are read-only."
+    }
+  },
+  "required": [
+    "bhid",
+    "date_created",
+    "depth_at",
+    "display_units",
+    "feature_type_fk",
+    "id",
+    "images",
+    "last_edited",
+    "project",
+    "xyz_at",
+    "xyz_from",
+    "xyz_to"
+  ],
+  "additionalProperties": false
+}

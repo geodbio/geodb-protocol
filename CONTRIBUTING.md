@@ -93,10 +93,28 @@ anything that changes the *meaning* of a field or endpoint, open an issue first 
 discussed change lands; an unannounced PR against the semantics usually does not.
 
 **Generated files cannot be hand-edited.** `spec/openapi.yaml` and
-`stac/xpl/schema.json` are emitted from the geoDB implementation by
-[`scripts/regenerate.py`](scripts/regenerate.py), so edits are overwritten on the next
-regeneration. If one of them is wrong, the bug is upstream — file the issue against the
+`stac/xpl/schema.json` are emitted from the geoDB implementation, and
+`schemas/*.json` and [`PROFILE.md`](PROFILE.md) are emitted in turn from the spec, by
+[`scripts/regenerate.py`](scripts/regenerate.py). Edits are overwritten on the next
+regeneration, and `scripts/regenerate.py --check` fails in CI if a committed copy has
+fallen behind. If one of them is wrong, the bug is upstream — file the issue against the
 behaviour and we will fix it at the source.
+
+## Which document is right
+
+**[`spec/openapi.yaml`](spec/openapi.yaml) is normative for the wire.** If any other
+file in this repo disagrees with it about a field name, a type, or whether something
+can be null, the OpenAPI document is right and the other file is a bug.
+
+That sentence used to be load-bearing and is now mostly historical, because the other
+files can no longer disagree: `schemas/` and `PROFILE.md` are generated from the
+spec's own components and flags. It is stated anyway, because "which one is normative"
+is the first question a serious implementer asks, and a repo that cannot answer it is
+asking them to guess.
+
+**[`PROFILE.md`](PROFILE.md) is normative for scope** — which operations a conforming
+server owes. An issue arguing that something should move between the core profile and
+the extensions is a good issue; it is a decision about the contract, not a detail.
 
 ## Licensing of contributions
 

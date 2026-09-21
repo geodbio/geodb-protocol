@@ -2,49 +2,145 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://spec.geodb.io/exploration/v0.1.0/certificate.json",
   "title": "Assay certificate",
-  "description": "A lab certificate / job \u2014 the chain-of-custody anchor tying a batch of assay results to a laboratory and a set of analytical methods. Part of the geoDB Open Exploration Protocol (chain-of-custody records lane).",
+  "description": "A laboratory job: the batch of samples one lab analysed and reported together, under one certificate number, on one date. The chain-of-custody anchor a value traces back to.\n\nOne laboratory job: who analysed what, when, and in what state.\n\nGENERATED from the normative OpenAPI document (`spec/openapi.yaml`) — do not edit by hand; run `python scripts/regenerate.py`. The OpenAPI document is normative for the wire; this file is the same contract for one record type, readable on its own.",
+  "x-generated-by": "scripts/regenerate.py from spec/openapi.yaml (geoDB Open Exploration Protocol v0.1.0)",
+  "x-openapi-component": "CertificateRead",
   "type": "object",
-  "required": [
-    "certificate_number",
-    "laboratory"
-  ],
   "properties": {
-    "certificate_number": {
-      "type": "string",
-      "description": "Lab certificate / job number."
+    "id": {
+      "type": "integer"
+    },
+    "name": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "project": {
+      "type": "object",
+      "description": "The project this certificate belongs to, as an identity object rather than a bare id, so a reference stays meaningful across exports.",
+      "properties": {
+        "id": {
+          "type": "integer"
+        },
+        "name": {
+          "type": "string"
+        },
+        "company": {
+          "type": "string"
+        }
+      }
     },
     "laboratory": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "description": "The laboratory that issued this certificate, as an identity object. Null when the record does not name one.",
+      "properties": {
+        "id": {
+          "type": "integer"
+        },
+        "name": {
+          "type": "string"
+        }
+      }
+    },
+    "analysis_date": {
       "type": "string",
-      "description": "Issuing laboratory name (see laboratory.json)."
+      "format": "date",
+      "description": "The date the laboratory reported this certificate."
     },
-    "date_received": {
+    "date_preliminary": {
       "type": [
         "string",
         "null"
       ],
-      "description": "ISO 8601 date samples received by the lab."
+      "format": "date",
+      "description": "The date the preliminary report was received, when this record began as one. Null for a certificate that arrived finalized."
     },
-    "date_reported": {
+    "status": {
+      "enum": [
+        "preliminary",
+        "finalized",
+        "unverified"
+      ],
+      "type": "string",
+      "description": "The state of this certificate record. `preliminary` — a final report is still expected and will replace these values in place; the numbers are usable but not yet the reported result. `finalized` — the reported result. `unverified` — the VALUES are the operator's real numbers, but this certificate record was reconstructed because the source data named no usable certificate; anything that reports or signs off on assay data should be able to exclude these.\n\n* `preliminary` - Preliminary\n* `finalized` - Finalized\n* `unverified` - Unverified (no certificate in source)"
+    },
+    "batch_number": {
       "type": [
         "string",
         "null"
       ],
-      "description": "ISO 8601 date results reported."
+      "description": "The laboratory's own batch number for this job, where the lab reports one. QC insertion rates are usually quoted per batch."
+    },
+    "weight_units": {
+      "enum": [
+        "kg",
+        "g",
+        "lb",
+        "oz"
+      ],
+      "type": "string",
+      "description": "The units the sample weights on this job were reported in.\n\n* `kg` - kilograms\n* `g` - grams\n* `lb` - pounds\n* `oz` - ounces"
+    },
+    "alt_certificate_numbers": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Other laboratory certificate numbers for the SAME job, when a lab split one job across several numbers on the same samples. Match a number you read on a report against `name` OR any entry here."
     },
     "methods": {
       "type": "array",
+      "description": "The analytical methods reported on this certificate, as identity objects. The same method may appear on many certificates.",
       "items": {
-        "type": "string"
-      },
-      "description": "Analytical method codes on this certificate."
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          }
+        }
+      }
     },
-    "elements": {
-      "type": "array",
-      "items": {
-        "type": "string"
-      },
-      "description": "Element symbols reported."
+    "result_count": {
+      "type": "integer",
+      "description": "How many assay rows this certificate produced. A zero is INFORMATION, not an error: an intentionally empty placeholder certificate is a legitimate record to hold."
+    },
+    "date_created": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date"
+    },
+    "last_edited": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date"
     }
   },
-  "additionalProperties": true
+  "required": [
+    "alt_certificate_numbers",
+    "analysis_date",
+    "batch_number",
+    "date_created",
+    "date_preliminary",
+    "id",
+    "laboratory",
+    "last_edited",
+    "methods",
+    "name",
+    "project",
+    "result_count",
+    "status",
+    "weight_units"
+  ],
+  "additionalProperties": false
 }

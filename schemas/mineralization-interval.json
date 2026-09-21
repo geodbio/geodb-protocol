@@ -1,0 +1,265 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://spec.geodb.io/exploration/v0.1.0/mineralization-interval.json",
+  "title": "Mineralization interval",
+  "description": "Mineralization logged over a depth interval, with the minerals observed and their abundances.\n\nGENERATED from the normative OpenAPI document (`spec/openapi.yaml`) — do not edit by hand; run `python scripts/regenerate.py`. The OpenAPI document is normative for the wire; this file is the same contract for one record type, readable on its own.",
+  "x-generated-by": "scripts/regenerate.py from spec/openapi.yaml (geoDB Open Exploration Protocol v0.1.0)",
+  "x-openapi-component": "DrillMineralizationRead",
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "integer"
+    },
+    "project": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "additionalProperties": true,
+      "description": "Natural key of the project: `{\"name\", \"company\"}`."
+    },
+    "bhid": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "additionalProperties": true,
+      "description": "Natural key of the drill hole: `{\"hole_id\", \"project\", \"company\"}`."
+    },
+    "depth_from": {
+      "type": "number",
+      "format": "double",
+      "description": "Top of this interval, measured ALONG the hole from the collar, in `length_units`."
+    },
+    "depth_to": {
+      "type": "number",
+      "format": "double",
+      "description": "Base of this interval, measured ALONG the hole from the collar, in `length_units`."
+    },
+    "display_units": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Units the *_display strings on this record are formatted in, from the project's display preference. Presentation only: the stored values remain in `length_units`."
+    },
+    "xyz_from": {
+      "type": [
+        "array",
+        "null"
+      ],
+      "items": {
+        "type": "number"
+      },
+      "description": "Desurveyed position at `depth_from`, as `[x, y, z]` on the PROJECT LOCAL GRID in metres — not WGS84, and not the record's own `epsg`. Null when the hole has no survey to desurvey against."
+    },
+    "xyz_to": {
+      "type": [
+        "array",
+        "null"
+      ],
+      "items": {
+        "type": "number"
+      },
+      "description": "Desurveyed position at `depth_to`, as `[x, y, z]` on the project local grid in metres. Null when the hole has no survey."
+    },
+    "assemblage": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "integer"
+        },
+        "name": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "description": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "mineral_names": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "mineral_names",
+        "name"
+      ],
+      "additionalProperties": false
+    },
+    "mineral_concentrations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "mineral": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "integer"
+              },
+              "name": {
+                "type": "string",
+                "maxLength": 150
+              },
+              "description": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "name"
+            ],
+            "additionalProperties": false
+          },
+          "percentage": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double",
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "description": "Percentage (0-100) of this mineral in the logged interval"
+          },
+          "notes": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Additional notes about this specific mineral occurrence"
+          }
+        },
+        "required": [
+          "id",
+          "mineral"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "minerals": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 150
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "texture": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "drill_mineralization_set": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "images": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true
+      },
+      "description": "Attached records, each as an object carrying its id, its natural key and display metadata. Soft-deleted attachments are omitted."
+    },
+    "notes": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "date_collected": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date"
+    },
+    "collected_by": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 50
+    },
+    "length_units": {
+      "enum": [
+        "M",
+        "FT"
+      ],
+      "type": "string",
+      "description": "* `M` - Meters\n* `FT` - Feet"
+    },
+    "date_created": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date"
+    },
+    "last_edited": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date"
+    }
+  },
+  "patternProperties": {
+    "^cf_[a-z0-9_]+$": {
+      "description": "Custom field. Any number of `cf_*` keys may be present: they are the project's user-defined fields, flattened to top level. The set of keys and their types vary BY PROJECT and BY MODEL — discover them at `/api/v2/model-schemas/?project_id=<id>`, never by assuming a fixed set. Values are whatever the customer stored (string, number, boolean or null). Calculated custom fields appear under the same prefix and are read-only."
+    }
+  },
+  "required": [
+    "assemblage",
+    "bhid",
+    "date_created",
+    "depth_from",
+    "depth_to",
+    "display_units",
+    "drill_mineralization_set",
+    "id",
+    "images",
+    "last_edited",
+    "mineral_concentrations",
+    "minerals",
+    "project",
+    "texture",
+    "xyz_from",
+    "xyz_to"
+  ],
+  "additionalProperties": false
+}

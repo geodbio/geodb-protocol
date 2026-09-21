@@ -3,13 +3,22 @@
 Regenerate the machine-readable artifacts from a geoDB checkout, and publish the
 served copies under docs/.
 
-Two artifacts are generated from the reference implementation so they can never
-drift from the running API:
+Three artifacts are generated from the reference implementation so they can
+never drift from the running API:
 
   spec/openapi.yaml      <- manage.py spectacular         (the /api/v2/ read surface)
   stac/xpl/schema.json   <- manage.py export_xpl_schema   (api/stac/xpl.py source of truth)
+  schemas/*.json         <- spec/openapi.yaml             (the core-profile Read components)
+  PROFILE.md             <- spec/openapi.yaml             (the x-protocol-core flags)
 
-A third step is pure copying. The repo is the source of truth for the schemas;
+``schemas/*.json`` used to be hand-authored, and by 2026-09-19 six of the seven
+disagreed with the wire on almost every field name (audit A1). Ruling R4: the
+OpenAPI document is NORMATIVE for the wire and the schemas are generated from
+its core-profile components, so they keep their job — the vocabulary, readable
+one file at a time — and lose their ability to contradict. See
+``scripts/emit_schemas.py``.
+
+A further step is pure copying. The repo is the source of truth for the schemas;
 GitHub Pages serves them at the host named in every ``$id`` (``spec.geodb.io``,
 ruling R1). Pages can only serve what is committed under docs/, and it does not
 follow git symlinks, so docs/ holds byte-identical COPIES:
@@ -17,11 +26,13 @@ follow git symlinks, so docs/ holds byte-identical COPIES:
   schemas/<name>.json    -> docs/exploration/v0.1.0/<name>.json
   stac/xpl/schema.json   -> docs/xpl/v0.1.0/schema.json
 
-Editing a schema therefore means running this script (or
-``python scripts/regenerate.py --publish-only`` when there is no geoDB checkout
-to hand). ``--check`` publishes nothing and exits non-zero if the two trees
-differ; ``scripts/validate.py`` runs the same comparison, so a stale docs/ copy
-fails validation rather than silently serving yesterday's schema.
+A schema is therefore never edited by hand. A field's wording lives on the
+serializer in the geoDB checkout, the spec is regenerated from it, and the
+schema follows. ``--check`` writes nothing and exits non-zero if the committed
+schemas differ from what the current spec emits, or if a served docs/ copy is
+stale; ``scripts/validate.py`` runs the same two comparisons, so a schema that
+never reached docs/ fails validation rather than silently serving yesterday's
+copy.
 
 Usage:
     python scripts/regenerate.py --geodb /path/to/geodb            # the Django project dir
@@ -37,6 +48,10 @@ import os
 import shutil
 import subprocess
 import sys
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import emit_profile  # noqa: E402
+import emit_schemas  # noqa: E402
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.dirname(HERE)
@@ -82,20 +97,62 @@ def main():
                     help='Python interpreter for the geoDB venv.')
     ap.add_argument('--publish-only', action='store_true',
                     help='Skip generation; only refresh the docs/ served copies.')
+    ap.add_argument('--emit-only', action='store_true',
+                    help='Skip the geoDB generation step; re-emit schemas/ from '
+                         'the committed spec/openapi.yaml, then publish docs/.')
     ap.add_argument('--check', action='store_true',
                     help='Verify docs/ matches the source schemas; write nothing. '
                          'Exits non-zero on any difference.')
     args = ap.parse_args()
 
     if args.check:
+        failed = False
+
+        # 1. The committed schemas ARE what the current spec emits. This is the
+        #    check that makes ruling R4 hold: a schema that drifted from the
+        #    spec is the exact defect the audit found, and it is now a red CI
+        #    job rather than something a vendor discovers at runtime.
+        schema_stale = emit_schemas.stale_schemas(emit_schemas.load_spec())
+        if schema_stale:
+            failed = True
+            print('schemas/ is stale — these differ from what spec/openapi.yaml '
+                  'emits:')
+            for name in schema_stale:
+                print('  [STALE]', name)
+            print('\nRun: python scripts/regenerate.py --emit-only')
+
+        # 2. PROFILE.md names the profile the spec actually publishes.
+        if emit_profile.is_stale(emit_schemas.load_spec()):
+            failed = True
+            print('PROFILE.md is stale — it does not match the x-protocol-core '
+                  'flags in spec/openapi.yaml.')
+            print('\nRun: python scripts/regenerate.py --emit-only')
+
+        # 3. The served docs/ copies are byte-identical to the source schemas.
         stale = publish(check_only=True)
         if stale:
+            failed = True
             print('docs/ is stale — these served copies differ from their source:')
             for path in stale:
                 print('  [STALE]', path)
             print('\nRun: python scripts/regenerate.py --publish-only')
+
+        if failed:
             sys.exit(1)
-        print(f'[OK] docs/ matches all {len(published_pairs())} source schemas.')
+        print(f'[OK] schemas/ matches spec/openapi.yaml '
+              f'({len(emit_schemas.SCHEMA_FOR_COMPONENT)} core schemas), '
+              f'PROFILE.md matches its core flags, and '
+              f'docs/ matches all {len(published_pairs())} source schemas.')
+        return
+
+    if args.emit_only:
+        print('Emitting schemas/ + PROFILE.md from spec/openapi.yaml ...')
+        spec = emit_schemas.load_spec()
+        emit_schemas.write_all(spec)
+        emit_profile.write(spec)
+        print('\nPublishing the served copies under docs/ ...')
+        if not publish():
+            print('  (already current)')
         return
 
     if not args.publish_only:
@@ -113,6 +170,14 @@ def main():
         run([args.python, 'manage.py', 'spectacular', '--file', openapi])
         run([args.python, 'manage.py', 'export_xpl_schema', '--output', xpl])
         print(f'\nWrote:\n  {openapi}\n  {xpl}')
+
+    # schemas/ is generated FROM the spec, so it runs whether or not the geoDB
+    # generation step did — --publish-only still re-derives them from whatever
+    # spec is committed, which is what keeps the three trees in step.
+    print('\nEmitting schemas/ + PROFILE.md from spec/openapi.yaml ...')
+    _spec = emit_schemas.load_spec()
+    emit_schemas.write_all(_spec)
+    emit_profile.write(_spec)
 
     print('\nPublishing the served copies under docs/ ...')
     if not publish():
