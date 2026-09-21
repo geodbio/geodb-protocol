@@ -20351,7 +20351,11 @@ components:
 
         Authentication failures are distinguishable, which matters because a revoked credential must not look like a transient failure: `grant_revoked` (the owner revoked it — do not retry), `grant_expired` (ask the owner to rotate it), `grant_unknown` (no such grant), `grant_malformed` (the header is not `Authorization: Grant <token>`), `grant_invalid` (project or data-room state). Each also carries the short `grant_error` key (`revoked` | `expired` | `unknown` | `malformed` | `invalid`).
 
-        Refusals by the grant gate use `grant_write_forbidden`, `grant_surface_forbidden`, `grant_no_read_capability` and `grant_room_pinned_*`. The full register, with a remedy and a retry-safety flag per code, is `errors.json` in the protocol repository.
+        Refusals by the grant gate use `grant_write_forbidden`, `grant_surface_forbidden`, `grant_no_read_capability`, `grant_room_pinned_*` and `use_v2` (a grant reads the /api/v2/ surface only).
+
+        THE FULL REGISTER — every code, with its meaning, its remedy and whether retrying the identical request can ever help — is `errors.json` in the protocol repository: https://github.com/geodbio/geodb-protocol/blob/main/errors.json . It is generated from this server, so it cannot fall behind what is raised here. Enumerate it rather than matching on `detail` prose.
+
+        Three different refusals answer 429 and they need DIFFERENT reactions: `throttled` (asking too often — back off and resend), `export_concurrency` (holding too many unfinished export jobs — poll the jobs you have, do NOT resend), and `grant_auth_throttled` (too many unknown credentials from this address — stop retrying and get a working grant). All three send `Retry-After`.
 
         Existing clients: DRF's own `detail` (and, for a validation failure, the per-field error keys) are still present and unchanged. The contract keys are additive.
       properties:

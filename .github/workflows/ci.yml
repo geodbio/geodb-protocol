@@ -45,6 +45,14 @@ jobs:
       - name: Validate protocol artifacts
         run: python scripts/validate.py
 
+      - name: Check the generated AGENTS.md tables
+        run: |
+          if [ -f scripts/emit_agents.py ]; then
+            python scripts/emit_agents.py --check
+          else
+            echo "scripts/emit_agents.py not present yet; skipping."
+          fi
+
       - name: Check schema and extension $id hosts
         run: |
           if [ -f scripts/check_ids.py ]; then
@@ -106,4 +114,17 @@ jobs:
             python conformance/run.py --offline
           else
             echo "conformance/ present but no run.py; nothing to run."
+          fi
+
+      - name: The AGENTS.md quickstart still compiles
+        run: |
+          # agent_smoke.py extracts the quickstart OUT of AGENTS.md and runs it,
+          # so a quickstart that has rotted fails here rather than in the first
+          # five minutes of somebody's integration. --offline parses and
+          # compiles without credentials; the EXECUTING run needs a token and
+          # so happens in our own CI, not here.
+          if [ -f conformance/agent_smoke.py ]; then
+            python conformance/agent_smoke.py --offline
+          else
+            echo "conformance/agent_smoke.py not present yet; skipping."
           fi

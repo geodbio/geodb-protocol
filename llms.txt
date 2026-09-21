@@ -1,0 +1,59 @@
+# geoDB Open Exploration Protocol
+
+> An open, machine-readable contract for pulling QA/QC'd mineral-exploration
+> data out of a geoDB project — drill collars, downhole logging, samples,
+> assays with laboratory chain of custody, geophysics, rasters and documents —
+> over an authenticated, project-scoped REST + STAC surface. Read-only in
+> v0.1.0. A project owner issues a revocable, project-pinned token; every call
+> is logged for them to see.
+
+## Start here
+
+- [AGENTS.md](AGENTS.md): the entry point. Token, the six domain traps that
+  produce wrong answers silently, the core profile, the sync loop as runnable
+  code, every error code with its remedy, retry policy. Read this first.
+
+## Normative
+
+- [spec/openapi.yaml](spec/openapi.yaml): OpenAPI 3, NORMATIVE for the wire,
+  generated from the reference implementation. Where any other file disagrees,
+  this one is right.
+- [PROFILE.md](PROFILE.md): which of the served operations are the protocol
+  (47) and which are geoDB extensions. Generated from the spec's own flags.
+- [errors.json](errors.json): every reason_code, with HTTP status, meaning,
+  remedy and whether retrying can help. Generated from the server.
+- [schemas/](schemas/): one JSON Schema per core record type — the exploration
+  vocabulary, readable one file at a time. Generated from the spec.
+- [stac/xpl/schema.json](stac/xpl/schema.json): the `xpl:` STAC extension for
+  exploration assets (the first one for geophysics, drilling and mining).
+
+## Runnable
+
+- [examples/](examples/): four flavours — curl, the geodb-client library, bare
+  requests, TypeScript fetch. Each under 60 lines, each runs against the public
+  sandbox with no signup.
+- [conformance/](conformance/): the runner a second implementation points at
+  its own server.
+- [scripts/regenerate.py](scripts/regenerate.py): re-emit every generated
+  artifact from a geoDB checkout. `--check` fails when one has drifted.
+- [scripts/validate.py](scripts/validate.py): validate the repo offline, with
+  no checkout and no credentials.
+
+## Context
+
+- [README.md](README.md): what this is and why, the two lanes, the auth model.
+- [CONTRIBUTING.md](CONTRIBUTING.md): how to file a useful issue; how decisions
+  get made. No permission, NDA or partnership is needed to implement or fork.
+- [SECURITY.md](SECURITY.md): how to report a vulnerability; scope; disclosure.
+- [CHANGELOG.md](CHANGELOG.md): version history.
+
+## Notes for a model reading this
+
+- `latitude` / `longitude` are the ORIGINAL imported coordinate in the CRS named
+  by `epsg` — easting/northing for a projected CRS, degrees only when
+  `epsg == 4326`. Read `source_coordinate` or `geometry_geojson` instead.
+- Assay values are decimal STRINGS; parse with a decimal type, never a float.
+- `cf_*` keys are per-project custom fields; discover them at
+  `/api/v2/model-schemas/`.
+- Lists page with `limit` / `offset`; `page_size` is ignored.
+- Python client: `pip install geodb-client`.

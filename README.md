@@ -22,6 +22,12 @@ missing *exploration* vocabulary.
 > and supported, and are not part of the contract anyone else is asked to
 > implement.
 
+> **Integrating? Start at [`AGENTS.md`](AGENTS.md).** It is written for an AI
+> coding agent and is the shortest path from a token to correct data: the six
+> traps in this domain that produce silently wrong answers, the core profile,
+> the sync loop as runnable code, and every error code with its remedy. Then
+> run something from [`examples/`](examples/) — four languages, no signup.
+
 - **Spec + docs:** CC-BY-4.0 · **Schemas + code:** Apache-2.0
 - **Version:** `0.1.0` (pre-1.0 — the shape is stable, field details may still move)
 - **Reference implementation:** the geoDB API itself (this is not a paper standard)
@@ -58,6 +64,16 @@ Existing first-party clients (mobile, QGIS, Blender) keep using Knox tokens
 ## What's in this repo
 
 ```
+AGENTS.md                  READ THIS FIRST if you are integrating. The entry point
+                           for an AI coding agent: the six traps, the core profile,
+                           the sync loop, every error code (tables generated)
+llms.txt                   One-line index of this repo, for LLM crawlers
+errors.json                Every reason_code with its meaning, remedy and whether
+                           retrying can help. GENERATED from the server
+examples/                  Runnable in four flavours: curl, geodb-client, bare
+                           requests, TypeScript fetch. run_all.py is what CI calls
+conformance/               agent_smoke.py executes AGENTS.md's quickstart literally,
+                           so a drifted quickstart fails CI
 spec/openapi.yaml          OpenAPI 3 for the read surface — NORMATIVE for the wire
                            (generated from the reference implementation; regen below)
 PROFILE.md                 Which operations are the protocol and which are geoDB's
@@ -96,8 +112,9 @@ stations = gx.drill_surveys().to_dataframe() # downhole azimuth/dip stations
 
 # ⚠️ collars carry the ORIGINAL imported coordinate: for a projected project,
 # `longitude` is the EASTING and `latitude` the NORTHING, in the CRS named by
-# `epsg`. Read `geometry` when you want WGS84.
-print(collars[["name", "latitude", "longitude", "epsg"]].head())
+# `epsg`. Read `source_coordinate` for the same values unambiguously named, or
+# `geometry` / `geometry_geojson` for WGS84. AGENTS.md section 3.1.
+print(collars[["name", "source_coordinate", "epsg", "geometry_geojson"]].head())
 
 # Walk the STAC catalog and pull a Cloud-Optimized GeoTIFF
 for item in gx.stac().items("rasters"):

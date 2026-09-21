@@ -1,0 +1,4 @@
+# Everything the examples need. `geodb-client` pulls in requests and pandas.
+requests>=2.31
+geodb-client>=0.1.0
+pandas>=2.0

@@ -3,13 +3,14 @@
 Regenerate the machine-readable artifacts from a geoDB checkout, and publish the
 served copies under docs/.
 
-Three artifacts are generated from the reference implementation so they can
+Four artifacts are generated from the reference implementation so they can
 never drift from the running API:
 
-  spec/openapi.yaml      <- manage.py spectacular         (the /api/v2/ read surface)
-  stac/xpl/schema.json   <- manage.py export_xpl_schema   (api/stac/xpl.py source of truth)
-  schemas/*.json         <- spec/openapi.yaml             (the core-profile Read components)
-  PROFILE.md             <- spec/openapi.yaml             (the x-protocol-core flags)
+  spec/openapi.yaml      <- manage.py spectacular          (the /api/v2/ read surface)
+  stac/xpl/schema.json   <- manage.py export_xpl_schema    (api/stac/xpl.py source of truth)
+  errors.json            <- manage.py export_reason_codes  (api/errors.py REASON_CODES)
+  schemas/*.json         <- spec/openapi.yaml              (the core-profile Read components)
+  PROFILE.md             <- spec/openapi.yaml              (the x-protocol-core flags)
 
 ``schemas/*.json`` used to be hand-authored, and by 2026-09-19 six of the seven
 disagreed with the wire on almost every field name (audit A1). Ruling R4: the
@@ -39,6 +40,7 @@ Usage:
     GEODB_DIR=/path/to/geodb python scripts/regenerate.py
     python scripts/regenerate.py --publish-only                    # refresh docs/ only
     python scripts/regenerate.py --check                           # verify docs/ is current
+    python scripts/regenerate.py --check --geodb /path/to/geodb     # ...and errors.json
 """
 
 import argparse
@@ -55,6 +57,50 @@ import emit_schemas  # noqa: E402
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.dirname(HERE)
+
+#: The reason-code registry (task A7). Generated from the reference
+#: implementation like the spec and the xpl schema, for the same reason: a
+#: published registry kept in step by hand is a registry that falls behind the
+#: server, and the whole point of it is that an agent can enumerate what it
+#: will be refused with.
+ERRORS_PATH = os.path.join(REPO, 'errors.json')
+
+
+def errors_are_stale(geodb_dir, python):
+    """'' when errors.json matches the server's registry, else why not.
+
+    Runs the SAME management command the generation step runs and compares its
+    output to the committed file, so --check cannot disagree with --generate.
+    """
+    if not os.path.exists(ERRORS_PATH):
+        return 'errors.json is not committed'
+    try:
+        emitted = subprocess.run(
+            [python, 'manage.py', 'export_reason_codes'],
+            cwd=geodb_dir, check=True, capture_output=True, text=True).stdout
+    except (subprocess.CalledProcessError, OSError) as exc:
+        return f'could not run export_reason_codes: {exc}'
+    # The command prints the document and nothing else; compare parsed JSON so
+    # a trailing-newline or key-order difference is not reported as drift.
+    import json
+    try:
+        want = json.loads(emitted[emitted.index('{'):emitted.rindex('}') + 1])
+    except (ValueError, IndexError):
+        return 'export_reason_codes produced no JSON document'
+    with open(ERRORS_PATH, encoding='utf-8') as fh:
+        have = json.load(fh)
+    if have == want:
+        return ''
+    missing = sorted(set(want['reason_codes']) - set(have['reason_codes']))
+    extra = sorted(set(have['reason_codes']) - set(want['reason_codes']))
+    if missing or extra:
+        return (f'codes missing from the file: {missing or "none"}; '
+                f'codes in the file the server does not register: '
+                f'{extra or "none"}')
+    changed = sorted(c for c in want['reason_codes']
+                     if have['reason_codes'][c] != want['reason_codes'][c])
+    return f'entries differ for: {changed}'
+
 
 # The served layout. Keys are repo-relative source files, values are the path
 # under docs/ that Pages serves — which must match the `$id` in the file.
@@ -128,7 +174,24 @@ def main():
                   'flags in spec/openapi.yaml.')
             print('\nRun: python scripts/regenerate.py --emit-only')
 
-        # 3. The served docs/ copies are byte-identical to the source schemas.
+        # 3. errors.json IS what the server registers. A code added at a call
+        #    site without a registry entry fails the server's own drift test;
+        #    this is the other half — a registry entry that never reached the
+        #    published file, which is what a consumer actually reads.
+        if args.geodb:
+            stale_errors = errors_are_stale(args.geodb, args.python)
+            if stale_errors:
+                failed = True
+                print('errors.json is stale — it differs from what '
+                      'api/errors.py::REASON_CODES exports:')
+                print('  ' + stale_errors)
+                print('\nRun: python scripts/regenerate.py --geodb <dir>')
+        elif not os.path.exists(ERRORS_PATH):
+            failed = True
+            print('errors.json is missing, and no --geodb checkout was given '
+                  'to regenerate it.')
+
+        # 4. The served docs/ copies are byte-identical to the source schemas.
         stale = publish(check_only=True)
         if stale:
             failed = True
@@ -141,8 +204,9 @@ def main():
             sys.exit(1)
         print(f'[OK] schemas/ matches spec/openapi.yaml '
               f'({len(emit_schemas.SCHEMA_FOR_COMPONENT)} core schemas), '
-              f'PROFILE.md matches its core flags, and '
-              f'docs/ matches all {len(published_pairs())} source schemas.')
+              f'PROFILE.md matches its core flags, '
+              f'{"errors.json matches the server registry, " if args.geodb else ""}'
+              f'and docs/ matches all {len(published_pairs())} source schemas.')
         return
 
     if args.emit_only:
@@ -169,7 +233,9 @@ def main():
 
         run([args.python, 'manage.py', 'spectacular', '--file', openapi])
         run([args.python, 'manage.py', 'export_xpl_schema', '--output', xpl])
-        print(f'\nWrote:\n  {openapi}\n  {xpl}')
+        run([args.python, 'manage.py', 'export_reason_codes',
+             '--output', ERRORS_PATH])
+        print(f'\nWrote:\n  {openapi}\n  {xpl}\n  {ERRORS_PATH}')
 
     # schemas/ is generated FROM the spec, so it runs whether or not the geoDB
     # generation step did — --publish-only still re-derives them from whatever
