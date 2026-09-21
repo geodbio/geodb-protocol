@@ -7,6 +7,9 @@ Validate the repo's schemas + examples offline (no network, no geoDB checkout).
 - spec/openapi.yaml parses as YAML and declares an OpenAPI version.
 - Every STAC example under stac/xpl/examples/ validates against stac/xpl/schema.json
   (the xpl: properties) and carries the STAC Item required fields.
+- The docs/ tree GitHub Pages serves is byte-identical to the source schemas, so
+  a schema edit that never reached docs/ fails here instead of serving a stale
+  copy at its own `$id`.
 
 Requires: jsonschema (+ pyyaml for the openapi check). Exit non-zero on any failure.
 
@@ -22,6 +25,8 @@ from jsonschema.validators import Draft202012Validator
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.dirname(HERE)
+sys.path.insert(0, HERE)
+from regenerate import publish as _publish_docs  # noqa: E402
 
 STAC_ITEM_REQUIRED = ('type', 'stac_version', 'id', 'geometry', 'properties',
                       'links', 'assets')
@@ -70,6 +75,16 @@ def main():
             failures.append(f'{rel}: xpl errors ' + '; '.join(e.message for e in errs))
         else:
             print(f'[OK] example valid: {rel}')
+
+    # 4. The served docs/ copies match their source (GitHub Pages serves docs/;
+    #    every `$id` resolves there, so a stale copy is a wrong published schema).
+    stale = _publish_docs(check_only=True)
+    if stale:
+        for path in stale:
+            failures.append(f'{path}: stale served copy — run '
+                            f'`python scripts/regenerate.py --publish-only`')
+    else:
+        print('[OK] docs/ served copies match the source schemas')
 
     if failures:
         print('\nFAILURES:')

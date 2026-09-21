@@ -2,7 +2,7 @@
   "type": "Feature",
   "stac_version": "1.1.0",
   "stac_extensions": [
-    "https://stac.geodb.io/xpl/v0.1.0/schema.json",
+    "https://spec.geodb.io/xpl/v0.1.0/schema.json",
     "https://stac-extensions.github.io/file/v2.1.0/schema.json"
   ],
   "id": "drillhole-CR-24-017",
@@ -49,6 +49,7 @@
   },
   "links": [
     {"rel": "self", "type": "application/geo+json", "href": "https://api.geodb.io/api/v2/stac/collections/drillhole-packages/items/drillhole-CR-24-017/"},
+    {"rel": "collection", "type": "application/json", "href": "https://api.geodb.io/api/v2/stac/collections/drillhole-packages/"},
     {"rel": "root", "type": "application/json", "href": "https://api.geodb.io/api/v2/stac/"}
   ]
 }

@@ -1,7 +1,7 @@
 # The `xpl:` STAC extension — exploration vocabulary
 
 - **Title:** Exploration (`xpl`)
-- **Identifier:** `https://stac.geodb.io/xpl/v0.1.0/schema.json`
+- **Identifier:** `https://spec.geodb.io/xpl/v0.1.0/schema.json`
 - **Field name prefix:** `xpl`
 - **Scope:** Item (properties), Asset
 - **Extension maturity:** Proposal (0.1.0)

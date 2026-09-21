@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>geodb-protocol schemas</title>
+<style>
+  :root { color-scheme: light dark; }
+  body { font-family: system-ui, sans-serif; line-height: 1.5; max-width: 46rem;
+         margin: 0 auto; padding: 2rem 1rem; }
+  h1 { font-size: 1.4rem; }
+  h2 { font-size: 1.05rem; margin-top: 2rem; }
+  ul { padding-left: 1.2rem; }
+  li { margin: 0.25rem 0; }
+  code { font-size: 0.95em; }
+  p.note { font-size: 0.9rem; opacity: 0.8; }
+</style>
+</head>
+<body>
+<h1>geodb-protocol</h1>
+<p>This host serves the JSON Schemas of the geoDB Open Exploration Protocol at the
+URIs named in their own <code>$id</code>. The files are served from the commit they
+are versioned in; the repository is the source of truth.</p>
+
+<h2>Exploration chain-of-custody schemas, v0.1.0</h2>
+<ul>
+  <li><a href="/exploration/v0.1.0/assay.json">assay.json</a></li>
+  <li><a href="/exploration/v0.1.0/certificate.json">certificate.json</a></li>
+  <li><a href="/exploration/v0.1.0/collar.json">collar.json</a></li>
+  <li><a href="/exploration/v0.1.0/interval.json">interval.json</a></li>
+  <li><a href="/exploration/v0.1.0/laboratory.json">laboratory.json</a></li>
+  <li><a href="/exploration/v0.1.0/qc-sample.json">qc-sample.json</a></li>
+  <li><a href="/exploration/v0.1.0/survey.json">survey.json</a></li>
+</ul>
+
+<h2>STAC extension <code>xpl:</code>, v0.1.0</h2>
+<ul>
+  <li><a href="/xpl/v0.1.0/schema.json">schema.json</a> — the exploration vocabulary
+      listed in <code>stac_extensions</code> on geoDB STAC items.</li>
+</ul>
+
+<p class="note">Source, OpenAPI description and examples:
+<a href="https://github.com/geodbio/geodb-protocol">github.com/geodbio/geodb-protocol</a>.
+A version segment is permanent: a published schema URI is never repointed.</p>
+</body>
+</html>
