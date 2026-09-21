@@ -61,6 +61,18 @@ jobs:
             echo "scripts/check_ids.py not present yet; skipping."
           fi
 
+      - name: The conformance suite carries the CURRENT contract
+        run: |
+          # conformance/ ships its own copy of the spec, the schemas and the
+          # error register, because a runner that fetched them from the server
+          # under test would pass against any self-consistent server. A copy
+          # drifts, so this is the check that it has not.
+          if [ -f scripts/sync_conformance_contract.py ]; then
+            python scripts/sync_conformance_contract.py --check
+          else
+            echo "scripts/sync_conformance_contract.py not present yet; skipping."
+          fi
+
   examples:
     name: Run the documented examples
     runs-on: ubuntu-latest
@@ -104,13 +116,19 @@ jobs:
             exit 0
           fi
           python -m pip install --upgrade pip
-          if [ -f conformance/requirements.txt ]; then
+          if [ -f conformance/pyproject.toml ]; then
+            pip install -e './conformance[geo]'
+          elif [ -f conformance/requirements.txt ]; then
             pip install -r conformance/requirements.txt
           fi
           if [ -f conformance/run.py ]; then
-            # No credentials in GitHub CI: the suite runs only the assertions
-            # that need no live server. The run against a real endpoint is a
-            # separate, credentialed job in our own CI.
+            # No credentials in GitHub CI, and none needed: --offline runs the
+            # BREAK MATRIX — every assertion against a mock server broken in
+            # exactly the one way that assertion exists to catch, asserting it
+            # goes red there and green against a correct one. That is a
+            # stronger check than it sounds: it fails if an assertion stops
+            # detecting its own defect, which is the way a suite rots.
+            # The run against a real endpoint is the credentialed job below.
             python conformance/run.py --offline
           else
             echo "conformance/ present but no run.py; nothing to run."
@@ -128,3 +146,48 @@ jobs:
           else
             echo "conformance/agent_smoke.py not present yet; skipping."
           fi
+
+# ---------------------------------------------------------------------------
+# The CREDENTIALED run, against a real endpoint.
+#
+# Commented out deliberately. This is a public repository: a fork's pull
+# request must never be able to reach a job holding a grant token, and a
+# contributor's PR must not go red because OUR sandbox happened to be down.
+# The offline break matrix above is the check that belongs in public CI.
+#
+# We enable this in our own CI (or here, once the public sandbox grant has been
+# rotated to a token whose only power is reading one CC0 demonstration project
+# and whose leak costs nothing). Enable by uncommenting and setting the
+# GEODB_SANDBOX_TOKEN secret.
+#
+#  conformance-live:
+#    name: Conformance suite (against the live sandbox)
+#    runs-on: ubuntu-latest
+#    # Never on a fork's PR: secrets must not cross that boundary.
+#    if: github.event_name == 'push' && github.repository == 'geodbio/geodb-protocol'
+#    steps:
+#      - uses: actions/checkout@v4
+#      - uses: actions/setup-python@v5
+#        with:
+#          python-version: '3.13'
+#      - name: Install the suite
+#        run: |
+#          python -m pip install --upgrade pip
+#          pip install -e './conformance[geo]'
+#      - name: Run against the public sandbox
+#        env:
+#          GEODB_TOKEN: ${{ secrets.GEODB_SANDBOX_TOKEN }}
+#        run: |
+#          python -m geodb_conformance read \
+#            --base-url https://api.geodb.io \
+#            --profile full \
+#            --junit conformance-junit.xml \
+#            --markdown conformance-report.md
+#      - name: Publish the report
+#        if: always()
+#        uses: actions/upload-artifact@v4
+#        with:
+#          name: conformance-report
+#          path: |
+#            conformance-report.md
+#            conformance-junit.xml

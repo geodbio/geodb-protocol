@@ -536,9 +536,43 @@ documents are for you:
   different profile from the one published.
 - **[`conformance/`](conformance/)** — the runner you point at your own base
   URL with your own token. It checks the envelope, the auth codes, the sync
-  semantics, the STAC landing page, the export flow, and that every 4xx you
-  emit carries a registered `reason_code`. Green there is what "conforming"
-  means; there is no certification and no committee.
+  semantics, the coordinate contract, the STAC landing page, the export flow,
+  and that every 4xx you emit carries a registered `reason_code`. Green there
+  is what "conforming" means; there is no certification and no committee.
+
+  ```bash
+  pip install geodb-conformance          # or: pip install -e conformance/
+  python -m geodb_conformance read \
+      --base-url https://your-server.example.com \
+      --token "$YOUR_GRANT_TOKEN" \
+      --profile core \
+      --markdown conformance-report.md
+  ```
+
+  It exits 0 when your server honoured the contract and 1 when it did not, so
+  it drops straight into CI; `--junit` writes JUnit XML beside the markdown.
+  Every assertion is named and carries a one-line statement of what it proves,
+  and the markdown report puts that line beside each verdict — so the output
+  reads as the contract with a result against each clause, which is what you
+  want in a ticket. `--profile core` is the profile you are asked to
+  implement; `--profile full` adds our own extensions and the checks that need
+  outbound network or a populated asset lane. `python -m geodb_conformance
+  list` prints every assertion without contacting anything.
+
+  The suite carries its own copy of the spec, the schemas and the error
+  register, and checks you against **those** — it never asks your server to
+  describe itself, because a runner that did would pass against any
+  self-consistent server. It validates real rows out of your lists against the
+  published JSON Schemas, and it reprojects a coordinate with `pyproj` to check
+  your derived WGS84 really is your native coordinate reprojected (install
+  `geodb-conformance[geo]` for that one; without it that check skips and says
+  so).
+
+  **Every assertion in it has been watched to fail.** `python -m
+  geodb_conformance selftest` runs each one against a mock server broken in
+  exactly the one way that assertion exists to catch, and asserts it goes red
+  there and green against a correct one. That needs no credentials and no
+  network, and it is what our own CI runs on every push.
 
 Start from [`spec/openapi.yaml`](spec/openapi.yaml) (normative for the wire)
 and [`schemas/`](schemas/) (the vocabulary, one record type per file). The

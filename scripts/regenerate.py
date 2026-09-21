@@ -55,6 +55,11 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import emit_profile  # noqa: E402
 import emit_schemas  # noqa: E402
 
+try:                                                        # noqa: SIM105
+    import sync_conformance_contract  # noqa: E402
+except ImportError:      # the script lands in a later task; stay green without it
+    sync_conformance_contract = None
+
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.dirname(HERE)
 
@@ -135,6 +140,20 @@ def publish(check_only=False):
     return stale
 
 
+def sync_conformance():
+    """Refresh the conformance package's own copy of the contract.
+
+    It ships spec + schemas + errors as package data so a vendor who pip
+    installs the runner gets the published contract with it. Regenerating
+    without this leaves the suite checking servers against the previous
+    protocol, silently.
+    """
+    if sync_conformance_contract is None:
+        return
+    print('\nSyncing the conformance package\'s copy of the contract ...')
+    sync_conformance_contract.main([])
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument('--geodb', default=os.environ.get('GEODB_DIR'),
@@ -200,6 +219,16 @@ def main():
                 print('  [STALE]', path)
             print('\nRun: python scripts/regenerate.py --publish-only')
 
+        # 5. The conformance package's copy of the contract is current. It
+        #    ships spec + schemas + errors as package data because a runner
+        #    that fetched them from the server under test would pass against
+        #    any self-consistent server — so that copy is load-bearing, and a
+        #    stale one means a vendor is being checked against last month's
+        #    protocol.
+        if sync_conformance_contract is not None:
+            if sync_conformance_contract.main(['--check']) != 0:
+                failed = True
+
         if failed:
             sys.exit(1)
         print(f'[OK] schemas/ matches spec/openapi.yaml '
@@ -217,6 +246,7 @@ def main():
         print('\nPublishing the served copies under docs/ ...')
         if not publish():
             print('  (already current)')
+        sync_conformance()
         return
 
     if not args.publish_only:
@@ -248,6 +278,7 @@ def main():
     print('\nPublishing the served copies under docs/ ...')
     if not publish():
         print('  (already current)')
+    sync_conformance()
     print('\nNow run: python scripts/validate.py')
 
 

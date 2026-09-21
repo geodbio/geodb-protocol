@@ -33,9 +33,55 @@
     },
     "certificate": {
       "type": [
-        "string",
+        "object",
         "null"
-      ]
+      ],
+      "description": "The lab job that created this row, as an identity object. On a merged row (one sample, two labs) the values may come from a different job — read the per-value `elements[].certificate` for provenance.",
+      "properties": {
+        "id": {
+          "type": "integer"
+        },
+        "name": {
+          "type": "string"
+        },
+        "laboratory": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "analysis_date": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date"
+        },
+        "status": {
+          "type": "string"
+        },
+        "date_preliminary": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date"
+        },
+        "natural_key": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "project": {
+              "type": "string"
+            },
+            "company": {
+              "type": "string"
+            }
+          }
+        }
+      }
     },
     "weight": {
       "type": [
@@ -115,32 +161,85 @@
           },
           "detection_limit": {
             "type": [
-              "string",
+              "number",
               "null"
             ],
-            "description": "Lower detection limit for the method that produced this value, in the same units. A value at or below it is reported with `above_det_limit: false`."
+            "description": "A method limit in the value's own units, or null when the method declares none. A float, unlike `value`, which is a decimal string because it is what the laboratory reported."
           },
           "upper_limit": {
             "type": [
-              "string",
+              "number",
               "null"
             ],
-            "description": "Upper reporting limit for the method that produced this value, in the same units."
+            "description": "A method limit in the value's own units, or null when the method declares none. A float, unlike `value`, which is a decimal string because it is what the laboratory reported."
           },
           "above_det_limit": {
             "type": "boolean"
           },
           "method": {
             "type": [
-              "string",
+              "object",
               "null"
-            ]
+            ],
+            "description": "The analytical method that produced this value, as an identity object. `is_floating_dl` says whether the detection limit is reported per sample rather than fixed by the method.",
+            "properties": {
+              "id": {
+                "type": "integer"
+              },
+              "name": {
+                "type": "string"
+              },
+              "laboratory": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "is_floating_dl": {
+                "type": "boolean"
+              },
+              "required_sample_mass_g": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "natural_key": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "laboratory": {
+                    "type": "string"
+                  },
+                  "company": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
           },
           "certificate": {
             "type": [
-              "string",
+              "object",
               "null"
-            ]
+            ],
+            "description": "The lab job that produced THIS value. Differs from the row's certificate on a merged row; null when the value carries no stamp of its own and the row's job could not be resolved.",
+            "properties": {
+              "id": {
+                "type": "integer"
+              },
+              "name": {
+                "type": "string"
+              },
+              "laboratory": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            }
           }
         },
         "required": [

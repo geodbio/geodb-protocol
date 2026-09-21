@@ -1,0 +1,137 @@
+{
+  "$comment": "GENERATED from the reference implementation (api/errors.py::REASON_CODES) by manage.py export_reason_codes. Do not edit by hand: scripts/regenerate.py --check fails when this file differs from what the server registers.",
+  "registry_version": "1",
+  "retry_semantics": {
+    "no": "Retrying the identical request cannot succeed. Change something first.",
+    "after": "Retry is correct once the interval in the Retry-After response header has elapsed.",
+    "maybe": "A transient or state-dependent refusal. Safe to retry later; not guaranteed to succeed."
+  },
+  "reason_codes": {
+    "authentication_failed": {
+      "http": 401,
+      "meaning": "No usable credential was presented.",
+      "remedy": "Send `Authorization: Grant <token>` with a current grant.",
+      "retry": "no"
+    },
+    "export_concurrency": {
+      "http": 429,
+      "meaning": "This grant already holds the maximum number of export jobs that have not finished.",
+      "remedy": "Do NOT resend the same export. Poll the status_url of the jobs you already started; when one reaches a terminal state a slot frees. `offending` carries in_flight and limit.",
+      "retry": "after"
+    },
+    "grant_auth_throttled": {
+      "http": 429,
+      "meaning": "Too many credentials that resolve to no grant have been presented from this address within the hour.",
+      "remedy": "Stop retrying with a credential that is not working. Obtain a current grant from the project owner, then resend after the interval in Retry-After.",
+      "retry": "after"
+    },
+    "grant_expired": {
+      "http": 401,
+      "meaning": "The grant passed its expiry date.",
+      "remedy": "Ask the project owner to rotate or reissue it.",
+      "retry": "no"
+    },
+    "grant_invalid": {
+      "http": 401,
+      "meaning": "The grant cannot be used in its current project or data-room state.",
+      "remedy": "Contact the project owner.",
+      "retry": "maybe"
+    },
+    "grant_malformed": {
+      "http": 401,
+      "meaning": "The Authorization header is not a well-formed Grant header.",
+      "remedy": "Send exactly 'Authorization: Grant <token>'.",
+      "retry": "no"
+    },
+    "grant_no_read_capability": {
+      "http": 403,
+      "meaning": "The view declares no read capability, so no grant may reach it.",
+      "remedy": "Use an operation listed in the published OpenAPI spec (/api/schema/).",
+      "retry": "no"
+    },
+    "grant_revoked": {
+      "http": 401,
+      "meaning": "The grant was revoked by the project owner.",
+      "remedy": "Do not retry; ask the owner for a new grant.",
+      "retry": "no"
+    },
+    "grant_room_pinned_refused": {
+      "http": 403,
+      "meaning": "The grant is pinned to a data room that does not expose this endpoint.",
+      "remedy": "Use an operation the room exposes, or ask the owner for a project-wide key.",
+      "retry": "no"
+    },
+    "grant_room_pinned_unclassified": {
+      "http": 403,
+      "meaning": "The endpoint has no room-scope classification, so a room-pinned grant is refused rather than guessed at.",
+      "remedy": "Use an operation the room exposes, or ask the owner for a project-wide key.",
+      "retry": "no"
+    },
+    "grant_surface_forbidden": {
+      "http": 403,
+      "meaning": "The endpoint is not part of the grant-readable surface.",
+      "remedy": "Use an operation listed in the published OpenAPI spec (/api/schema/).",
+      "retry": "no"
+    },
+    "grant_unknown": {
+      "http": 401,
+      "meaning": "The token does not resolve to any grant.",
+      "remedy": "Check the credential. If it was never issued, ask the project owner for an access grant. Do not retry as-is.",
+      "retry": "no"
+    },
+    "grant_write_forbidden": {
+      "http": 403,
+      "meaning": "A write method was attempted with a read-only grant.",
+      "remedy": "Use a read operation. The one write a grant may make is creating an export job (POST /api/v2/exports/).",
+      "retry": "no"
+    },
+    "invalid_parameter": {
+      "http": 400,
+      "meaning": "A query parameter was present but could not be understood.",
+      "remedy": "Correct the parameter named in `offending` and resend. Dates are ISO 8601 (YYYY-MM-DD or a full timestamp).",
+      "retry": "no"
+    },
+    "method_not_allowed": {
+      "http": 405,
+      "meaning": "The HTTP method is not supported on this endpoint.",
+      "remedy": "Use a method the spec declares for this path. The read surface is GET-only apart from POST /api/v2/exports/.",
+      "retry": "no"
+    },
+    "not_found": {
+      "http": 404,
+      "meaning": "No such resource inside this credential's scope. A row that exists in another project is indistinguishable from one that does not exist \u2014 by design.",
+      "remedy": "Check the id, and that it belongs to the project this grant is pinned to (GET /api/v2/grant-context/).",
+      "retry": "no"
+    },
+    "parse_error": {
+      "http": 400,
+      "meaning": "The request body was not valid for its Content-Type.",
+      "remedy": "Send well-formed JSON with Content-Type: application/json.",
+      "retry": "no"
+    },
+    "permission_denied": {
+      "http": 403,
+      "meaning": "The credential is valid but not permitted this operation.",
+      "remedy": "Use an operation listed in the published OpenAPI spec (/api/schema/), within the grant's project scope.",
+      "retry": "no"
+    },
+    "throttled": {
+      "http": 429,
+      "meaning": "The grant's request rate was exceeded.",
+      "remedy": "Wait for the interval given in the Retry-After header, then resend. Prefer ?modified_since= incremental pulls over repeated full pulls.",
+      "retry": "after"
+    },
+    "use_v2": {
+      "http": 403,
+      "meaning": "Access grants read the /api/v2/ surface only. The /api/v1/ tree is not part of the protocol.",
+      "remedy": "Request the same path under /api/v2/. Every operation a grant may call is listed in the published OpenAPI spec (/api/schema/).",
+      "retry": "no"
+    },
+    "validation_error": {
+      "http": 400,
+      "meaning": "The request body or parameters failed validation.",
+      "remedy": "Correct the fields named in the response and resend.",
+      "retry": "no"
+    }
+  }
+}

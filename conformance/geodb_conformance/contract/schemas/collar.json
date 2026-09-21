@@ -1,0 +1,395 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://spec.geodb.io/exploration/v0.1.0/collar.json",
+  "title": "Drill collar",
+  "description": "The surface location and orientation of a drillhole — the anchor every downhole record references.\n\nGENERATED from the normative OpenAPI document (`spec/openapi.yaml`) — do not edit by hand; run `python scripts/regenerate.py`. The OpenAPI document is normative for the wire; this file is the same contract for one record type, readable on its own.",
+  "x-generated-by": "scripts/regenerate.py from spec/openapi.yaml (geoDB Open Exploration Protocol v0.1.0)",
+  "x-openapi-component": "DrillCollarRead",
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "integer"
+    },
+    "name": {
+      "type": "string",
+      "maxLength": 50
+    },
+    "project": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "additionalProperties": true,
+      "description": "Natural key of the project: `{\"name\", \"company\"}`."
+    },
+    "pad": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "hole_type": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "How the hole was drilled — the project's own drilling-method code (diamond core, reverse circulation, auger, and so on). Read the enum on this field for the values this server emits."
+    },
+    "hole_status": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "hole_size": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "date_completed": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date"
+    },
+    "total_depth": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "format": "double",
+      "description": "The final drilled depth of the hole, in `length_units`. The depth measured ALONG the hole, not a vertical depth."
+    },
+    "total_depth_label": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "azimuth": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "format": "double",
+      "description": "Azimuth in DEGREES, clockwise from grid north (0–360). On a collar it is the orientation the hole was set up to drill; on a downhole survey station it is the measured orientation at that depth."
+    },
+    "dip": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "format": "double",
+      "description": "Dip in DEGREES from horizontal. ⚠️ NEGATIVE IS DOWNWARD: a vertical hole drilled straight down is -90, a horizontal hole is 0. On a collar it is the set-up inclination; on a survey station it is the measured inclination at that depth."
+    },
+    "display_units": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Units the *_display strings on this record are formatted in, from the project's display preference. Presentation only: the stored values remain in `length_units`."
+    },
+    "latitude": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "format": "double",
+      "description": "⚠️ NOT necessarily degrees. This is the ORIGINAL as-imported coordinate in the CRS named by `epsg`: for a projected CRS (UTM, State Plane, ...) `longitude` holds the EASTING and `latitude` holds the NORTHING. The values are true WGS84 degrees only when `epsg` is 4326.\n\nThe field names are historical and are kept for continuity. For an unambiguous form of the same values, read `source_coordinate`; for WGS84, read `geometry` (EWKT) or `geometry_geojson`."
+    },
+    "longitude": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "format": "double",
+      "description": "⚠️ NOT necessarily degrees. This is the ORIGINAL as-imported coordinate in the CRS named by `epsg`: for a projected CRS (UTM, State Plane, ...) `longitude` holds the EASTING and `latitude` holds the NORTHING. The values are true WGS84 degrees only when `epsg` is 4326.\n\nThe field names are historical and are kept for continuity. For an unambiguous form of the same values, read `source_coordinate`; for WGS84, read `geometry` (EWKT) or `geometry_geojson`."
+    },
+    "epsg": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "maximum": 2147483647,
+      "minimum": -2147483648,
+      "description": "EPSG code of the coordinate reference system that `latitude`, `longitude` and `source_coordinate` are expressed in — the CRS the data was imported in, preserved rather than normalised. Interpret those values against this code; they are degrees only when it is 4326. The derived WGS84 form is always in `geometry` / `geometry_geojson`."
+    },
+    "elevation": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "format": "double",
+      "description": "Elevation of the collar, in `elevation_units`. See `elevation_source` for whether it was surveyed, taken from a DEM, or entered by hand."
+    },
+    "elevation_source": {
+      "enum": [
+        "surveyed",
+        "dem",
+        "manual",
+        "unknown"
+      ],
+      "type": "string",
+      "description": "Source of elevation data for quality tracking\n\n* `surveyed` - Surveyed\n* `dem` - DEM\n* `manual` - Manual Entry\n* `unknown` - Unknown"
+    },
+    "length_units": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Units the record's DEPTH and LENGTH values are stored in: `M` (metres) or `FT` (feet). Stored units, not a display preference — read every depth against this."
+    },
+    "xy_units": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Get XY units for original coordinates (degrees, meters, feet, us-feet)."
+    },
+    "crs_easting": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "format": "double",
+      "description": "Get project CRS easting (X coordinate)."
+    },
+    "crs_northing": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "format": "double",
+      "description": "Get project CRS northing (Y coordinate)."
+    },
+    "crs_elevation": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "format": "double",
+      "description": "Get project CRS elevation (Z coordinate)."
+    },
+    "crs_epsg": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Get project EPSG code."
+    },
+    "crs_xy_units": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Get project CRS XY units (degrees, meters, feet, us-feet)."
+    },
+    "crs_elevation_units": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Get project CRS elevation units (M or FT)."
+    },
+    "proj4_easting": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "format": "double",
+      "description": "Get local grid easting (X coordinate in custom Proj4 CRS)."
+    },
+    "proj4_northing": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "format": "double",
+      "description": "Get local grid northing (Y coordinate in custom Proj4 CRS)."
+    },
+    "proj4_elevation": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "format": "double",
+      "description": "Get local grid elevation (Z coordinate in custom Proj4 CRS)."
+    },
+    "proj4_string": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Get project's Proj4 definition string."
+    },
+    "proj4_xy_units": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Get Proj4 local grid XY units (usually 'meters')."
+    },
+    "proj4_elevation_units": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Get Proj4 local grid elevation units (M or FT)."
+    },
+    "notes": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "geometry": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "The derived WGS84 location as an EWKT string: `SRID=4326;POINT Z (lon lat elev)` — longitude first, then latitude, then elevation in metres (`POINT` without `Z` when no elevation is recorded). Always EPSG 4326, whatever `epsg` says.\n\nThis is the reprojected value. The original coordinate the customer supplied is `source_coordinate`. For a parsed object rather than a string, read `geometry_geojson`."
+    },
+    "documents": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true
+      },
+      "description": "Attached records, each as an object carrying its id, its natural key and display metadata. Soft-deleted attachments are omitted."
+    },
+    "images": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true
+      },
+      "description": "Attached records, each as an object carrying its id, its natural key and display metadata. Soft-deleted attachments are omitted."
+    },
+    "date_created": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date"
+    },
+    "last_edited": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date"
+    },
+    "source_coordinate": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "description": "`{x, y, epsg}` — the original coordinate, unambiguously named (R2).",
+      "properties": {
+        "x": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "format": "double",
+          "description": "Easting, or longitude in degrees when epsg is 4326."
+        },
+        "y": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "format": "double",
+          "description": "Northing, or latitude in degrees when epsg is 4326."
+        },
+        "epsg": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "description": "EPSG code x and y are expressed in."
+        }
+      },
+      "required": [
+        "epsg",
+        "x",
+        "y"
+      ],
+      "additionalProperties": false
+    },
+    "geometry_geojson": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "description": "A GeoJSON Point (RFC 7946), always WGS84.",
+      "properties": {
+        "type": {
+          "type": "string",
+          "description": "Always \"Point\"."
+        },
+        "coordinates": {
+          "type": "array",
+          "items": {
+            "type": "number",
+            "format": "double"
+          },
+          "description": "[longitude, latitude] or [longitude, latitude, elevation]."
+        }
+      },
+      "required": [
+        "coordinates",
+        "type"
+      ],
+      "additionalProperties": false
+    },
+    "coordinate_system_metadata": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "additionalProperties": true,
+      "description": "The project's coordinate-system settings (declared EPSG, optional local-grid proj4 string, units). Present on every record whose model carries a location. Advisory metadata for clients that reproject; the per-record CRS is always the record's own `epsg`."
+    }
+  },
+  "patternProperties": {
+    "^cf_[a-z0-9_]+$": {
+      "description": "Custom field. Any number of `cf_*` keys may be present: they are the project's user-defined fields, flattened to top level. The set of keys and their types vary BY PROJECT and BY MODEL — discover them at `/api/v2/model-schemas/?project_id=<id>`, never by assuming a fixed set. Values are whatever the customer stored (string, number, boolean or null). Calculated custom fields appear under the same prefix and are read-only."
+    }
+  },
+  "required": [
+    "crs_easting",
+    "crs_elevation",
+    "crs_elevation_units",
+    "crs_epsg",
+    "crs_northing",
+    "crs_xy_units",
+    "date_created",
+    "display_units",
+    "documents",
+    "geometry",
+    "geometry_geojson",
+    "hole_size",
+    "hole_status",
+    "hole_type",
+    "id",
+    "images",
+    "last_edited",
+    "length_units",
+    "name",
+    "pad",
+    "proj4_easting",
+    "proj4_elevation",
+    "proj4_elevation_units",
+    "proj4_northing",
+    "proj4_string",
+    "proj4_xy_units",
+    "project",
+    "source_coordinate",
+    "total_depth_label",
+    "xy_units"
+  ],
+  "additionalProperties": false
+}

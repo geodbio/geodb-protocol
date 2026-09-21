@@ -1,0 +1,358 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://spec.geodb.io/exploration/v0.1.0/vein-interval.json",
+  "title": "Vein interval",
+  "description": "A vein logged over a depth interval — its type, width, orientation and mineral contents.\n\nGENERATED from the normative OpenAPI document (`spec/openapi.yaml`) — do not edit by hand; run `python scripts/regenerate.py`. The OpenAPI document is normative for the wire; this file is the same contract for one record type, readable on its own.",
+  "x-generated-by": "scripts/regenerate.py from spec/openapi.yaml (geoDB Open Exploration Protocol v0.1.0)",
+  "x-openapi-component": "DrillVeinRead",
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "integer"
+    },
+    "project": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "additionalProperties": true,
+      "description": "Natural key of the project: `{\"name\", \"company\"}`."
+    },
+    "bhid": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "additionalProperties": true,
+      "description": "Natural key of the drill hole: `{\"hole_id\", \"project\", \"company\"}`."
+    },
+    "depth_from": {
+      "type": "number",
+      "format": "double",
+      "description": "Top of this interval, measured ALONG the hole from the collar, in `length_units`."
+    },
+    "depth_to": {
+      "type": "number",
+      "format": "double",
+      "description": "Base of this interval, measured ALONG the hole from the collar, in `length_units`."
+    },
+    "display_units": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Units the *_display strings on this record are formatted in, from the project's display preference. Presentation only: the stored values remain in `length_units`."
+    },
+    "xyz_from": {
+      "type": [
+        "array",
+        "null"
+      ],
+      "items": {
+        "type": "number"
+      },
+      "description": "Desurveyed position at `depth_from`, as `[x, y, z]` on the PROJECT LOCAL GRID in metres — not WGS84, and not the record's own `epsg`. Null when the hole has no survey to desurvey against."
+    },
+    "xyz_to": {
+      "type": [
+        "array",
+        "null"
+      ],
+      "items": {
+        "type": "number"
+      },
+      "description": "Desurveyed position at `depth_to`, as `[x, y, z]` on the project local grid in metres. Null when the hole has no survey."
+    },
+    "vein_type": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "integer"
+        },
+        "name": {
+          "type": "string",
+          "maxLength": 150
+        },
+        "code": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 50
+        },
+        "description": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "name"
+      ],
+      "additionalProperties": false
+    },
+    "vein_count": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "maximum": 2147483647,
+      "minimum": 0,
+      "description": "Number of veins observed in this interval"
+    },
+    "veins_per_meter": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "format": "double",
+      "minimum": 0.0,
+      "title": "Veins/Meter",
+      "description": "Vein density (auto-calculated from vein count / interval length, or entered manually)"
+    },
+    "avg_width_mm": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "format": "double",
+      "minimum": 0.0,
+      "title": "Avg Width (mm)",
+      "description": "Average vein width in millimeters"
+    },
+    "min_width_mm": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "format": "double",
+      "minimum": 0.0,
+      "title": "Min Width (mm)"
+    },
+    "max_width_mm": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "format": "double",
+      "minimum": 0.0,
+      "title": "Max Width (mm)"
+    },
+    "vein_percent": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "format": "double",
+      "maximum": 100.0,
+      "minimum": 0.0,
+      "title": "Vein %",
+      "description": "Percentage of interval that is vein material"
+    },
+    "assemblage": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "integer"
+        },
+        "name": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "description": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "mineral_names": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "mineral_names",
+        "name"
+      ],
+      "additionalProperties": false
+    },
+    "mineral_contents": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "mineral": {
+            "type": "integer"
+          },
+          "mineral_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "mineral_color": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "percentage": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double",
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "description": "Percentage (0-100) of this mineral in vein fill"
+          },
+          "position": {
+            "enum": [
+              "core",
+              "margin",
+              "throughout",
+              "unknown"
+            ],
+            "type": "string",
+            "description": "Position of mineral within vein structure\n\n* `core` - Vein Core\n* `margin` - Vein Margin\n* `throughout` - Throughout\n* `unknown` - Unknown"
+          },
+          "notes": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "mineral",
+          "mineral_color",
+          "mineral_name"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "selvage_alteration": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "selvage_width_mm": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "format": "double",
+      "minimum": 0.0,
+      "title": "Selvage Width (mm)",
+      "description": "Width of alteration selvage in millimeters"
+    },
+    "texture": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "angle_to_ca": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "format": "double",
+      "title": "Angle to Core Axis",
+      "description": "Dominant vein orientation relative to core axis (degrees)"
+    },
+    "drill_vein_set": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "images": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true
+      },
+      "description": "Attached records, each as an object carrying its id, its natural key and display metadata. Soft-deleted attachments are omitted."
+    },
+    "notes": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "date_collected": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date",
+      "title": "Date Logged"
+    },
+    "collected_by": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "title": "Logged By",
+      "maxLength": 50
+    },
+    "length_units": {
+      "enum": [
+        "M",
+        "FT"
+      ],
+      "type": "string",
+      "description": "Display units only - depths stored in meters\n\n* `M` - Meters\n* `FT` - Feet"
+    },
+    "date_created": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date"
+    },
+    "last_edited": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date"
+    }
+  },
+  "patternProperties": {
+    "^cf_[a-z0-9_]+$": {
+      "description": "Custom field. Any number of `cf_*` keys may be present: they are the project's user-defined fields, flattened to top level. The set of keys and their types vary BY PROJECT and BY MODEL — discover them at `/api/v2/model-schemas/?project_id=<id>`, never by assuming a fixed set. Values are whatever the customer stored (string, number, boolean or null). Calculated custom fields appear under the same prefix and are read-only."
+    }
+  },
+  "required": [
+    "assemblage",
+    "bhid",
+    "date_created",
+    "depth_from",
+    "depth_to",
+    "display_units",
+    "drill_vein_set",
+    "id",
+    "images",
+    "last_edited",
+    "mineral_contents",
+    "project",
+    "selvage_alteration",
+    "texture",
+    "vein_type",
+    "xyz_from",
+    "xyz_to"
+  ],
+  "additionalProperties": false
+}

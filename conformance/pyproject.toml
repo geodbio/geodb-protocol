@@ -1,0 +1,59 @@
+[build-system]
+requires = ["setuptools>=64", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "geodb-conformance"
+version = "0.1.0"
+description = "Conformance suite for the geoDB Open Exploration Protocol — point it at your own server and find out whether it implements the protocol."
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "Apache-2.0" }
+authors = [{ name = "Aqua Terra Geoscientists / geoDB", email = "joshua@geodb.io" }]
+keywords = ["geodb", "conformance", "openapi", "stac", "mineral-exploration"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python :: 3",
+    "Topic :: Scientific/Engineering :: GIS",
+    "Topic :: Software Development :: Testing",
+]
+
+# Deliberately small. A vendor runs this against their own server to find out
+# whether it is conformant; every dependency here is one more thing that can
+# stop them. `requests` for the wire, `jsonschema` to validate rows against the
+# published schemas, `pyyaml` to read the packaged spec. Nothing else is
+# required — pyproj is an extra, and its absence SKIPS the reprojection check
+# with a message rather than failing the run.
+dependencies = [
+    "requests>=2.28",
+    "jsonschema>=4.17",
+    "pyyaml>=6.0",
+]
+
+[project.optional-dependencies]
+# The derived-WGS84 check reprojects the native coordinate itself and compares.
+# Without pyproj that one assertion skips, loudly.
+geo = ["pyproj>=3.4"]
+
+[project.urls]
+Homepage = "https://github.com/geodbio/geodb-protocol"
+Protocol = "https://github.com/geodbio/geodb-protocol"
+Documentation = "https://github.com/geodbio/geodb-protocol/blob/main/AGENTS.md"
+
+[project.scripts]
+geodb-conformance = "geodb_conformance.__main__:main"
+
+[tool.setuptools]
+packages = ["geodb_conformance", "geodb_conformance.checks"]
+
+# ⭐ The suite ships its own copy of the published contract. A conformance
+# runner that fetched the spec from the server under test would pass against
+# any self-consistent server, including one serving a different protocol
+# entirely. `scripts/sync_conformance_contract.py --check` (run by
+# scripts/regenerate.py --check, and by CI) fails if these copies have drifted
+# from the repo's normative files.
+[tool.setuptools.package-data]
+geodb_conformance = ["contract/*.yaml", "contract/*.json", "contract/schemas/*.json"]

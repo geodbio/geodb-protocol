@@ -72,8 +72,13 @@ errors.json                Every reason_code with its meaning, remedy and whethe
                            retrying can help. GENERATED from the server
 examples/                  Runnable in four flavours: curl, geodb-client, bare
                            requests, TypeScript fetch. run_all.py is what CI calls
-conformance/               agent_smoke.py executes AGENTS.md's quickstart literally,
-                           so a drifted quickstart fails CI
+conformance/               The `geodb-conformance` package: point it at your OWN
+                           server and find out whether it implements the protocol.
+                           `python -m geodb_conformance read --base-url … --token …`
+                           Carries its own copy of the contract; every assertion has
+                           been proven to fail against a deliberately broken mock
+                           (`selftest`). agent_smoke.py also executes AGENTS.md's
+                           quickstart literally, so a drifted quickstart fails CI
 spec/openapi.yaml          OpenAPI 3 for the read surface — NORMATIVE for the wire
                            (generated from the reference implementation; regen below)
 PROFILE.md                 Which operations are the protocol and which are geoDB's
@@ -88,6 +93,9 @@ stac/xpl/examples/         Worked STAC items (airborne-mag survey, drillhole pac
 scripts/regenerate.py      Re-emit openapi.yaml + xpl/schema.json from a geoDB
                            checkout, then schemas/ + PROFILE.md from the spec
 scripts/validate.py        Validate schemas, spec, and examples offline (no checkout needed)
+scripts/sync_conformance_contract.py
+                           Copy spec/errors/schemas into the conformance package
+                           (--check fails if that copy has drifted)
 CHANGELOG.md               Version history
 CONTRIBUTING.md            How to file a useful issue; how decisions get made
 SECURITY.md                How to report a vulnerability; scope; disclosure window
