@@ -38,8 +38,7 @@ Authorization: Grant gdbg_<token>
 - The grant is pinned to exactly **one project** — it can never read another.
 - It is **read-only**. The single exception is `POST /api/v2/exports/`, which
   creates an export *job* (it mutates no customer data).
-- Every pull lands in a **customer-visible access log** — the owner sees exactly
-  what the vendor pulled, and when. Revoke or rotate at any time.
+- Every request made with a grant lands in a **customer-visible access log**, served or not: the owner sees each endpoint pulled, per hour, with request counts, and every refusal — a revoked or expired token still polling, a write attempt, an off-surface probe, a throttle — with its reason code. Requests whose token matches no grant cannot be attributed to one and are counted per IP-hour instead.
 - Asset downloads are **short-lived signed redirects** (302 → a ~5-minute URL);
   no long-lived links are ever embedded in the catalog JSON.
 

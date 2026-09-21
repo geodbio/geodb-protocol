@@ -1122,7 +1122,8 @@ paths:
                     "min_value": null,
                     "max_value": null,
                     "help_text": "",
-                    "order": 1
+                    "order": 1,
+                    "applies_to_sample_types": []
                 },
                 {
                     "field_name": "claim_status",
@@ -1134,7 +1135,8 @@ paths:
                     "min_value": null,
                     "max_value": null,
                     "help_text": "Current status of the mining claim",
-                    "order": 2
+                    "order": 2,
+                    "applies_to_sample_types": []
                 }
             ]
         }
@@ -1142,6 +1144,11 @@ paths:
 
         If no schema exists, returns `{"schema_exists": false, "fields": []}`.
         Mobile app should still allow record creation but without custom fields.
+
+        `applies_to_sample_types` (PointSample schemas only; always present,
+        `[]` = every sample type): a field applies to a row iff the list is
+        empty or the row's `sample_type` code is in it. Blank type ⇒ only
+        unrestricted fields. `required` means required-when-applies.
       tags:
       - custom-field-schemas
       security:
@@ -1460,7 +1467,12 @@ paths:
   /api/v2/drill-alterations/:
     get:
       operationId: drill_alterations_list
-      description: Override list to add deleted_ids to paginated response.
+      description: |-
+        Override list to add deleted_ids to paginated response.
+
+        Also handles the additive incremental-sync surface (2026-07-19):
+        Last-Modified/ETag on first pages and conditional-request 304s,
+        BEFORE any body is built (a 304 must not carry deleted_ids).
       parameters:
       - name: limit
         required: false
@@ -1474,6 +1486,18 @@ paths:
         description: The initial index from which to return the results.
         schema:
           type: integer
+      - in: query
+        name: scope
+        schema:
+          type: string
+          enum:
+          - company
+        description: 'scope=company: read the UNION of the requester''s allowed projects
+          WITHIN THE ACTIVE COMPANY (never cross-company), instead of the single active
+          project. Read-only — write verbs are refused (403) under this scope. A single-project
+          requester (or a project-pinned grant) is refused / degrades to its one project.
+          Rows carry flat project_id / project_name so results can be grouped by project.
+          Any other scope value is left to endpoint-specific meaning.'
       tags:
       - drill-alterations
       security:
@@ -1560,6 +1584,18 @@ paths:
         description: The initial index from which to return the results.
         schema:
           type: integer
+      - in: query
+        name: scope
+        schema:
+          type: string
+          enum:
+          - company
+        description: 'scope=company: read the UNION of the requester''s allowed projects
+          WITHIN THE ACTIVE COMPANY (never cross-company), instead of the single active
+          project. Read-only — write verbs are refused (403) under this scope. A single-project
+          requester (or a project-pinned grant) is refused / degrades to its one project.
+          Rows carry flat project_id / project_name so results can be grouped by project.
+          Any other scope value is left to endpoint-specific meaning.'
       tags:
       - Drill Collars
       security:
@@ -1732,7 +1768,12 @@ paths:
   /api/v2/drill-custom-intervals/:
     get:
       operationId: drill_custom_intervals_list
-      description: Override list to add deleted_ids to paginated response.
+      description: |-
+        Override list to add deleted_ids to paginated response.
+
+        Also handles the additive incremental-sync surface (2026-07-19):
+        Last-Modified/ETag on first pages and conditional-request 304s,
+        BEFORE any body is built (a 304 must not carry deleted_ids).
       parameters:
       - name: limit
         required: false
@@ -1746,6 +1787,18 @@ paths:
         description: The initial index from which to return the results.
         schema:
           type: integer
+      - in: query
+        name: scope
+        schema:
+          type: string
+          enum:
+          - company
+        description: 'scope=company: read the UNION of the requester''s allowed projects
+          WITHIN THE ACTIVE COMPANY (never cross-company), instead of the single active
+          project. Read-only — write verbs are refused (403) under this scope. A single-project
+          requester (or a project-pinned grant) is refused / degrades to its one project.
+          Rows carry flat project_id / project_name so results can be grouped by project.
+          Any other scope value is left to endpoint-specific meaning.'
       tags:
       - drill-custom-intervals
       security:
@@ -1803,7 +1856,12 @@ paths:
   /api/v2/drill-lithologies/:
     get:
       operationId: drill_lithologies_list
-      description: Override list to add deleted_ids to paginated response.
+      description: |-
+        Override list to add deleted_ids to paginated response.
+
+        Also handles the additive incremental-sync surface (2026-07-19):
+        Last-Modified/ETag on first pages and conditional-request 304s,
+        BEFORE any body is built (a 304 must not carry deleted_ids).
       parameters:
       - name: limit
         required: false
@@ -1817,6 +1875,18 @@ paths:
         description: The initial index from which to return the results.
         schema:
           type: integer
+      - in: query
+        name: scope
+        schema:
+          type: string
+          enum:
+          - company
+        description: 'scope=company: read the UNION of the requester''s allowed projects
+          WITHIN THE ACTIVE COMPANY (never cross-company), instead of the single active
+          project. Read-only — write verbs are refused (403) under this scope. A single-project
+          requester (or a project-pinned grant) is refused / degrades to its one project.
+          Rows carry flat project_id / project_name so results can be grouped by project.
+          Any other scope value is left to endpoint-specific meaning.'
       tags:
       - drill-lithologies
       security:
@@ -2166,7 +2236,12 @@ paths:
   /api/v2/drill-mineralizations/:
     get:
       operationId: drill_mineralizations_list
-      description: Override list to add deleted_ids to paginated response.
+      description: |-
+        Override list to add deleted_ids to paginated response.
+
+        Also handles the additive incremental-sync surface (2026-07-19):
+        Last-Modified/ETag on first pages and conditional-request 304s,
+        BEFORE any body is built (a 304 must not carry deleted_ids).
       parameters:
       - name: limit
         required: false
@@ -2180,6 +2255,18 @@ paths:
         description: The initial index from which to return the results.
         schema:
           type: integer
+      - in: query
+        name: scope
+        schema:
+          type: string
+          enum:
+          - company
+        description: 'scope=company: read the UNION of the requester''s allowed projects
+          WITHIN THE ACTIVE COMPANY (never cross-company), instead of the single active
+          project. Read-only — write verbs are refused (403) under this scope. A single-project
+          requester (or a project-pinned grant) is refused / degrades to its one project.
+          Rows carry flat project_id / project_name so results can be grouped by project.
+          Any other scope value is left to endpoint-specific meaning.'
       tags:
       - drill-mineralizations
       security:
@@ -2394,6 +2481,18 @@ paths:
         description: The initial index from which to return the results.
         schema:
           type: integer
+      - in: query
+        name: scope
+        schema:
+          type: string
+          enum:
+          - company
+        description: 'scope=company: read the UNION of the requester''s allowed projects
+          WITHIN THE ACTIVE COMPANY (never cross-company), instead of the single active
+          project. Read-only — write verbs are refused (403) under this scope. A single-project
+          requester (or a project-pinned grant) is refused / degrades to its one project.
+          Rows carry flat project_id / project_name so results can be grouped by project.
+          Any other scope value is left to endpoint-specific meaning.'
       tags:
       - drill-pads
       security:
@@ -2691,7 +2790,25 @@ paths:
   /api/v2/drill-photos/:
     get:
       operationId: drill_photos_list
-      description: Override list to add deleted_ids to paginated response.
+      description: |-
+        Override list to add deleted_ids to paginated response.
+
+        Also handles the additive incremental-sync surface (2026-07-19):
+        Last-Modified/ETag on first pages and conditional-request 304s,
+        BEFORE any body is built (a 304 must not carry deleted_ids).
+      parameters:
+      - in: query
+        name: scope
+        schema:
+          type: string
+          enum:
+          - company
+        description: 'scope=company: read the UNION of the requester''s allowed projects
+          WITHIN THE ACTIVE COMPANY (never cross-company), instead of the single active
+          project. Read-only — write verbs are refused (403) under this scope. A single-project
+          requester (or a project-pinned grant) is refused / degrades to its one project.
+          Rows carry flat project_id / project_name so results can be grouped by project.
+          Any other scope value is left to endpoint-specific meaning.'
       tags:
       - drill-photos
       security:
@@ -2925,7 +3042,12 @@ paths:
   /api/v2/drill-rqds/:
     get:
       operationId: drill_rqds_list
-      description: Override list to add deleted_ids to paginated response.
+      description: |-
+        Override list to add deleted_ids to paginated response.
+
+        Also handles the additive incremental-sync surface (2026-07-19):
+        Last-Modified/ETag on first pages and conditional-request 304s,
+        BEFORE any body is built (a 304 must not carry deleted_ids).
       parameters:
       - name: limit
         required: false
@@ -2939,6 +3061,18 @@ paths:
         description: The initial index from which to return the results.
         schema:
           type: integer
+      - in: query
+        name: scope
+        schema:
+          type: string
+          enum:
+          - company
+        description: 'scope=company: read the UNION of the requester''s allowed projects
+          WITHIN THE ACTIVE COMPANY (never cross-company), instead of the single active
+          project. Read-only — write verbs are refused (403) under this scope. A single-project
+          requester (or a project-pinned grant) is refused / degrades to its one project.
+          Rows carry flat project_id / project_name so results can be grouped by project.
+          Any other scope value is left to endpoint-specific meaning.'
       tags:
       - drill-rqds
       security:
@@ -3082,7 +3216,12 @@ paths:
   /api/v2/drill-spectral-intervals/:
     get:
       operationId: drill_spectral_intervals_list
-      description: Override list to add deleted_ids to paginated response.
+      description: |-
+        Override list to add deleted_ids to paginated response.
+
+        Also handles the additive incremental-sync surface (2026-07-19):
+        Last-Modified/ETag on first pages and conditional-request 304s,
+        BEFORE any body is built (a 304 must not carry deleted_ids).
       parameters:
       - name: limit
         required: false
@@ -3096,6 +3235,18 @@ paths:
         description: The initial index from which to return the results.
         schema:
           type: integer
+      - in: query
+        name: scope
+        schema:
+          type: string
+          enum:
+          - company
+        description: 'scope=company: read the UNION of the requester''s allowed projects
+          WITHIN THE ACTIVE COMPANY (never cross-company), instead of the single active
+          project. Read-only — write verbs are refused (403) under this scope. A single-project
+          requester (or a project-pinned grant) is refused / degrades to its one project.
+          Rows carry flat project_id / project_name so results can be grouped by project.
+          Any other scope value is left to endpoint-specific meaning.'
       tags:
       - drill-spectral-intervals
       security:
@@ -3283,7 +3434,12 @@ paths:
   /api/v2/drill-structures/:
     get:
       operationId: drill_structures_list
-      description: Override list to add deleted_ids to paginated response.
+      description: |-
+        Override list to add deleted_ids to paginated response.
+
+        Also handles the additive incremental-sync surface (2026-07-19):
+        Last-Modified/ETag on first pages and conditional-request 304s,
+        BEFORE any body is built (a 304 must not carry deleted_ids).
       parameters:
       - name: limit
         required: false
@@ -3297,6 +3453,18 @@ paths:
         description: The initial index from which to return the results.
         schema:
           type: integer
+      - in: query
+        name: scope
+        schema:
+          type: string
+          enum:
+          - company
+        description: 'scope=company: read the UNION of the requester''s allowed projects
+          WITHIN THE ACTIVE COMPANY (never cross-company), instead of the single active
+          project. Read-only — write verbs are refused (403) under this scope. A single-project
+          requester (or a project-pinned grant) is refused / degrades to its one project.
+          Rows carry flat project_id / project_name so results can be grouped by project.
+          Any other scope value is left to endpoint-specific meaning.'
       tags:
       - drill-structures
       security:
@@ -3377,6 +3545,18 @@ paths:
         description: The initial index from which to return the results.
         schema:
           type: integer
+      - in: query
+        name: scope
+        schema:
+          type: string
+          enum:
+          - company
+        description: 'scope=company: read the UNION of the requester''s allowed projects
+          WITHIN THE ACTIVE COMPANY (never cross-company), instead of the single active
+          project. Read-only — write verbs are refused (403) under this scope. A single-project
+          requester (or a project-pinned grant) is refused / degrades to its one project.
+          Rows carry flat project_id / project_name so results can be grouped by project.
+          Any other scope value is left to endpoint-specific meaning.'
       tags:
       - Drill Surveys
       security:
@@ -3587,6 +3767,18 @@ paths:
         description: The initial index from which to return the results.
         schema:
           type: integer
+      - in: query
+        name: scope
+        schema:
+          type: string
+          enum:
+          - company
+        description: 'scope=company: read the UNION of the requester''s allowed projects
+          WITHIN THE ACTIVE COMPANY (never cross-company), instead of the single active
+          project. Read-only — write verbs are refused (403) under this scope. A single-project
+          requester (or a project-pinned grant) is refused / degrades to its one project.
+          Rows carry flat project_id / project_name so results can be grouped by project.
+          Any other scope value is left to endpoint-specific meaning.'
       tags:
       - drill-traces
       security:
@@ -3955,7 +4147,12 @@ paths:
   /api/v2/drill-veins/:
     get:
       operationId: drill_veins_list
-      description: Override list to add deleted_ids to paginated response.
+      description: |-
+        Override list to add deleted_ids to paginated response.
+
+        Also handles the additive incremental-sync surface (2026-07-19):
+        Last-Modified/ETag on first pages and conditional-request 304s,
+        BEFORE any body is built (a 304 must not carry deleted_ids).
       parameters:
       - name: limit
         required: false
@@ -3969,6 +4166,18 @@ paths:
         description: The initial index from which to return the results.
         schema:
           type: integer
+      - in: query
+        name: scope
+        schema:
+          type: string
+          enum:
+          - company
+        description: 'scope=company: read the UNION of the requester''s allowed projects
+          WITHIN THE ACTIVE COMPANY (never cross-company), instead of the single active
+          project. Read-only — write verbs are refused (403) under this scope. A single-project
+          requester (or a project-pinned grant) is refused / degrades to its one project.
+          Rows carry flat project_id / project_name so results can be grouped by project.
+          Any other scope value is left to endpoint-specific meaning.'
       tags:
       - drill-veins
       security:
@@ -4185,6 +4394,18 @@ paths:
         description: The initial index from which to return the results.
         schema:
           type: integer
+      - in: query
+        name: scope
+        schema:
+          type: string
+          enum:
+          - company
+        description: 'scope=company: read the UNION of the requester''s allowed projects
+          WITHIN THE ACTIVE COMPANY (never cross-company), instead of the single active
+          project. Read-only — write verbs are refused (403) under this scope. A single-project
+          requester (or a project-pinned grant) is refused / degrades to its one project.
+          Rows carry flat project_id / project_name so results can be grouped by project.
+          Any other scope value is left to endpoint-specific meaning.'
       tags:
       - field-notes
       security:
@@ -4357,7 +4578,7 @@ paths:
         name: id
         schema:
           type: integer
-        description: A unique integer value identifying this Mineral.
+        description: A unique integer value identifying this Formation.
         required: true
       tags:
       - formations
@@ -4374,7 +4595,12 @@ paths:
   /api/v2/geophysical-surveys/:
     get:
       operationId: geophysical_surveys_list
-      description: Override list to add deleted_ids to paginated response.
+      description: |-
+        Override list to add deleted_ids to paginated response.
+
+        Also handles the additive incremental-sync surface (2026-07-19):
+        Last-Modified/ETag on first pages and conditional-request 304s,
+        BEFORE any body is built (a 304 must not carry deleted_ids).
       parameters:
       - name: limit
         required: false
@@ -4388,6 +4614,18 @@ paths:
         description: The initial index from which to return the results.
         schema:
           type: integer
+      - in: query
+        name: scope
+        schema:
+          type: string
+          enum:
+          - company
+        description: 'scope=company: read the UNION of the requester''s allowed projects
+          WITHIN THE ACTIVE COMPANY (never cross-company), instead of the single active
+          project. Read-only — write verbs are refused (403) under this scope. A single-project
+          requester (or a project-pinned grant) is refused / degrades to its one project.
+          Rows carry flat project_id / project_name so results can be grouped by project.
+          Any other scope value is left to endpoint-specific meaning.'
       tags:
       - geophysical-surveys
       security:
@@ -4565,6 +4803,18 @@ paths:
         description: The initial index from which to return the results.
         schema:
           type: integer
+      - in: query
+        name: scope
+        schema:
+          type: string
+          enum:
+          - company
+        description: 'scope=company: read the UNION of the requester''s allowed projects
+          WITHIN THE ACTIVE COMPANY (never cross-company), instead of the single active
+          project. Read-only — write verbs are refused (403) under this scope. A single-project
+          requester (or a project-pinned grant) is refused / degrades to its one project.
+          Rows carry flat project_id / project_name so results can be grouped by project.
+          Any other scope value is left to endpoint-specific meaning.'
       tags:
       - landholdings
       security:
@@ -4716,20 +4966,49 @@ paths:
   /api/v2/mapping-areas/:
     get:
       operationId: mapping_areas_list
-      description: Override list to add deleted_ids to paginated response.
+      description: |-
+        Override list to add deleted_ids to paginated response.
+
+        Also handles the additive incremental-sync surface (2026-07-19):
+        Last-Modified/ETag on first pages and conditional-request 304s,
+        BEFORE any body is built (a 304 must not carry deleted_ids).
       parameters:
+      - in: query
+        name: compact
+        schema:
+          type: string
+        description: 'compact=1: lean sync serialization — flat scalars with FK ids
+          (project_id, bhid_id, ...), raw extra_data dict, no nested natural keys
+          / derived fields / geometry columns. Same pagination envelope and deleted_ids
+          metadata. Assays inline their element values as flat dicts. Any other value
+          = default rich shape.'
       - name: limit
         required: false
         in: query
         description: Number of results to return per page.
         schema:
           type: integer
+      - in: query
+        name: modified_since
+        schema:
+          type: string
+        description: 'Incremental sync: only rows with last_edited >= the DATE part
+          of this ISO 8601 date/datetime. DAY-granular — rows already modified on
+          the same day are re-included; treat pulls as idempotent upserts keyed on
+          id. Deletions are not reflected here; keep using deleted_since / deleted_ids.
+          Invalid values are ignored. When sent, the response echoes modified_since_applied.'
       - name: offset
         required: false
         in: query
         description: The initial index from which to return the results.
         schema:
           type: integer
+      - in: query
+        name: skip_count
+        schema:
+          type: string
+        description: 'skip_count=1: suppress the per-page COUNT(*). count is null;
+          next is present exactly while a full page was returned.'
       tags:
       - mapping-areas
       security:
@@ -5386,6 +5665,18 @@ paths:
         description: The initial index from which to return the results.
         schema:
           type: integer
+      - in: query
+        name: scope
+        schema:
+          type: string
+          enum:
+          - company
+        description: 'scope=company: read the UNION of the requester''s allowed projects
+          WITHIN THE ACTIVE COMPANY (never cross-company), instead of the single active
+          project. Read-only — write verbs are refused (403) under this scope. A single-project
+          requester (or a project-pinned grant) is refused / degrades to its one project.
+          Rows carry flat project_id / project_name so results can be grouped by project.
+          Any other scope value is left to endpoint-specific meaning.'
       tags:
       - Point Samples
       security:
@@ -5455,6 +5746,18 @@ paths:
         description: The initial index from which to return the results.
         schema:
           type: integer
+      - in: query
+        name: scope
+        schema:
+          type: string
+          enum:
+          - company
+        description: 'scope=company: read the UNION of the requester''s allowed projects
+          WITHIN THE ACTIVE COMPANY (never cross-company), instead of the single active
+          project. Read-only — write verbs are refused (403) under this scope. A single-project
+          requester (or a project-pinned grant) is refused / degrades to its one project.
+          Rows carry flat project_id / project_name so results can be grouped by project.
+          Any other scope value is left to endpoint-specific meaning.'
       tags:
       - Project Files
       security:
@@ -5539,9 +5842,47 @@ paths:
               schema:
                 $ref: '#/components/schemas/ProjectFileRead'
           description: ''
-  /api/v2/project-files/{id}/tiles/{z}/{x}/{y}.png/:
+  /api/v2/project-files/{id}/tiles/{z}/{x}/{y}.png:
     get:
       operationId: project_files_tiles_.png_retrieve
+      description: Large project files (rasters, GIS packages, LFView) with pre-signed
+        download URLs.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      - in: path
+        name: x
+        schema:
+          type: integer
+        required: true
+      - in: path
+        name: y
+        schema:
+          type: integer
+        required: true
+      - in: path
+        name: z
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Project Files
+      security:
+      - knoxApiToken: []
+      - GrantAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectFileRead'
+          description: ''
+  /api/v2/project-files/{id}/tiles/{z}/{x}/{y}.png/:
+    get:
+      operationId: project_files_tiles_.png_retrieve_2
       description: Large project files (rasters, GIS packages, LFView) with pre-signed
         download URLs.
       parameters:
@@ -5820,9 +6161,23 @@ paths:
 
         GET /api/v2/qaqc-protocols/{id}/status/
         GET /api/v2/qaqc-protocols/{id}/status/?collar_id={id}
+        GET /api/v2/qaqc-protocols/{id}/status/?sample_package={id}
 
         Returns reminder status for each QC type (standards, blanks, duplicates),
         including whether each type is due or approaching.
+
+        SCOPE. Three shapes, and the engine already understood all three — only
+        the surface one was unreachable from the API until 2026-07-29:
+
+          - no scope        project-wide drill counters (the original default)
+          - ?collar_id=     per-hole, when counter_scope='hole'
+          - ?sample_package=  per-PROGRAMME surface counters
+
+        Why the surface scope matters rather than being a nicety: without it a
+        project running two soil programmes pools both into ONE duplicate
+        counter, so "a duplicate every 25 samples" counts across populations
+        that should never be mixed — and the QC density of each programme is
+        wrong in a way nobody can see from the field.
       parameters:
       - in: path
         name: id
@@ -5877,6 +6232,18 @@ paths:
         description: The initial index from which to return the results.
         schema:
           type: integer
+      - in: query
+        name: scope
+        schema:
+          type: string
+          enum:
+          - company
+        description: 'scope=company: read the UNION of the requester''s allowed projects
+          WITHIN THE ACTIVE COMPANY (never cross-company), instead of the single active
+          project. Read-only — write verbs are refused (403) under this scope. A single-project
+          requester (or a project-pinned grant) is refused / degrades to its one project.
+          Rows carry flat project_id / project_name so results can be grouped by project.
+          Any other scope value is left to endpoint-specific meaning.'
       tags:
       - qc-samples
       security:
@@ -6046,6 +6413,18 @@ paths:
         description: The initial index from which to return the results.
         schema:
           type: integer
+      - in: query
+        name: scope
+        schema:
+          type: string
+          enum:
+          - company
+        description: 'scope=company: read the UNION of the requester''s allowed projects
+          WITHIN THE ACTIVE COMPANY (never cross-company), instead of the single active
+          project. Read-only — write verbs are refused (403) under this scope. A single-project
+          requester (or a project-pinned grant) is refused / degrades to its one project.
+          Rows carry flat project_id / project_name so results can be grouped by project.
+          Any other scope value is left to endpoint-specific meaning.'
       tags:
       - Roads
       security:
@@ -6070,6 +6449,23 @@ paths:
           type: integer
         description: A unique integer value identifying this Road.
         required: true
+      tags:
+      - Roads
+      security:
+      - knoxApiToken: []
+      - GrantAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoadRead'
+          description: ''
+  /api/v2/roads/style-spec/:
+    get:
+      operationId: roads_style_spec_retrieve
+      description: The road styling contract — colours, dash patterns and the access-resolution
+        rule, as data.
       tags:
       - Roads
       security:
@@ -6143,6 +6539,10 @@ paths:
         Returns:
             - Found in project:  {"found": true, "scope": "project", ...sample fields}
             - Found in company:  {"found": true, "scope": "company", "project_name": "..."}
+            - Matches ONLY a QC bag from a REJECTED certificate in this project:
+              {"found": false, "scope": "rejected", "name", "display_type",
+               "rejected_certificate", "message"} (status 200) — not active
+              inventory, never a bare unknown. QC matching is LIVE rows only.
             - Not found anywhere: {"found": false} (status 404)
       tags:
       - sample-inventory
@@ -6602,6 +7002,18 @@ paths:
         description: The initial index from which to return the results.
         schema:
           type: integer
+      - in: query
+        name: scope
+        schema:
+          type: string
+          enum:
+          - company
+        description: 'scope=company: read the UNION of the requester''s allowed projects
+          WITHIN THE ACTIVE COMPANY (never cross-company), instead of the single active
+          project. Read-only — write verbs are refused (403) under this scope. A single-project
+          requester (or a project-pinned grant) is refused / degrades to its one project.
+          Rows carry flat project_id / project_name so results can be grouped by project.
+          Any other scope value is left to endpoint-specific meaning.'
       tags:
       - structures
       security:
@@ -6800,6 +7212,199 @@ paths:
               schema:
                 $ref: '#/components/schemas/TextureRead'
           description: ''
+  /api/v2/vector-features/:
+    get:
+      operationId: vector_features_list
+      description: 'Flat, cross-project vector FEATURES — the regional analogue of
+        the per-layer vector-layers/<id>/features/ action. Read-only. Intended for
+        the company-wide regional overlay (mobile / QGIS / vendor grant): add ?scope=company
+        to pull the union of feature rows across the requester''s allowed projects
+        WITHIN ONE company. Features are neutral (no server-resolved per-feature style)
+        — other projects'' cartography is not loaded, by design. Only features of
+        ACTIVE layers appear (same draft fence as the per-layer endpoint).'
+      parameters:
+      - in: query
+        name: layer_id
+        schema:
+          type: integer
+        description: Narrow to a single vector layer within the resolved scope.
+      - name: limit
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: offset
+        required: false
+        in: query
+        description: The initial index from which to return the results.
+        schema:
+          type: integer
+      - in: query
+        name: scope
+        schema:
+          type: string
+          enum:
+          - company
+        description: 'scope=company: read the UNION of the requester''s allowed projects
+          WITHIN THE ACTIVE COMPANY (never cross-company), instead of the single active
+          project. Read-only — write verbs are refused (403) under this scope. A single-project
+          requester (or a project-pinned grant) is refused / degrades to its one project.
+          Rows carry flat project_id / project_name so results can be grouped by project.
+          Any other scope value is left to endpoint-specific meaning.'
+      - in: query
+        name: simplify
+        schema:
+          type: number
+          format: double
+        description: OPT-IN topology-preserving simplification tolerance in degrees
+          (e.g. 0.0002 ≈ 22 m). Omit for full-resolution geometry — the default, and
+          the only safe input for an edit round-trip.
+      tags:
+      - Vector Layers
+      security:
+      - knoxApiToken: []
+      - GrantAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedRegionalVectorFeatureList'
+          description: ''
+  /api/v2/vector-features/{id}/:
+    get:
+      operationId: vector_features_retrieve
+      description: 'Flat, cross-project vector FEATURES — the regional analogue of
+        the per-layer vector-layers/<id>/features/ action. Read-only. Intended for
+        the company-wide regional overlay (mobile / QGIS / vendor grant): add ?scope=company
+        to pull the union of feature rows across the requester''s allowed projects
+        WITHIN ONE company. Features are neutral (no server-resolved per-feature style)
+        — other projects'' cartography is not loaded, by design. Only features of
+        ACTIVE layers appear (same draft fence as the per-layer endpoint).'
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Vector Feature.
+        required: true
+      tags:
+      - Vector Layers
+      security:
+      - knoxApiToken: []
+      - GrantAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegionalVectorFeature'
+          description: ''
+  /api/v2/vector-layers/:
+    get:
+      operationId: vector_layers_list
+      description: Interpretive vector map layers (geology units/contacts/faults,
+        alteration zones, targets, ...) with server-resolved cartography. Read-only
+        surface; layers render in the project's resolved vintage and only ACTIVE layers
+        are visible.
+      parameters:
+      - name: limit
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: offset
+        required: false
+        in: query
+        description: The initial index from which to return the results.
+        schema:
+          type: integer
+      tags:
+      - Vector Layers
+      security:
+      - knoxApiToken: []
+      - GrantAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedVectorLayerSummaryList'
+          description: ''
+  /api/v2/vector-layers/{id}/:
+    get:
+      operationId: vector_layers_retrieve
+      description: Interpretive vector map layers (geology units/contacts/faults,
+        alteration zones, targets, ...) with server-resolved cartography. Read-only
+        surface; layers render in the project's resolved vintage and only ACTIVE layers
+        are visible.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Vector Layer.
+        required: true
+      tags:
+      - Vector Layers
+      security:
+      - knoxApiToken: []
+      - GrantAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VectorLayerSummary'
+          description: ''
+  /api/v2/vector-layers/{id}/features/:
+    get:
+      operationId: vector_layers_features_list
+      description: Interpretive vector map layers (geology units/contacts/faults,
+        alteration zones, targets, ...) with server-resolved cartography. Read-only
+        surface; layers render in the project's resolved vintage and only ACTIVE layers
+        are visible.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Vector Layer.
+        required: true
+      - name: limit
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: offset
+        required: false
+        in: query
+        description: The initial index from which to return the results.
+        schema:
+          type: integer
+      - in: query
+        name: simplify
+        schema:
+          type: number
+          format: double
+        description: OPT-IN topology-preserving simplification tolerance in degrees
+          (e.g. 0.0002 ≈ 22 m). Omit for full-resolution geometry — the default, and
+          the only safe input for an edit round-trip.
+      tags:
+      - Vector Layers
+      security:
+      - knoxApiToken: []
+      - GrantAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedVectorFeatureReadList'
+          description: ''
   /api/v2/vein-types/:
     get:
       operationId: vein_types_list
@@ -6896,7 +7501,12 @@ paths:
   /api/v2/water-samples/:
     get:
       operationId: water_samples_list
-      description: Override list to add deleted_ids to paginated response.
+      description: |-
+        Override list to add deleted_ids to paginated response.
+
+        Also handles the additive incremental-sync surface (2026-07-19):
+        Last-Modified/ETag on first pages and conditional-request 304s,
+        BEFORE any body is built (a 304 must not carry deleted_ids).
       parameters:
       - name: limit
         required: false
@@ -6910,6 +7520,18 @@ paths:
         description: The initial index from which to return the results.
         schema:
           type: integer
+      - in: query
+        name: scope
+        schema:
+          type: string
+          enum:
+          - company
+        description: 'scope=company: read the UNION of the requester''s allowed projects
+          WITHIN THE ACTIVE COMPANY (never cross-company), instead of the single active
+          project. Read-only — write verbs are refused (403) under this scope. A single-project
+          requester (or a project-pinned grant) is refused / degrades to its one project.
+          Rows carry flat project_id / project_name so results can be grouped by project.
+          Any other scope value is left to endpoint-specific meaning.'
       tags:
       - water-samples
       security:
@@ -7019,7 +7641,12 @@ paths:
   /api/v2/water-sites/:
     get:
       operationId: water_sites_list
-      description: Override list to add deleted_ids to paginated response.
+      description: |-
+        Override list to add deleted_ids to paginated response.
+
+        Also handles the additive incremental-sync surface (2026-07-19):
+        Last-Modified/ETag on first pages and conditional-request 304s,
+        BEFORE any body is built (a 304 must not carry deleted_ids).
       parameters:
       - name: limit
         required: false
@@ -7033,6 +7660,18 @@ paths:
         description: The initial index from which to return the results.
         schema:
           type: integer
+      - in: query
+        name: scope
+        schema:
+          type: string
+          enum:
+          - company
+        description: 'scope=company: read the UNION of the requester''s allowed projects
+          WITHIN THE ACTIVE COMPANY (never cross-company), instead of the single active
+          project. Read-only — write verbs are refused (403) under this scope. A single-project
+          requester (or a project-pinned grant) is refused / degrades to its one project.
+          Rows carry flat project_id / project_name so results can be grouped by project.
+          Any other scope value is left to endpoint-specific meaning.'
       tags:
       - water-sites
       security:
@@ -7184,6 +7823,11 @@ components:
         color:
           type: string
           maxLength: 7
+        fgdc_pattern_id:
+          type: integer
+          readOnly: true
+          nullable: true
+          description: FGDC geologic-map pattern id. Null renders the solid color.
         image_url:
           type: string
           readOnly: true
@@ -7212,6 +7856,7 @@ components:
       - created_by
       - date_created
       - extra_data
+      - fgdc_pattern_id
       - id
       - image_url
       - last_edited
@@ -7734,8 +8379,12 @@ components:
         method:
           type: string
           readOnly: true
+        certificate:
+          type: string
+          readOnly: true
       required:
       - above_det_limit
+      - certificate
       - detection_limit
       - element
       - method
@@ -8832,10 +9481,11 @@ components:
           allOf:
           - $ref: '#/components/schemas/SourceEnum'
           description: |-
-            Provenance: 'manual' (hand-logged) or 'petra_geochem' (Petra-promoted population).
+            Provenance: 'manual' (hand-logged), 'petra_geochem' (Petra-promoted geochem population) or 'petra_chat' (dictated to Petra in chat).
 
             * `manual` - Manual
             * `petra_geochem` - Petra geochem
+            * `petra_chat` - Petra chat
         created_by:
           type: string
           readOnly: true
@@ -9970,6 +10620,9 @@ components:
           type: string
           readOnly: true
           nullable: true
+        drill_sample_set:
+          type: string
+          readOnly: true
         created_by:
           type: string
           readOnly: true
@@ -10008,6 +10661,7 @@ components:
       - depth_to
       - depth_to_display
       - display_units
+      - drill_sample_set
       - extra_data
       - id
       - images
@@ -10764,11 +11418,9 @@ components:
         depth_from:
           type: number
           format: double
-          title: From (m)
         depth_to:
           type: number
           format: double
-          title: To (m)
         depth_from_display:
           type: string
           readOnly: true
@@ -11142,6 +11794,7 @@ components:
             * `point_samples` - point_samples
             * `qc_samples` - qc_samples
             * `geophysical_surveys` - geophysical_surveys
+            * `vector_features` - vector_features
         format:
           allOf:
           - $ref: '#/components/schemas/FormatEnum'
@@ -11157,6 +11810,13 @@ components:
           default: true
           description: Merge assay results into the sample exports, using the project's
             assay-merge settings. Ignored by tables that carry no assays.
+        vector_layer_id:
+          type: integer
+          nullable: true
+          description: Only for model=vector_features. Narrows the export to a single
+            vector map layer (homogeneous geometry + attribute schema). Omit to export
+            every active layer in the project export vintage, with layer_id/layer_name/kind
+            identity columns. Ignored by all other models.
       required:
       - model
     ExportJobAccepted:
@@ -11781,7 +12441,8 @@ components:
       type: object
       description: |-
         Compact nested serializer for use in DrillLithology responses.
-        Returns lithology details including color for visualization.
+        Returns lithology details including color + FGDC pattern id for
+        visualization (mobile/QGIS paint the same palette the web map does).
       properties:
         id:
           type: integer
@@ -11795,7 +12456,14 @@ components:
         description:
           type: string
           nullable: true
+        fgdc_pattern_id:
+          type: integer
+          readOnly: true
+          nullable: true
+          description: FGDC geologic-map pattern id. Overrides the global lookup-by-name
+            in fgdc_lithology_map.py.
       required:
+      - fgdc_pattern_id
       - id
       - name
     LithologyRead:
@@ -11820,6 +12488,12 @@ components:
         formation:
           type: integer
           nullable: true
+        fgdc_pattern_id:
+          type: integer
+          readOnly: true
+          nullable: true
+          description: FGDC geologic-map pattern id. Overrides the global lookup-by-name
+            in fgdc_lithology_map.py.
         image_url:
           type: string
           readOnly: true
@@ -11848,6 +12522,7 @@ components:
       - created_by
       - date_created
       - extra_data
+      - fgdc_pattern_id
       - id
       - image_url
       - last_edited
@@ -12472,6 +13147,7 @@ components:
       - point_samples
       - qc_samples
       - geophysical_surveys
+      - vector_features
       type: string
       description: |-
         * `drill_collars` - drill_collars
@@ -12491,6 +13167,7 @@ components:
         * `point_samples` - point_samples
         * `qc_samples` - qc_samples
         * `geophysical_surveys` - geophysical_surveys
+        * `vector_features` - vector_features
     ModelTypeEnum:
       enum:
       - DrillCollar
@@ -13570,6 +14247,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/QCTypeRead'
+    PaginatedRegionalVectorFeatureList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?offset=400&limit=100
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?offset=200&limit=100
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/RegionalVectorFeature'
     PaginatedRoadReadList:
       type: object
       required:
@@ -13708,6 +14408,52 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/TextureRead'
+    PaginatedVectorFeatureReadList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?offset=400&limit=100
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?offset=200&limit=100
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/VectorFeatureRead'
+    PaginatedVectorLayerSummaryList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?offset=400&limit=100
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?offset=200&limit=100
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/VectorLayerSummary'
     PaginatedVeinTypeReadList:
       type: object
       required:
@@ -13998,7 +14744,7 @@ components:
         lab_status:
           nullable: true
           description: |-
-            Lab workflow status (Collected, Submitted, Analyzed)
+            Lab workflow status (Planned, Collected, Submitted, Analyzed) — separate from the field-collection status.
 
             * `PL` - Planned
             * `CO` - Collected
@@ -14146,6 +14892,12 @@ components:
           type: string
           readOnly: true
           nullable: true
+        sample_package:
+          type: integer
+          readOnly: true
+        sample_package_detail:
+          type: string
+          readOnly: true
         date_collected:
           type: string
           format: date
@@ -14214,6 +14966,8 @@ components:
       - proj4_string
       - proj4_xy_units
       - project
+      - sample_package
+      - sample_package_detail
       - status_display
       - submittal
       - submittal_name
@@ -14304,6 +15058,7 @@ components:
             * `LF` - Leapfrog Viewer File
             * `3D` - 3D Model
             * `XS` - Cross Section
+            * `GR` - Georeferenced Map
             * `ZP` - Zip Archive
             * `OT` - Other
         category_display:
@@ -14448,6 +15203,7 @@ components:
       - LF
       - 3D
       - XS
+      - GR
       - ZP
       - OT
       type: string
@@ -14468,6 +15224,7 @@ components:
         * `LF` - Leapfrog Viewer File
         * `3D` - 3D Model
         * `XS` - Cross Section
+        * `GR` - Georeferenced Map
         * `ZP` - Zip Archive
         * `OT` - Other
     QAQCProtocol:
@@ -14663,6 +15420,24 @@ components:
         ds_duplicate_detail:
           type: string
           readOnly: true
+        ps_duplicate:
+          type: integer
+          readOnly: true
+          nullable: true
+        ps_duplicate_detail:
+          type: string
+          readOnly: true
+        sample_package:
+          type: integer
+          readOnly: true
+          nullable: true
+          description: |-
+            Field collection programme this QC sample belongs to (the surface twin of bhid: bhid anchors a QC row to a drill hole, sample_package anchors it to a soil/surface programme). Same FK name and target as PointSample.sample_package so a QC row and the primaries it accompanies share one anchor.
+
+            NOT to be confused with the sibling `package` FK below: sample_package = FIELD COLLECTION batch (lifecycle stage PL->CO); `package`/SubmittalPackage = LAB SHIPMENT box (stage CO->SU). Different stages of one lifecycle, deliberately separate fields.
+        sample_package_detail:
+          type: string
+          readOnly: true
         qc_type:
           type: integer
           readOnly: true
@@ -14734,6 +15509,11 @@ components:
         mark_deleted:
           type: boolean
           readOnly: true
+        extra_data:
+          readOnly: true
+          nullable: true
+          description: Custom field data as key-value pairs. Captures unmapped import
+            columns and user-defined custom fields.
       required:
       - bhid
       - bhid_name
@@ -14745,6 +15525,7 @@ components:
       - date_created
       - ds_duplicate
       - ds_duplicate_detail
+      - extra_data
       - id
       - lab_status
       - lab_status_display
@@ -14755,8 +15536,12 @@ components:
       - notes
       - package_number
       - project
+      - ps_duplicate
+      - ps_duplicate_detail
       - qc_type
       - qc_type_detail
+      - sample_package
+      - sample_package_detail
       - sample_type
       - sample_type_display
       - standard
@@ -14813,6 +15598,47 @@ components:
       - description
       - id
       - name
+    RegionalVectorFeature:
+      type: object
+      description: |-
+        Flat, cross-project feature row for the regional `vector-features/`
+        endpoint (A2 of the company-scope build).
+
+        Deliberately DOES NOT carry server-resolved per-feature `style` — unlike
+        the per-layer `VectorFeatureReadSerializer`. The regional overlay renders
+        OTHER projects' features as neutral reference context (their styling
+        configs aren't loaded — same principle as the neutral-gray samples /
+        collars / roads regional layers). It carries `layer_id` so a client can
+        group by layer, and `project_id` / `project_name` (from
+        UnionScopeProjectFieldsMixin, active only under `?scope=company`) to group
+        by project. Geometry is full-resolution WGS84 GeoJSON, or the SQL-side
+        `gj` annotation when the viewset applied `?simplify=`.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        layer_id:
+          type: integer
+          readOnly: true
+        label:
+          type: string
+          readOnly: true
+        properties:
+          readOnly: true
+        epsg:
+          type: integer
+          readOnly: true
+          nullable: true
+        geometry:
+          type: string
+          readOnly: true
+      required:
+      - epsg
+      - geometry
+      - id
+      - label
+      - layer_id
+      - properties
     RoadRead:
       type: object
       description: Read serializer — GeoJSON geometry + mobile-friendly coordinates.
@@ -14831,6 +15657,9 @@ components:
           readOnly: true
           description: Route identifier from the source dataset (MVUM id, forest road
             number, GlobalID, ...).
+        style:
+          type: string
+          readOnly: true
         route_status:
           type: string
           readOnly: true
@@ -14944,6 +15773,7 @@ components:
       - route_id
       - route_status
       - seasonal
+      - style
       - surface_type
       - truck
     SampleType59cEnum:
@@ -14980,10 +15810,12 @@ components:
       enum:
       - manual
       - petra_geochem
+      - petra_chat
       type: string
       description: |-
         * `manual` - Manual
         * `petra_geochem` - Petra geochem
+        * `petra_chat` - Petra chat
     SpectralGeounitRead:
       type: object
       properties:
@@ -15709,6 +16541,119 @@ components:
         * `~` - Approximate
         * `IND` - Indeterminate
         * `ND` - Not detected
+    VectorFeatureRead:
+      type: object
+      description: |-
+        Read serializer for one VectorFeature, styled server-side.
+
+        Context contract: the viewset MUST pass ``style_resolver`` (a
+        ``map.api_views_vector.StyleResolver`` built once for the layer) in the
+        serializer context.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        label:
+          type: string
+          readOnly: true
+        properties:
+          readOnly: true
+        epsg:
+          type: integer
+          readOnly: true
+          nullable: true
+        geometry:
+          type: string
+          readOnly: true
+        style:
+          type: string
+          readOnly: true
+      required:
+      - epsg
+      - geometry
+      - id
+      - label
+      - properties
+      - style
+    VectorLayerSummary:
+      type: object
+      description: |-
+        OpenAPI documentation twin of ``map.api_views_vector._layer_summary``.
+
+        NOT used to serialize — the viewset returns `_layer_summary` dicts
+        directly so the API and the web panel can never drift. If you change
+        `_layer_summary`, update this mirror (the parity test will remind you).
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          readOnly: true
+        display_name:
+          type: string
+          readOnly: true
+        kind:
+          type: string
+          readOnly: true
+        kind_label:
+          type: string
+          readOnly: true
+        geometry_type:
+          type: string
+          readOnly: true
+        feature_count:
+          type: integer
+          readOnly: true
+        extent:
+          type: array
+          items:
+            type: number
+            format: double
+          readOnly: true
+          nullable: true
+          description: Cached WGS84 bounds [w, s, e, n].
+        style_mode:
+          type: string
+          readOnly: true
+        style:
+          type: object
+          additionalProperties: {}
+          readOnly: true
+        visible:
+          type: boolean
+          readOnly: true
+        opacity:
+          type: integer
+          readOnly: true
+        has_patterns:
+          type: boolean
+          readOnly: true
+        catalog_legend:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+          readOnly: true
+        catalog_legend_total:
+          type: integer
+          readOnly: true
+      required:
+      - catalog_legend
+      - catalog_legend_total
+      - display_name
+      - extent
+      - feature_count
+      - geometry_type
+      - has_patterns
+      - id
+      - kind
+      - kind_label
+      - name
+      - opacity
+      - style
+      - style_mode
+      - visible
     VeinMineralContentNested:
       type: object
       description: Nested serializer for VeinMineralContent through model.
