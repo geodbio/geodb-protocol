@@ -1,0 +1,12 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security vulnerability
+    url: https://github.com/geodbio/geodb-protocol/blob/main/SECURITY.md
+    about: >-
+      Do not open a public issue. Email security@geodb.io (or support@geodb.io as
+      a fallback). See SECURITY.md for what to include and our disclosure window.
+  - name: Question about using the hosted API
+    url: mailto:support@geodb.io
+    about: >-
+      Trouble with a grant token, an account, or your own project's data is a
+      support matter, not a spec issue. Please do not post project data here.

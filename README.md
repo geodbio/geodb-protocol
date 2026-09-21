@@ -57,7 +57,10 @@ stac/xpl/schema.json       The xpl: STAC extension JSON Schema (generated)
 stac/xpl/README.md         The xpl: extension — fields, profiles, item examples
 stac/xpl/examples/         Worked STAC items (airborne-mag survey, drillhole package)
 scripts/regenerate.py      Re-emit openapi.yaml + xpl/schema.json from a geoDB checkout
+scripts/validate.py        Validate schemas, spec, and examples offline (no checkout needed)
 CHANGELOG.md               Version history
+CONTRIBUTING.md            How to file a useful issue; how decisions get made
+SECURITY.md                How to report a vulnerability; scope; disclosure window
 LICENSE (Apache-2.0)       Code + schemas
 LICENSE-docs (CC-BY-4.0)   Spec + documentation
 ```
@@ -105,6 +108,20 @@ STAC `/search` + stac-geoparquet; OGC API-Features conformance formalities;
 Evo/OMF/geoh5/LAS export dialects; outbound webhooks. These are tracked, not
 built. This protocol adopts existing standards and adds the one missing
 vocabulary — it is deliberately small.
+
+## Contributing and security
+
+If something here is ambiguous, missing, or wrong, that is the thing we most want to
+hear about — [`CONTRIBUTING.md`](CONTRIBUTING.md) says what makes a useful issue, who
+reads the tracker, and how decisions get made. You do not need permission, an NDA, or
+a partnership to implement, fork, or criticise this specification.
+
+Security problems go to **security@geodb.io**, not the issue tracker —
+[`SECURITY.md`](SECURITY.md) has scope, what to include, and our disclosure window.
+
+**How to validate locally:** `python scripts/validate.py` checks every schema, the
+`xpl:` extension, the OpenAPI document, and the worked STAC examples — offline, with
+no geoDB checkout and no credentials. It needs `jsonschema` and `pyyaml`.
 
 ## Governance
 

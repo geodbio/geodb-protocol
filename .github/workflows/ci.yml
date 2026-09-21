@@ -1,0 +1,104 @@
+name: CI
+
+# Everything here runs on a bare checkout of this repository. It deliberately
+# does NOT run scripts/regenerate.py --check: regeneration needs a geoDB
+# checkout and a configured Django project to emit spec/openapi.yaml and
+# stac/xpl/schema.json from the reference implementation. That drift check runs
+# in our own CI, where the implementation is available; GitHub only ever sees
+# the committed artifacts, so here we validate them rather than re-derive them.
+#
+# Several steps are guarded with `if [ -f ... ]` / `if [ -d ... ]` on purpose.
+# The examples tree, the id checker and the conformance suite land in later
+# tasks; the workflow is green today and picks each one up the moment it exists,
+# without a second edit to this file.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Validate schemas, spec, and examples
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install validation dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install jsonschema pyyaml
+
+      - name: Validate protocol artifacts
+        run: python scripts/validate.py
+
+      - name: Check schema and extension $id hosts
+        run: |
+          if [ -f scripts/check_ids.py ]; then
+            python scripts/check_ids.py
+          else
+            echo "scripts/check_ids.py not present yet; skipping."
+          fi
+
+  examples:
+    name: Run the documented examples
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Run examples
+        run: |
+          if [ ! -d examples ]; then
+            echo "examples/ not present yet; skipping."
+            exit 0
+          fi
+          python -m pip install --upgrade pip
+          if [ -f examples/requirements.txt ]; then
+            pip install -r examples/requirements.txt
+          fi
+          if [ -f examples/run_all.py ]; then
+            python examples/run_all.py
+          else
+            echo "examples/ present but no run_all.py; nothing to run."
+          fi
+
+  conformance:
+    name: Conformance suite (offline assertions)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Run the conformance suite
+        run: |
+          if [ ! -d conformance ]; then
+            echo "conformance/ not present yet; skipping."
+            exit 0
+          fi
+          python -m pip install --upgrade pip
+          if [ -f conformance/requirements.txt ]; then
+            pip install -r conformance/requirements.txt
+          fi
+          if [ -f conformance/run.py ]; then
+            # No credentials in GitHub CI: the suite runs only the assertions
+            # that need no live server. The run against a real endpoint is a
+            # separate, credentialed job in our own CI.
+            python conformance/run.py --offline
+          else
+            echo "conformance/ present but no run.py; nothing to run."
+          fi
