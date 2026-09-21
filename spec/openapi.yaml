@@ -238,6 +238,17 @@ paths:
           be parsed is REFUSED with 400 reason_code=invalid_parameter. When sent,
           the response echoes modified_since_applied.'
       - in: query
+        name: deleted_since
+        schema:
+          type: string
+        description: 'Deletion sync: restrict deleted_ids to records soft-deleted
+          on or after the DATE part of this ISO 8601 date/datetime. DAY-granular and
+          inclusive, for the same reason as modified_since — removal is idempotent,
+          so over-including a deletion is harmless and under-including leaves a ghost
+          record. Omit it on a first sync to receive every deleted id. The response
+          echoes deleted_since_applied, and sync_timestamp is the value to send next
+          time.'
+      - in: query
         name: compact
         schema:
           type: string
@@ -6062,18 +6073,56 @@ paths:
 
         ⚠️ `modified_since` is DAY-granular: it returns everything changed on that day or later, so a repeated pull re-sends the current day's rows. Deduplicate by `id` rather than assuming a strict watermark.
       parameters:
+      - in: query
+        name: compact
+        schema:
+          type: string
+        description: 'compact=1: lean sync serialization — flat scalars with FK ids
+          (project_id, bhid_id, ...), raw extra_data dict, no nested natural keys
+          / derived fields / geometry columns. Same pagination envelope and deleted_ids
+          metadata. Assays inline their element values as flat dicts. Any other value
+          = default rich shape.'
+      - in: query
+        name: deleted_since
+        schema:
+          type: string
+        description: 'Deletion sync: restrict deleted_ids to records soft-deleted
+          on or after the DATE part of this ISO 8601 date/datetime. DAY-granular and
+          inclusive, for the same reason as modified_since — removal is idempotent,
+          so over-including a deletion is harmless and under-including leaves a ghost
+          record. Omit it on a first sync to receive every deleted id. The response
+          echoes deleted_since_applied, and sync_timestamp is the value to send next
+          time.'
       - name: limit
         required: false
         in: query
         description: Number of results to return per page.
         schema:
           type: integer
+      - in: query
+        name: modified_since
+        schema:
+          type: string
+        description: 'Incremental sync: only rows with last_edited >= the DATE part
+          of this ISO 8601 date/datetime. DAY-granular — rows already modified on
+          the same day are re-included; treat pulls as idempotent upserts keyed on
+          id. The same-day over-inclusion is deliberate: under-including would silently
+          lose an edit made after your previous pull on that day. Deletions are not
+          reflected here; keep using deleted_since / deleted_ids. A value that cannot
+          be parsed is REFUSED with 400 reason_code=invalid_parameter. When sent,
+          the response echoes modified_since_applied.'
       - name: offset
         required: false
         in: query
         description: The initial index from which to return the results.
         schema:
           type: integer
+      - in: query
+        name: skip_count
+        schema:
+          type: string
+        description: 'skip_count=1: suppress the per-page COUNT(*). count is null;
+          next is present exactly while a full page was returned.'
       tags:
       - Assays
       security:
@@ -8196,6 +8245,44 @@ paths:
           requester (or a project-pinned grant) is refused / degrades to its one project.
           Rows carry flat project_id / project_name so results can be grouped by project.
           Any other scope value is left to endpoint-specific meaning.'
+      - in: query
+        name: modified_since
+        schema:
+          type: string
+        description: 'Incremental sync: only rows with last_edited >= the DATE part
+          of this ISO 8601 date/datetime. DAY-granular — rows already modified on
+          the same day are re-included; treat pulls as idempotent upserts keyed on
+          id. The same-day over-inclusion is deliberate: under-including would silently
+          lose an edit made after your previous pull on that day. Deletions are not
+          reflected here; keep using deleted_since / deleted_ids. A value that cannot
+          be parsed is REFUSED with 400 reason_code=invalid_parameter. When sent,
+          the response echoes modified_since_applied.'
+      - in: query
+        name: deleted_since
+        schema:
+          type: string
+        description: 'Deletion sync: restrict deleted_ids to records soft-deleted
+          on or after the DATE part of this ISO 8601 date/datetime. DAY-granular and
+          inclusive, for the same reason as modified_since — removal is idempotent,
+          so over-including a deletion is harmless and under-including leaves a ghost
+          record. Omit it on a first sync to receive every deleted id. The response
+          echoes deleted_since_applied, and sync_timestamp is the value to send next
+          time.'
+      - in: query
+        name: compact
+        schema:
+          type: string
+        description: 'compact=1: lean sync serialization — flat scalars with FK ids
+          (project_id, bhid_id, ...), raw extra_data dict, no nested natural keys
+          / derived fields / geometry columns. Same pagination envelope and deleted_ids
+          metadata. Assays inline their element values as flat dicts. Any other value
+          = default rich shape.'
+      - in: query
+        name: skip_count
+        schema:
+          type: string
+        description: 'skip_count=1: suppress the per-page COUNT(*). count is null;
+          next is present exactly while a full page was returned.'
       tags:
       - Quality Control
       security:
@@ -15244,24 +15331,6 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/AlterationRead'
-        deleted_ids:
-          type: array
-          items:
-            type: integer
-          description: Ids of records soft-deleted on the server, so a client can
-            remove them locally. Returned on the FIRST page (no `offset`, or `offset=0`)
-            and on any request that sends `deleted_since`; later pages carry an empty
-            array. Union them across pages — removal is idempotent.
-        deleted_since_applied:
-          type: string
-          nullable: true
-          description: Echo of the `deleted_since` value actually applied, or null
-            when none was applied.
-        sync_timestamp:
-          type: string
-          format: date-time
-          description: Server time this page was built. Pass it as the next pull's
-            `deleted_since` / `modified_since`.
         modified_since_applied:
           type: string
           nullable: true
@@ -15385,24 +15454,6 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/CustomFieldSchemaList'
-        deleted_ids:
-          type: array
-          items:
-            type: integer
-          description: Ids of records soft-deleted on the server, so a client can
-            remove them locally. Returned on the FIRST page (no `offset`, or `offset=0`)
-            and on any request that sends `deleted_since`; later pages carry an empty
-            array. Union them across pages — removal is idempotent.
-        deleted_since_applied:
-          type: string
-          nullable: true
-          description: Echo of the `deleted_since` value actually applied, or null
-            when none was applied.
-        sync_timestamp:
-          type: string
-          format: date-time
-          description: Server time this page was built. Pass it as the next pull's
-            `deleted_since` / `modified_since`.
         modified_since_applied:
           type: string
           nullable: true
@@ -15432,24 +15483,6 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/CustomIntervalTypeRead'
-        deleted_ids:
-          type: array
-          items:
-            type: integer
-          description: Ids of records soft-deleted on the server, so a client can
-            remove them locally. Returned on the FIRST page (no `offset`, or `offset=0`)
-            and on any request that sends `deleted_since`; later pages carry an empty
-            array. Union them across pages — removal is idempotent.
-        deleted_since_applied:
-          type: string
-          nullable: true
-          description: Echo of the `deleted_since` value actually applied, or null
-            when none was applied.
-        sync_timestamp:
-          type: string
-          format: date-time
-          description: Server time this page was built. Pass it as the next pull's
-            `deleted_since` / `modified_since`.
         modified_since_applied:
           type: string
           nullable: true
@@ -15526,24 +15559,6 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/DrillAlterationSetRead'
-        deleted_ids:
-          type: array
-          items:
-            type: integer
-          description: Ids of records soft-deleted on the server, so a client can
-            remove them locally. Returned on the FIRST page (no `offset`, or `offset=0`)
-            and on any request that sends `deleted_since`; later pages carry an empty
-            array. Union them across pages — removal is idempotent.
-        deleted_since_applied:
-          type: string
-          nullable: true
-          description: Echo of the `deleted_since` value actually applied, or null
-            when none was applied.
-        sync_timestamp:
-          type: string
-          format: date-time
-          description: Server time this page was built. Pass it as the next pull's
-            `deleted_since` / `modified_since`.
         modified_since_applied:
           type: string
           nullable: true
@@ -15667,24 +15682,6 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/DrillCustomIntervalSetRead'
-        deleted_ids:
-          type: array
-          items:
-            type: integer
-          description: Ids of records soft-deleted on the server, so a client can
-            remove them locally. Returned on the FIRST page (no `offset`, or `offset=0`)
-            and on any request that sends `deleted_since`; later pages carry an empty
-            array. Union them across pages — removal is idempotent.
-        deleted_since_applied:
-          type: string
-          nullable: true
-          description: Echo of the `deleted_since` value actually applied, or null
-            when none was applied.
-        sync_timestamp:
-          type: string
-          format: date-time
-          description: Server time this page was built. Pass it as the next pull's
-            `deleted_since` / `modified_since`.
         modified_since_applied:
           type: string
           nullable: true
@@ -15761,24 +15758,6 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/DrillLithologySetRead'
-        deleted_ids:
-          type: array
-          items:
-            type: integer
-          description: Ids of records soft-deleted on the server, so a client can
-            remove them locally. Returned on the FIRST page (no `offset`, or `offset=0`)
-            and on any request that sends `deleted_since`; later pages carry an empty
-            array. Union them across pages — removal is idempotent.
-        deleted_since_applied:
-          type: string
-          nullable: true
-          description: Echo of the `deleted_since` value actually applied, or null
-            when none was applied.
-        sync_timestamp:
-          type: string
-          format: date-time
-          description: Server time this page was built. Pass it as the next pull's
-            `deleted_since` / `modified_since`.
         modified_since_applied:
           type: string
           nullable: true
@@ -15855,24 +15834,6 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/DrillMineralizationSetRead'
-        deleted_ids:
-          type: array
-          items:
-            type: integer
-          description: Ids of records soft-deleted on the server, so a client can
-            remove them locally. Returned on the FIRST page (no `offset`, or `offset=0`)
-            and on any request that sends `deleted_since`; later pages carry an empty
-            array. Union them across pages — removal is idempotent.
-        deleted_since_applied:
-          type: string
-          nullable: true
-          description: Echo of the `deleted_since` value actually applied, or null
-            when none was applied.
-        sync_timestamp:
-          type: string
-          format: date-time
-          description: Server time this page was built. Pass it as the next pull's
-            `deleted_since` / `modified_since`.
         modified_since_applied:
           type: string
           nullable: true
@@ -15902,24 +15863,6 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/DrillPadRead'
-        deleted_ids:
-          type: array
-          items:
-            type: integer
-          description: Ids of records soft-deleted on the server, so a client can
-            remove them locally. Returned on the FIRST page (no `offset`, or `offset=0`)
-            and on any request that sends `deleted_since`; later pages carry an empty
-            array. Union them across pages — removal is idempotent.
-        deleted_since_applied:
-          type: string
-          nullable: true
-          description: Echo of the `deleted_since` value actually applied, or null
-            when none was applied.
-        sync_timestamp:
-          type: string
-          format: date-time
-          description: Server time this page was built. Pass it as the next pull's
-            `deleted_since` / `modified_since`.
         modified_since_applied:
           type: string
           nullable: true
@@ -16043,24 +15986,6 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/DrillRQDSetRead'
-        deleted_ids:
-          type: array
-          items:
-            type: integer
-          description: Ids of records soft-deleted on the server, so a client can
-            remove them locally. Returned on the FIRST page (no `offset`, or `offset=0`)
-            and on any request that sends `deleted_since`; later pages carry an empty
-            array. Union them across pages — removal is idempotent.
-        deleted_since_applied:
-          type: string
-          nullable: true
-          description: Echo of the `deleted_since` value actually applied, or null
-            when none was applied.
-        sync_timestamp:
-          type: string
-          format: date-time
-          description: Server time this page was built. Pass it as the next pull's
-            `deleted_since` / `modified_since`.
         modified_since_applied:
           type: string
           nullable: true
@@ -16184,24 +16109,6 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/DrillSpectralSetRead'
-        deleted_ids:
-          type: array
-          items:
-            type: integer
-          description: Ids of records soft-deleted on the server, so a client can
-            remove them locally. Returned on the FIRST page (no `offset`, or `offset=0`)
-            and on any request that sends `deleted_since`; later pages carry an empty
-            array. Union them across pages — removal is idempotent.
-        deleted_since_applied:
-          type: string
-          nullable: true
-          description: Echo of the `deleted_since` value actually applied, or null
-            when none was applied.
-        sync_timestamp:
-          type: string
-          format: date-time
-          description: Server time this page was built. Pass it as the next pull's
-            `deleted_since` / `modified_since`.
         modified_since_applied:
           type: string
           nullable: true
@@ -16231,24 +16138,6 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/DrillStructureFeatureTypeRead'
-        deleted_ids:
-          type: array
-          items:
-            type: integer
-          description: Ids of records soft-deleted on the server, so a client can
-            remove them locally. Returned on the FIRST page (no `offset`, or `offset=0`)
-            and on any request that sends `deleted_since`; later pages carry an empty
-            array. Union them across pages — removal is idempotent.
-        deleted_since_applied:
-          type: string
-          nullable: true
-          description: Echo of the `deleted_since` value actually applied, or null
-            when none was applied.
-        sync_timestamp:
-          type: string
-          format: date-time
-          description: Server time this page was built. Pass it as the next pull's
-            `deleted_since` / `modified_since`.
         modified_since_applied:
           type: string
           nullable: true
@@ -16372,24 +16261,6 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/DrillTraceSummary'
-        deleted_ids:
-          type: array
-          items:
-            type: integer
-          description: Ids of records soft-deleted on the server, so a client can
-            remove them locally. Returned on the FIRST page (no `offset`, or `offset=0`)
-            and on any request that sends `deleted_since`; later pages carry an empty
-            array. Union them across pages — removal is idempotent.
-        deleted_since_applied:
-          type: string
-          nullable: true
-          description: Echo of the `deleted_since` value actually applied, or null
-            when none was applied.
-        sync_timestamp:
-          type: string
-          format: date-time
-          description: Server time this page was built. Pass it as the next pull's
-            `deleted_since` / `modified_since`.
         modified_since_applied:
           type: string
           nullable: true
@@ -16466,24 +16337,6 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/DrillVeinSetRead'
-        deleted_ids:
-          type: array
-          items:
-            type: integer
-          description: Ids of records soft-deleted on the server, so a client can
-            remove them locally. Returned on the FIRST page (no `offset`, or `offset=0`)
-            and on any request that sends `deleted_since`; later pages carry an empty
-            array. Union them across pages — removal is idempotent.
-        deleted_since_applied:
-          type: string
-          nullable: true
-          description: Echo of the `deleted_since` value actually applied, or null
-            when none was applied.
-        sync_timestamp:
-          type: string
-          format: date-time
-          description: Server time this page was built. Pass it as the next pull's
-            `deleted_since` / `modified_since`.
         modified_since_applied:
           type: string
           nullable: true
@@ -16513,24 +16366,6 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/FieldNoteRead'
-        deleted_ids:
-          type: array
-          items:
-            type: integer
-          description: Ids of records soft-deleted on the server, so a client can
-            remove them locally. Returned on the FIRST page (no `offset`, or `offset=0`)
-            and on any request that sends `deleted_since`; later pages carry an empty
-            array. Union them across pages — removal is idempotent.
-        deleted_since_applied:
-          type: string
-          nullable: true
-          description: Echo of the `deleted_since` value actually applied, or null
-            when none was applied.
-        sync_timestamp:
-          type: string
-          format: date-time
-          description: Server time this page was built. Pass it as the next pull's
-            `deleted_since` / `modified_since`.
         modified_since_applied:
           type: string
           nullable: true
@@ -16560,24 +16395,6 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/FormationRead'
-        deleted_ids:
-          type: array
-          items:
-            type: integer
-          description: Ids of records soft-deleted on the server, so a client can
-            remove them locally. Returned on the FIRST page (no `offset`, or `offset=0`)
-            and on any request that sends `deleted_since`; later pages carry an empty
-            array. Union them across pages — removal is idempotent.
-        deleted_since_applied:
-          type: string
-          nullable: true
-          description: Echo of the `deleted_since` value actually applied, or null
-            when none was applied.
-        sync_timestamp:
-          type: string
-          format: date-time
-          description: Server time this page was built. Pass it as the next pull's
-            `deleted_since` / `modified_since`.
         modified_since_applied:
           type: string
           nullable: true
@@ -16701,24 +16518,6 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/LandHoldingOutline'
-        deleted_ids:
-          type: array
-          items:
-            type: integer
-          description: Ids of records soft-deleted on the server, so a client can
-            remove them locally. Returned on the FIRST page (no `offset`, or `offset=0`)
-            and on any request that sends `deleted_since`; later pages carry an empty
-            array. Union them across pages — removal is idempotent.
-        deleted_since_applied:
-          type: string
-          nullable: true
-          description: Echo of the `deleted_since` value actually applied, or null
-            when none was applied.
-        sync_timestamp:
-          type: string
-          format: date-time
-          description: Server time this page was built. Pass it as the next pull's
-            `deleted_since` / `modified_since`.
         modified_since_applied:
           type: string
           nullable: true
@@ -16748,24 +16547,6 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/LithologyRead'
-        deleted_ids:
-          type: array
-          items:
-            type: integer
-          description: Ids of records soft-deleted on the server, so a client can
-            remove them locally. Returned on the FIRST page (no `offset`, or `offset=0`)
-            and on any request that sends `deleted_since`; later pages carry an empty
-            array. Union them across pages — removal is idempotent.
-        deleted_since_applied:
-          type: string
-          nullable: true
-          description: Echo of the `deleted_since` value actually applied, or null
-            when none was applied.
-        sync_timestamp:
-          type: string
-          format: date-time
-          description: Server time this page was built. Pass it as the next pull's
-            `deleted_since` / `modified_since`.
         modified_since_applied:
           type: string
           nullable: true
@@ -16795,24 +16576,6 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/MethodRead'
-        deleted_ids:
-          type: array
-          items:
-            type: integer
-          description: Ids of records soft-deleted on the server, so a client can
-            remove them locally. Returned on the FIRST page (no `offset`, or `offset=0`)
-            and on any request that sends `deleted_since`; later pages carry an empty
-            array. Union them across pages — removal is idempotent.
-        deleted_since_applied:
-          type: string
-          nullable: true
-          description: Echo of the `deleted_since` value actually applied, or null
-            when none was applied.
-        sync_timestamp:
-          type: string
-          format: date-time
-          description: Server time this page was built. Pass it as the next pull's
-            `deleted_since` / `modified_since`.
         modified_since_applied:
           type: string
           nullable: true
@@ -16842,24 +16605,6 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/MineralAssemblageRead'
-        deleted_ids:
-          type: array
-          items:
-            type: integer
-          description: Ids of records soft-deleted on the server, so a client can
-            remove them locally. Returned on the FIRST page (no `offset`, or `offset=0`)
-            and on any request that sends `deleted_since`; later pages carry an empty
-            array. Union them across pages — removal is idempotent.
-        deleted_since_applied:
-          type: string
-          nullable: true
-          description: Echo of the `deleted_since` value actually applied, or null
-            when none was applied.
-        sync_timestamp:
-          type: string
-          format: date-time
-          description: Server time this page was built. Pass it as the next pull's
-            `deleted_since` / `modified_since`.
         modified_since_applied:
           type: string
           nullable: true
@@ -16889,24 +16634,6 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/MineralRead'
-        deleted_ids:
-          type: array
-          items:
-            type: integer
-          description: Ids of records soft-deleted on the server, so a client can
-            remove them locally. Returned on the FIRST page (no `offset`, or `offset=0`)
-            and on any request that sends `deleted_since`; later pages carry an empty
-            array. Union them across pages — removal is idempotent.
-        deleted_since_applied:
-          type: string
-          nullable: true
-          description: Echo of the `deleted_since` value actually applied, or null
-            when none was applied.
-        sync_timestamp:
-          type: string
-          format: date-time
-          description: Server time this page was built. Pass it as the next pull's
-            `deleted_since` / `modified_since`.
         modified_since_applied:
           type: string
           nullable: true
@@ -16936,24 +16663,6 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/PhotoRead'
-        deleted_ids:
-          type: array
-          items:
-            type: integer
-          description: Ids of records soft-deleted on the server, so a client can
-            remove them locally. Returned on the FIRST page (no `offset`, or `offset=0`)
-            and on any request that sends `deleted_since`; later pages carry an empty
-            array. Union them across pages — removal is idempotent.
-        deleted_since_applied:
-          type: string
-          nullable: true
-          description: Echo of the `deleted_since` value actually applied, or null
-            when none was applied.
-        sync_timestamp:
-          type: string
-          format: date-time
-          description: Server time this page was built. Pass it as the next pull's
-            `deleted_since` / `modified_since`.
         modified_since_applied:
           type: string
           nullable: true
@@ -17030,24 +16739,6 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ProjectFileRead'
-        deleted_ids:
-          type: array
-          items:
-            type: integer
-          description: Ids of records soft-deleted on the server, so a client can
-            remove them locally. Returned on the FIRST page (no `offset`, or `offset=0`)
-            and on any request that sends `deleted_since`; later pages carry an empty
-            array. Union them across pages — removal is idempotent.
-        deleted_since_applied:
-          type: string
-          nullable: true
-          description: Echo of the `deleted_since` value actually applied, or null
-            when none was applied.
-        sync_timestamp:
-          type: string
-          format: date-time
-          description: Server time this page was built. Pass it as the next pull's
-            `deleted_since` / `modified_since`.
         modified_since_applied:
           type: string
           nullable: true
@@ -17124,24 +16815,6 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/QCTypeRead'
-        deleted_ids:
-          type: array
-          items:
-            type: integer
-          description: Ids of records soft-deleted on the server, so a client can
-            remove them locally. Returned on the FIRST page (no `offset`, or `offset=0`)
-            and on any request that sends `deleted_since`; later pages carry an empty
-            array. Union them across pages — removal is idempotent.
-        deleted_since_applied:
-          type: string
-          nullable: true
-          description: Echo of the `deleted_since` value actually applied, or null
-            when none was applied.
-        sync_timestamp:
-          type: string
-          format: date-time
-          description: Server time this page was built. Pass it as the next pull's
-            `deleted_since` / `modified_since`.
         modified_since_applied:
           type: string
           nullable: true
@@ -17171,24 +16844,6 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/RegionalVectorFeature'
-        deleted_ids:
-          type: array
-          items:
-            type: integer
-          description: Ids of records soft-deleted on the server, so a client can
-            remove them locally. Returned on the FIRST page (no `offset`, or `offset=0`)
-            and on any request that sends `deleted_since`; later pages carry an empty
-            array. Union them across pages — removal is idempotent.
-        deleted_since_applied:
-          type: string
-          nullable: true
-          description: Echo of the `deleted_since` value actually applied, or null
-            when none was applied.
-        sync_timestamp:
-          type: string
-          format: date-time
-          description: Server time this page was built. Pass it as the next pull's
-            `deleted_since` / `modified_since`.
         modified_since_applied:
           type: string
           nullable: true
@@ -17265,24 +16920,6 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/StandardRead'
-        deleted_ids:
-          type: array
-          items:
-            type: integer
-          description: Ids of records soft-deleted on the server, so a client can
-            remove them locally. Returned on the FIRST page (no `offset`, or `offset=0`)
-            and on any request that sends `deleted_since`; later pages carry an empty
-            array. Union them across pages — removal is idempotent.
-        deleted_since_applied:
-          type: string
-          nullable: true
-          description: Echo of the `deleted_since` value actually applied, or null
-            when none was applied.
-        sync_timestamp:
-          type: string
-          format: date-time
-          description: Server time this page was built. Pass it as the next pull's
-            `deleted_since` / `modified_since`.
         modified_since_applied:
           type: string
           nullable: true
@@ -17312,24 +16949,6 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/StructureRead'
-        deleted_ids:
-          type: array
-          items:
-            type: integer
-          description: Ids of records soft-deleted on the server, so a client can
-            remove them locally. Returned on the FIRST page (no `offset`, or `offset=0`)
-            and on any request that sends `deleted_since`; later pages carry an empty
-            array. Union them across pages — removal is idempotent.
-        deleted_since_applied:
-          type: string
-          nullable: true
-          description: Echo of the `deleted_since` value actually applied, or null
-            when none was applied.
-        sync_timestamp:
-          type: string
-          format: date-time
-          description: Server time this page was built. Pass it as the next pull's
-            `deleted_since` / `modified_since`.
         modified_since_applied:
           type: string
           nullable: true
@@ -17359,24 +16978,6 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/TextureRead'
-        deleted_ids:
-          type: array
-          items:
-            type: integer
-          description: Ids of records soft-deleted on the server, so a client can
-            remove them locally. Returned on the FIRST page (no `offset`, or `offset=0`)
-            and on any request that sends `deleted_since`; later pages carry an empty
-            array. Union them across pages — removal is idempotent.
-        deleted_since_applied:
-          type: string
-          nullable: true
-          description: Echo of the `deleted_since` value actually applied, or null
-            when none was applied.
-        sync_timestamp:
-          type: string
-          format: date-time
-          description: Server time this page was built. Pass it as the next pull's
-            `deleted_since` / `modified_since`.
         modified_since_applied:
           type: string
           nullable: true
@@ -17406,24 +17007,6 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/VectorFeatureRead'
-        deleted_ids:
-          type: array
-          items:
-            type: integer
-          description: Ids of records soft-deleted on the server, so a client can
-            remove them locally. Returned on the FIRST page (no `offset`, or `offset=0`)
-            and on any request that sends `deleted_since`; later pages carry an empty
-            array. Union them across pages — removal is idempotent.
-        deleted_since_applied:
-          type: string
-          nullable: true
-          description: Echo of the `deleted_since` value actually applied, or null
-            when none was applied.
-        sync_timestamp:
-          type: string
-          format: date-time
-          description: Server time this page was built. Pass it as the next pull's
-            `deleted_since` / `modified_since`.
         modified_since_applied:
           type: string
           nullable: true
@@ -17453,24 +17036,6 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/VectorLayerSummary'
-        deleted_ids:
-          type: array
-          items:
-            type: integer
-          description: Ids of records soft-deleted on the server, so a client can
-            remove them locally. Returned on the FIRST page (no `offset`, or `offset=0`)
-            and on any request that sends `deleted_since`; later pages carry an empty
-            array. Union them across pages — removal is idempotent.
-        deleted_since_applied:
-          type: string
-          nullable: true
-          description: Echo of the `deleted_since` value actually applied, or null
-            when none was applied.
-        sync_timestamp:
-          type: string
-          format: date-time
-          description: Server time this page was built. Pass it as the next pull's
-            `deleted_since` / `modified_since`.
         modified_since_applied:
           type: string
           nullable: true
@@ -17500,24 +17065,6 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/VeinTypeRead'
-        deleted_ids:
-          type: array
-          items:
-            type: integer
-          description: Ids of records soft-deleted on the server, so a client can
-            remove them locally. Returned on the FIRST page (no `offset`, or `offset=0`)
-            and on any request that sends `deleted_since`; later pages carry an empty
-            array. Union them across pages — removal is idempotent.
-        deleted_since_applied:
-          type: string
-          nullable: true
-          description: Echo of the `deleted_since` value actually applied, or null
-            when none was applied.
-        sync_timestamp:
-          type: string
-          format: date-time
-          description: Server time this page was built. Pass it as the next pull's
-            `deleted_since` / `modified_since`.
         modified_since_applied:
           type: string
           nullable: true
