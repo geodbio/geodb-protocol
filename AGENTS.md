@@ -44,12 +44,16 @@ pinned to one open-data demonstration project, throttled, and rotated
 periodically. No signup, no account.
 
 ```bash
-export GEODB_TOKEN=<SANDBOX_TOKEN>
+export GEODB_TOKEN=gdbg_DKQ9_K7A7EJB1uhWo30HVT5sBL8DAmUr6O3IHC0nb2ZCAmrj6adPizch_thYJyQY
 export GEODB_BASE_URL=https://api.geodb.io      # the default; override for a self-hosted server
 ```
 
 See [`sandbox.env.example`](sandbox.env.example). Every example in
 [`examples/`](examples/) runs as-is against it.
+
+> **Send a normal HTTP client.** `requests`, `httpx`, `curl`, Node and Go all work. Python's bare
+> `urllib` default user agent (`Python-urllib/x.y`) is refused at our CDN with a 403 "Error 1010"
+> before it reaches the API; if you must use `urllib`, set a `User-Agent` header.
 
 **Every request carries the token in one header:**
 
