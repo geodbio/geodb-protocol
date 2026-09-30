@@ -78,19 +78,30 @@ def sync_day_granular(session):
     require_equal(past_body['count'], everything['count'],
                   f'{path}?modified_since=2000-01-01 must match every row')
 
-    # The day-granular claim itself: a full ISO timestamp for LATER TODAY must
-    # not narrow within the day.
-    today = dt.date.today().isoformat()
-    today_body = session.get_json(path, params={'modified_since': today,
-                                                'limit': 1})
-    late_today = f'{today}T23:59:59'
-    late_body = session.get_json(path, params={'modified_since': late_today,
+    # The day-granular claim itself: a full ISO timestamp for LATE in a day
+    # must not narrow within that day. Anchor on a day a real row was edited,
+    # never on the runner's "today": on a day nothing was edited both cursors
+    # match zero rows and the comparison proves nothing (a narrowing server
+    # passed it every day after the mock fixture's date).
+    row = everything['results'][0]
+    stamp = row.get('last_edited') or row.get('date_created')
+    if not isinstance(stamp, str) or len(stamp) < 10:
+        raise Skipped(f'{path}: the first row carries no `last_edited` date '
+                      f'to anchor a same-day cursor on')
+    day = stamp[:10]
+    day_body = session.get_json(path, params={'modified_since': day,
+                                              'limit': 1})
+    require(day_body['count'] > 0,
+            f'{path}: `modified_since={day}` matched no rows, yet a row was '
+            f'last edited on {day}')
+    late_in_day = f'{day}T23:59:59'
+    late_body = session.get_json(path, params={'modified_since': late_in_day,
                                                'limit': 1})
     require_equal(
-        late_body['count'], today_body['count'],
-        f'{path}: `modified_since={late_today}` matched '
-        f'{late_body["count"]} rows but `modified_since={today}` matched '
-        f'{today_body["count"]} — the comparison narrowed WITHIN the day. '
+        late_body['count'], day_body['count'],
+        f'{path}: `modified_since={late_in_day}` matched '
+        f'{late_body["count"]} rows but `modified_since={day}` matched '
+        f'{day_body["count"]} — the comparison narrowed WITHIN the day. '
         f'The protocol documents day granularity; a client that trusts a '
         f'within-day cursor here will silently miss rows')
 
