@@ -44,7 +44,9 @@ def describe_serves_the_contract(session):
         require(body.get('identifying_fields'), f'describe {model}: no identifying_fields')
         names = {f.get('name') for f in body.get('fields') or []}
         require(names, f'describe {model}: no fields')
-        missing = set(session.write_profile['intents']) - set(body.get('intents') or [])
+        applies = {name for name, rule in session.write_profile['intents'].items()
+                   if rule.get('model') in (None, model)}       # model-bound intents
+        missing = applies - set(body.get('intents') or [])
         require(not missing, f'describe {model}: intents missing {sorted(missing)}')
     names = {f['name'] for f in parent['fields']}
     for field in ('latitude', 'longitude', 'epsg'):

@@ -26,6 +26,8 @@ PROJECT = {'id': 2, 'name': 'Mock Write Twin', 'code': 'MOCKW2'}
 BATCH_LIMIT = 1000
 INTENTS = ('create', 'upsert', 'update', 'retract', 'restore', 'make_default_set',
            'qaqc_verdict', 'qc_reconnect', 'undo')
+#: Intents bound to one record type: describe lists them only for it.
+MODEL_INTENTS = {'qaqc_verdict': 'Certificate', 'qc_reconnect': 'QCSample'}
 BODY_KEYS = {'model', 'intent', 'records', 'project', 'set', 'logging_set', 'sample_set',
              'acknowledge', 'dry_run', 'confirm', 'audit_batch_id', 'write_id'}
 HOLE_TYPES = {'DD': 'Diamond Core', 'RC': 'Reverse Circulation'}
@@ -161,7 +163,8 @@ class WriteStore:
         kind = MODELS[model]
         fields = COLLAR_FIELDS if kind == 'collar' else SAMPLE_FIELDS
         body = {
-            'model': model, 'intents': list(INTENTS),
+            'model': model,
+            'intents': [i for i in INTENTS if MODEL_INTENTS.get(i, model) == model],
             'identifying_fields': ['name'] if kind == 'collar' else ['name', 'bhid'],
             'fields': [dict({'name': f, 'type': 'text', 'required': f == 'name'},
                             **({'choices': list(HOLE_TYPES), 'choice_labels': HOLE_TYPES}

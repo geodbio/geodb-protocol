@@ -115,7 +115,8 @@
         "updated",
         "unchanged",
         "refused"
-      ]
+      ],
+      "model": "Certificate"
     },
     "qc_reconnect": {
       "does": "reconnects a QC sample to its withdrawn result (a result left in the Trash or unlinked by a certificate delete); never for a rejected certificate's results",
@@ -124,7 +125,8 @@
         "updated",
         "unchanged",
         "refused"
-      ]
+      ],
+      "model": "QCSample"
     },
     "undo": {
       "does": "reverses one earlier write by its write_id (rows changed since are left as they are and named)",
