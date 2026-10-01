@@ -13110,11 +13110,12 @@ components:
           allOf:
           - $ref: '#/components/schemas/SourceEnum'
           description: |-
-            Provenance: 'manual' (hand-logged), 'petra_geochem' (Petra-promoted geochem population) or 'petra_chat' (dictated to Petra in chat).
+            Provenance: 'manual' (hand-logged), 'petra_geochem' (Petra-promoted geochem population), 'petra_chat' (dictated to Petra in chat) or 'external' (written through a key: a connected AI, agent or vendor app).
 
             * `manual` - Manual
             * `petra_geochem` - Petra geochem
             * `petra_chat` - Petra chat
+            * `external` - Written through a key
         date_created:
           type: string
           format: date
@@ -20515,11 +20516,13 @@ components:
       - manual
       - petra_geochem
       - petra_chat
+      - external
       type: string
       description: |-
         * `manual` - Manual
         * `petra_geochem` - Petra geochem
         * `petra_chat` - Petra chat
+        * `external` - Written through a key
     StandardRead:
       type: object
       properties:
