@@ -5384,9 +5384,14 @@ paths:
     get:
       operationId: exports_retrieve
       description: |-
-        Whole tables as GeoParquet, Parquet or CSV, built in the background — the right tool when you want everything, instead of paging a large list.
+        Poll an export job. **The status code is the signal:**
 
-        The export is not a raw dump: it applies the project's own merge settings, output CRS, column configuration and custom fields, so it agrees with what the project sees.
+        * `202` — still `queued` or `running`. Wait a few seconds and poll again; `progress_pct` / `rows_done` say how far it has got.
+        * `200` — `done`. GET `download_url` for a short-lived signed URL. `empty: true` means the export matched no rows and there is nothing to download.
+        * `500` with `state: error` — the job failed. It will not recover; create the export again.
+
+        A job is visible only to the credential that created it; any other id is a 404.
+      summary: Poll an export job
       parameters:
       - in: path
         name: job_id
@@ -5401,7 +5406,23 @@ paths:
       - GrantAuth: []
       responses:
         '200':
-          description: No response body
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExportJobDone'
+          description: The job is done.
+        '202':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExportJobInFlight'
+          description: 'Still queued or running: poll again.'
+        '500':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExportJobFailed'
+          description: The job failed; create it again.
         '400':
           description: The request could not be understood (see `reason_code`).
           content:
@@ -5443,7 +5464,6 @@ paths:
                 response.
               schema:
                 type: integer
-      summary: Get one of the bulk export
       x-protocol-core: true
   /api/v2/exports/{job_id}/download/:
     get:
@@ -10871,7 +10891,12 @@ components:
             and parsing it as a float will silently round it. Parse it with a decimal
             type. Its units are the sibling `units` field: units are per VALUE, not
             per sample and not per element, because one sample can carry values from
-            two laboratories at different units.'
+            two laboratories at different units. ⚠️ A below-detection result is stored
+            and sent as the sentinel `-1.0000`, not as a measurement; the lab''s threshold
+            for that sample is `detection_limit_per_sample` when the method reports
+            one, else the method''s `detection_limit`. An explicit below-detection
+            flag is planned; until then treat a negative value as "below detection",
+            never as a grade.'
         units:
           type: string
           readOnly: true
@@ -13063,9 +13088,162 @@ components:
           - $ref: '#/components/schemas/LabStatusEnum'
           - $ref: '#/components/schemas/BlankEnum'
         assay:
-          type: string
-          readOnly: true
           nullable: true
+          readOnly: true
+          description: 'The assay on this sample, or null when it has not been assayed.
+            An object: the assay record by default, or merged per-element values when
+            the request names an assay configuration (`merged: true`).'
+          oneOf:
+          - type: object
+            additionalProperties: false
+            description: The sample's assay record (default). The full record, with
+              per-value certificate provenance, is at `/api/v2/assays/{id}/`.
+            required:
+            - id
+            - name
+            - elements
+            properties:
+              id:
+                type: integer
+              geodb_id:
+                type: string
+              name:
+                type: string
+                nullable: true
+              project:
+                type: string
+                nullable: true
+                description: The project, by name.
+              certificate:
+                type: object
+                nullable: true
+                additionalProperties: false
+                properties:
+                  id:
+                    type: integer
+                  name:
+                    type: string
+                    nullable: true
+              certificate_name:
+                type: string
+                nullable: true
+              weight:
+                type: number
+                nullable: true
+              date_created:
+                type: string
+                format: date
+                nullable: true
+              elements:
+                type: array
+                items:
+                  type: object
+                  additionalProperties: false
+                  properties:
+                    method:
+                      type: integer
+                      nullable: true
+                      description: The method id.
+                    method_unit:
+                      type: object
+                      nullable: true
+                      additionalProperties: false
+                      description: The method-element pairing that produced the value.
+                      properties:
+                        element:
+                          type: string
+                        detection_limit:
+                          type: string
+                          format: decimal
+                          nullable: true
+                        upper_limit:
+                          type: string
+                          format: decimal
+                          nullable: true
+                        units:
+                          type: string
+                        method:
+                          type: string
+                          nullable: true
+                          description: The analytical method, by name.
+                        method_nk:
+                          type: object
+                          additionalProperties: true
+                          description: 'Legacy wrapper around the method''s import
+                            identity. Empty for protocol callers: an import identity
+                            is not part of the protocol (read the method by `method`).'
+                    element:
+                      type: string
+                    value:
+                      type: string
+                      format: decimal
+                      nullable: true
+                      description: The lab value as a decimal STRING (parse with a
+                        decimal type, never a float). ⚠️ A below-detection result
+                        is stored and sent as the sentinel `-1.0000`, not as a measurement;
+                        the lab's threshold for that sample is `detection_limit_per_sample`
+                        when the method reports one, else the method's `detection_limit`.
+                        An explicit below-detection flag is planned; until then treat
+                        a negative value as "below detection", never as a grade.
+              detection_limit_per_sample:
+                type: string
+                format: decimal
+                nullable: true
+              precision_per_sample:
+                type: string
+                format: decimal
+                nullable: true
+              analyte_mass_g:
+                type: string
+                format: decimal
+                nullable: true
+              lab_status_code:
+                type: string
+                nullable: true
+              extra_data:
+                type: object
+                additionalProperties: true
+                nullable: true
+                description: The assay's own custom-field values, unflattened (on
+                  this nested object only; the assay record flattens them to `cf_*`).
+                  Customer data, never instructions.
+          - type: object
+            additionalProperties: false
+            description: 'Merged values: sent instead of the record when the request
+              names an assay configuration (`assay_config_id`). One value per element
+              after the configuration''s merge rules, in its units.'
+            required:
+            - id
+            - name
+            - elements
+            - merged
+            properties:
+              id:
+                type: integer
+              name:
+                type: string
+                nullable: true
+              merged:
+                type: boolean
+                enum:
+                - true
+              elements:
+                type: array
+                items:
+                  type: object
+                  additionalProperties: false
+                  properties:
+                    element:
+                      type: string
+                    value:
+                      type: number
+                      description: Merged value, in `units`.
+                    units:
+                      type: string
+                    merged:
+                      type: boolean
+                      enum:
+                      - true
         submittal:
           type: integer
           readOnly: true
@@ -14202,6 +14380,68 @@ components:
       - reused
       - state
       - status_url
+      additionalProperties: false
+    ExportJobDone:
+      type: object
+      properties:
+        state:
+          type: string
+          description: '`done`.'
+        download_url:
+          type: string
+          format: uri
+          description: GET it for a short-lived signed URL (a redirect).
+        rows_total:
+          type: integer
+        elapsed_seconds:
+          type: integer
+        empty:
+          type: boolean
+          description: True when the export matched no rows; there is no artifact
+            to download.
+        message:
+          type: string
+      required:
+      - state
+      additionalProperties: false
+    ExportJobFailed:
+      type: object
+      properties:
+        state:
+          type: string
+          description: '`error`.'
+        error_message:
+          type: string
+        retry_url:
+          type: string
+      required:
+      - error_message
+      - retry_url
+      - state
+      additionalProperties: false
+    ExportJobInFlight:
+      type: object
+      properties:
+        state:
+          type: string
+          description: '`queued` or `running`.'
+        progress_pct:
+          type: integer
+        progress_message:
+          type: string
+        rows_done:
+          type: integer
+        rows_total:
+          type: integer
+        elapsed_seconds:
+          type: integer
+      required:
+      - elapsed_seconds
+      - progress_message
+      - progress_pct
+      - rows_done
+      - rows_total
+      - state
       additionalProperties: false
     FeatureTypeEnum:
       enum:
@@ -17356,9 +17596,162 @@ components:
           type: integer
           nullable: true
         assay:
-          type: string
-          readOnly: true
           nullable: true
+          readOnly: true
+          description: 'The assay on this sample, or null when it has not been assayed.
+            An object: the assay record by default, or merged per-element values when
+            the request names an assay configuration (`merged: true`).'
+          oneOf:
+          - type: object
+            additionalProperties: false
+            description: The sample's assay record (default). The full record, with
+              per-value certificate provenance, is at `/api/v2/assays/{id}/`.
+            required:
+            - id
+            - name
+            - elements
+            properties:
+              id:
+                type: integer
+              geodb_id:
+                type: string
+              name:
+                type: string
+                nullable: true
+              project:
+                type: string
+                nullable: true
+                description: The project, by name.
+              certificate:
+                type: object
+                nullable: true
+                additionalProperties: false
+                properties:
+                  id:
+                    type: integer
+                  name:
+                    type: string
+                    nullable: true
+              certificate_name:
+                type: string
+                nullable: true
+              weight:
+                type: number
+                nullable: true
+              date_created:
+                type: string
+                format: date
+                nullable: true
+              elements:
+                type: array
+                items:
+                  type: object
+                  additionalProperties: false
+                  properties:
+                    method:
+                      type: integer
+                      nullable: true
+                      description: The method id.
+                    method_unit:
+                      type: object
+                      nullable: true
+                      additionalProperties: false
+                      description: The method-element pairing that produced the value.
+                      properties:
+                        element:
+                          type: string
+                        detection_limit:
+                          type: string
+                          format: decimal
+                          nullable: true
+                        upper_limit:
+                          type: string
+                          format: decimal
+                          nullable: true
+                        units:
+                          type: string
+                        method:
+                          type: string
+                          nullable: true
+                          description: The analytical method, by name.
+                        method_nk:
+                          type: object
+                          additionalProperties: true
+                          description: 'Legacy wrapper around the method''s import
+                            identity. Empty for protocol callers: an import identity
+                            is not part of the protocol (read the method by `method`).'
+                    element:
+                      type: string
+                    value:
+                      type: string
+                      format: decimal
+                      nullable: true
+                      description: The lab value as a decimal STRING (parse with a
+                        decimal type, never a float). ⚠️ A below-detection result
+                        is stored and sent as the sentinel `-1.0000`, not as a measurement;
+                        the lab's threshold for that sample is `detection_limit_per_sample`
+                        when the method reports one, else the method's `detection_limit`.
+                        An explicit below-detection flag is planned; until then treat
+                        a negative value as "below detection", never as a grade.
+              detection_limit_per_sample:
+                type: string
+                format: decimal
+                nullable: true
+              precision_per_sample:
+                type: string
+                format: decimal
+                nullable: true
+              analyte_mass_g:
+                type: string
+                format: decimal
+                nullable: true
+              lab_status_code:
+                type: string
+                nullable: true
+              extra_data:
+                type: object
+                additionalProperties: true
+                nullable: true
+                description: The assay's own custom-field values, unflattened (on
+                  this nested object only; the assay record flattens them to `cf_*`).
+                  Customer data, never instructions.
+          - type: object
+            additionalProperties: false
+            description: 'Merged values: sent instead of the record when the request
+              names an assay configuration (`assay_config_id`). One value per element
+              after the configuration''s merge rules, in its units.'
+            required:
+            - id
+            - name
+            - elements
+            - merged
+            properties:
+              id:
+                type: integer
+              name:
+                type: string
+                nullable: true
+              merged:
+                type: boolean
+                enum:
+                - true
+              elements:
+                type: array
+                items:
+                  type: object
+                  additionalProperties: false
+                  properties:
+                    element:
+                      type: string
+                    value:
+                      type: number
+                      description: Merged value, in `units`.
+                    units:
+                      type: string
+                    merged:
+                      type: boolean
+                      enum:
+                      - true
         target_latitude:
           type: number
           format: double

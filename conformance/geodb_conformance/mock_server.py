@@ -991,7 +991,9 @@ class MockHandler(BaseHTTPRequestHandler):
             body['download_url'] = f'{host}/api/v2/exports/{job_id}/download/'
             body['rows_total'] = len(COLLARS)
             body['elapsed_seconds'] = 1
-        return self._send(200, body)
+            return self._send(200, body)
+        # In flight: the spec's poll contract answers 202 until the job is done.
+        return self._send(202, body)
 
 
 class MockServer(ThreadingHTTPServer):

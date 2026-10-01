@@ -31,6 +31,12 @@
       "remedy": "Ask the project owner to rotate or reissue it.",
       "retry": "no"
     },
+    "grant_holder_removed": {
+      "http": 401,
+      "meaning": "The person this grant acts as no longer holds a membership on any project in its scope.",
+      "remedy": "Ask a project owner to restore the membership, then connect again (a new grant); this one will not recover.",
+      "retry": "no"
+    },
     "grant_invalid": {
       "http": 401,
       "meaning": "The grant cannot be used in its current project or data-room state.",
@@ -120,6 +126,12 @@
       "meaning": "The grant's request rate was exceeded.",
       "remedy": "Wait for the interval given in the Retry-After header, then resend. Prefer ?modified_since= incremental pulls over repeated full pulls.",
       "retry": "after"
+    },
+    "use_grant_scheme": {
+      "http": 401,
+      "meaning": "The credential was sent under the Bearer scheme; grants authenticate under the Grant scheme.",
+      "remedy": "Send the same token as 'Authorization: Grant <token>'.",
+      "retry": "no"
     },
     "use_v2": {
       "http": 403,

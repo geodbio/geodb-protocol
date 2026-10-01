@@ -191,8 +191,10 @@ def envelope_page_size(session):
 
 @REGISTRY.add(
     'envelope.only_cf_extra_keys',
-    'Beyond the declared schema a row carries only `cf_*` custom fields — '
-    'positive declaration: what the spec does not declare is not on the wire.')
+    'Beyond the declared schema a row carries only `cf_*` custom fields and '
+    'the key patterns the schema itself declares (`patternProperties`, e.g. a '
+    'metal-equivalent `AuEq ppm`) — positive declaration: what the spec does '
+    'not declare is not on the wire.')
 def envelope_only_cf_keys(session):
     from .schemas import schema_for_list_path
 
@@ -203,15 +205,21 @@ def envelope_only_cf_keys(session):
             continue
         schema = session.contract.schema(schema_name)
         declared = set(schema.get('properties') or {})
+        # A key whose NAME is data (a custom field, a metal equivalent named
+        # for its element and units) can only be declared as a pattern. The
+        # schema's own patterns ARE its declaration; the `cf_*` pattern is
+        # accepted even from a schema that forgot to state it.
+        patterns = [CF_PATTERN] + [
+            re.compile(p) for p in (schema.get('patternProperties') or {})]
         body = session.get_json(path, params={'limit': 5})
         for row in body.get('results') or []:
             for key in row:
-                if key in declared or CF_PATTERN.match(key):
+                if key in declared or any(p.match(key) for p in patterns):
                     continue
                 undeclared.append(f'{path}: {key!r} (schema {schema_name})')
     require(not undeclared,
-            'keys on the wire that neither the schema declares nor the `cf_*` '
-            'pattern allows:\n'
+            'keys on the wire that neither the schema declares (as a property '
+            'or a pattern) nor the `cf_*` pattern allows:\n'
             + '\n'.join(f'  {row}' for row in sorted(set(undeclared))))
 
 

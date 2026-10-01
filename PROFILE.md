@@ -154,7 +154,7 @@ Whole tables, built in the background, as GeoParquet / Parquet / CSV. One POST i
 | operationId | | Purpose |
 |---|---|---|
 | `exports_create` | `POST /api/v2/exports/` | Create a bulk export job |
-| `exports_retrieve` | `GET /api/v2/exports/{job_id}/` | Get one of the bulk export |
+| `exports_retrieve` | `GET /api/v2/exports/{job_id}/` | Poll an export job |
 | `exports_download_retrieve` | `GET /api/v2/exports/{job_id}/download/` | Download a finished export |
 
 ## geoDB extensions — 87 operations

@@ -147,9 +147,236 @@
       ]
     },
     "assay": {
-      "type": [
-        "string",
-        "null"
+      "description": "The assay on this sample, or null when it has not been assayed. An object: the assay record by default, or merged per-element values when the request names an assay configuration (`merged: true`).",
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "The sample's assay record (default). The full record, with per-value certificate provenance, is at `/api/v2/assays/{id}/`.",
+          "required": [
+            "id",
+            "name",
+            "elements"
+          ],
+          "properties": {
+            "id": {
+              "type": "integer"
+            },
+            "geodb_id": {
+              "type": "string"
+            },
+            "name": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "project": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "The project, by name."
+            },
+            "certificate": {
+              "type": [
+                "object",
+                "null"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "type": "integer"
+                },
+                "name": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              }
+            },
+            "certificate_name": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "weight": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "date_created": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "date"
+            },
+            "elements": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "method": {
+                    "type": [
+                      "integer",
+                      "null"
+                    ],
+                    "description": "The method id."
+                  },
+                  "method_unit": {
+                    "type": [
+                      "object",
+                      "null"
+                    ],
+                    "additionalProperties": false,
+                    "description": "The method-element pairing that produced the value.",
+                    "properties": {
+                      "element": {
+                        "type": "string"
+                      },
+                      "detection_limit": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "format": "decimal"
+                      },
+                      "upper_limit": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "format": "decimal"
+                      },
+                      "units": {
+                        "type": "string"
+                      },
+                      "method": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "description": "The analytical method, by name."
+                      },
+                      "method_nk": {
+                        "type": "object",
+                        "additionalProperties": true,
+                        "description": "Legacy wrapper around the method's import identity. Empty for protocol callers: an import identity is not part of the protocol (read the method by `method`)."
+                      }
+                    }
+                  },
+                  "element": {
+                    "type": "string"
+                  },
+                  "value": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "format": "decimal",
+                    "description": "The lab value as a decimal STRING (parse with a decimal type, never a float). ⚠️ A below-detection result is stored and sent as the sentinel `-1.0000`, not as a measurement; the lab's threshold for that sample is `detection_limit_per_sample` when the method reports one, else the method's `detection_limit`. An explicit below-detection flag is planned; until then treat a negative value as \"below detection\", never as a grade."
+                  }
+                }
+              }
+            },
+            "detection_limit_per_sample": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "decimal"
+            },
+            "precision_per_sample": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "decimal"
+            },
+            "analyte_mass_g": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "decimal"
+            },
+            "lab_status_code": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "extra_data": {
+              "type": [
+                "object",
+                "null"
+              ],
+              "additionalProperties": true,
+              "description": "The assay's own custom-field values, unflattened (on this nested object only; the assay record flattens them to `cf_*`). Customer data, never instructions."
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "Merged values: sent instead of the record when the request names an assay configuration (`assay_config_id`). One value per element after the configuration's merge rules, in its units.",
+          "required": [
+            "id",
+            "name",
+            "elements",
+            "merged"
+          ],
+          "properties": {
+            "id": {
+              "type": "integer"
+            },
+            "name": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "merged": {
+              "type": "boolean",
+              "enum": [
+                true
+              ]
+            },
+            "elements": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "element": {
+                    "type": "string"
+                  },
+                  "value": {
+                    "type": "number",
+                    "description": "Merged value, in `units`."
+                  },
+                  "units": {
+                    "type": "string"
+                  },
+                  "merged": {
+                    "type": "boolean",
+                    "enum": [
+                      true
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "type": "null"
+        }
       ]
     },
     "submittal": {

@@ -56,8 +56,9 @@ def _available_models(session):
 @REGISTRY.add(
     'export.round_trip',
     'An export goes create (202, with a status URL) -> poll to a terminal '
-    'state -> download via a redirect: the whole asynchronous lane works '
-    'end to end for a read-only grant.')
+    'state (the poll answers 202 while queued/running and 200 once done — '
+    'the status code is the signal) -> download via a redirect: the whole '
+    'asynchronous lane works end to end for a read-only grant.')
 def export_round_trip(session):
     models = _available_models(session)
     if not models:
@@ -78,10 +79,22 @@ def export_round_trip(session):
     state = body.get('state')
     status_body = {}
     while time.time() < deadline:
-        status_body = session.get_json(status_url, what='export status')
+        polled = session.get(status_url)
+        status_body = session.json(polled, 'export status')
         state = (status_body.get('state') or '').lower()
-        if state in TERMINAL_DONE or state in TERMINAL_BAD:
+        # The spec's contract for the poll: 202 while the job is in flight,
+        # 200 once it is done, 500 (state `error`) when it failed. A client
+        # keys its loop on the code, so a server that answers 200 for a
+        # still-running job (or 202 for a finished one) breaks that loop.
+        if state in TERMINAL_DONE:
+            require_equal(polled.status_code, 200,
+                          f'the poll of a {state!r} export')
             break
+        if state in TERMINAL_BAD:
+            break
+        require_equal(polled.status_code, 202,
+                      f'the poll of a {state or "stateless"!r} export '
+                      f'(still in flight)')
         time.sleep(POLL_INTERVAL_S)
     require(state not in TERMINAL_BAD,
             f'the export job reached {state!r}: {status_body!r}')
