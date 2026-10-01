@@ -19,7 +19,7 @@ info:
     read. `GET /api/v2/grant-context/` tells you which project you are in and what
     the limits are — the cheapest first call to make.
 
-    ## Six things that will catch you out
+    ## Eight things that will catch you out
 
     1. **Coordinates are not degrees.** `latitude` and `longitude` hold the
        ORIGINAL imported coordinate in the system named by `epsg` — for a UTM
@@ -41,6 +41,17 @@ info:
     6. **`modified_since` is DAY-granular.** It returns everything changed on that
        day or later, so a repeated pull re-sends the current day's rows.
        Deduplicate by `id` rather than treating it as a strict watermark.
+    7. **Some rows are withheld, and the response says so.** Results from a
+       certificate that failed QAQC review (rejected, or superseded by a
+       re-assay) are left out of assays and QC samples by default, as are
+       soft-deleted rows; each list's `withheld` object counts them on the
+       first page (later pages carry null). Never report
+       a flagged row as a result — use it to explain why a sample is missing.
+    8. **Below detection is a flag beside a sentinel.** A value the laboratory
+       reported below its detection limit is stored as `-1.0000` with
+       `below_detection: true`; the threshold is the value's `detection_limit`.
+       The sentinel is a marker, never a grade, and merged reads have already
+       substituted it once — do not substitute it again.
 
     ## Bulk
 
@@ -78,6 +89,23 @@ paths:
         description: The initial index from which to return the results.
         schema:
           type: integer
+      - in: query
+        name: project_id
+        schema:
+          type: string
+        description: Narrow to one project this credential can read, by its id. An
+          id that names no readable project is refused with `invalid_parameter` —
+          never an empty list.
+      - in: query
+        name: project
+        schema:
+          type: string
+        description: 'Narrow to one project this credential can read, by its id or
+          its exact name (case does not matter). A value that names no readable project
+          is refused with `invalid_parameter` — never an empty list. The JSON natural
+          key some app endpoints take (`{"name": …, "company": …}`) is not a form
+          this parameter accepts: it is refused with `invalid_parameter` too — send
+          the id.'
       tags:
       - Surface Geology
       security:
@@ -213,16 +241,30 @@ paths:
 
         ⚠️ `modified_since` is DAY-granular: it returns everything changed on that day or later, so a repeated pull re-sends the current day's rows. Deduplicate by `id` rather than assuming a strict watermark.
       parameters:
+      - in: query
+        name: compact
+        schema:
+          type: string
+        description: 'compact=1: lean sync serialization — flat scalars with FK ids
+          (project_id, bhid_id, ...), raw extra_data dict, no nested natural keys
+          / derived fields / geometry columns. Same pagination envelope and deleted_ids
+          metadata. Assays inline their element values as flat dicts. Any other value
+          = default rich shape.'
+      - in: query
+        name: deleted_since
+        schema:
+          type: string
+        description: 'Deletion sync: restrict deleted_ids to records soft-deleted
+          on or after the DATE part of this ISO 8601 date/datetime. DAY-granular and
+          inclusive, for the same reason as modified_since — removal is idempotent,
+          so over-including a deletion is harmless and under-including leaves a ghost
+          record. Omit it on a first sync to receive every deleted id. The response
+          echoes deleted_since_applied, and sync_timestamp is the value to send next
+          time.'
       - name: limit
         required: false
         in: query
         description: Number of results to return per page.
-        schema:
-          type: integer
-      - name: offset
-        required: false
-        in: query
-        description: The initial index from which to return the results.
         schema:
           type: integer
       - in: query
@@ -237,32 +279,35 @@ paths:
           reflected here; keep using deleted_since / deleted_ids. A value that cannot
           be parsed is REFUSED with 400 reason_code=invalid_parameter. When sent,
           the response echoes modified_since_applied.'
-      - in: query
-        name: deleted_since
+      - name: offset
+        required: false
+        in: query
+        description: The initial index from which to return the results.
         schema:
-          type: string
-        description: 'Deletion sync: restrict deleted_ids to records soft-deleted
-          on or after the DATE part of this ISO 8601 date/datetime. DAY-granular and
-          inclusive, for the same reason as modified_since — removal is idempotent,
-          so over-including a deletion is harmless and under-including leaves a ghost
-          record. Omit it on a first sync to receive every deleted id. The response
-          echoes deleted_since_applied, and sync_timestamp is the value to send next
-          time.'
-      - in: query
-        name: compact
-        schema:
-          type: string
-        description: 'compact=1: lean sync serialization — flat scalars with FK ids
-          (project_id, bhid_id, ...), raw extra_data dict, no nested natural keys
-          / derived fields / geometry columns. Same pagination envelope and deleted_ids
-          metadata. Assays inline their element values as flat dicts. Any other value
-          = default rich shape.'
+          type: integer
       - in: query
         name: skip_count
         schema:
           type: string
         description: 'skip_count=1: suppress the per-page COUNT(*). count is null;
           next is present exactly while a full page was returned.'
+      - in: query
+        name: project_id
+        schema:
+          type: string
+        description: Narrow to one project this credential can read, by its id. An
+          id that names no readable project is refused with `invalid_parameter` —
+          never an empty list.
+      - in: query
+        name: project
+        schema:
+          type: string
+        description: 'Narrow to one project this credential can read, by its id or
+          its exact name (case does not matter). A value that names no readable project
+          is refused with `invalid_parameter` — never an empty list. The JSON natural
+          key some app endpoints take (`{"name": …, "company": …}`) is not a form
+          this parameter accepts: it is refused with `invalid_parameter` too — send
+          the id.'
       tags:
       - Assays
       security:
@@ -453,6 +498,23 @@ paths:
           type: string
         description: 'skip_count=1: suppress the per-page COUNT(*). count is null;
           next is present exactly while a full page was returned.'
+      - in: query
+        name: project_id
+        schema:
+          type: string
+        description: Narrow to one project this credential can read, by its id. An
+          id that names no readable project is refused with `invalid_parameter` —
+          never an empty list.
+      - in: query
+        name: project
+        schema:
+          type: string
+        description: 'Narrow to one project this credential can read, by its id or
+          its exact name (case does not matter). A value that names no readable project
+          is refused with `invalid_parameter` — never an empty list. The JSON natural
+          key some app endpoints take (`{"name": …, "company": …}`) is not a form
+          this parameter accepts: it is refused with `invalid_parameter` too — send
+          the id.'
       tags:
       - Assays
       security:
@@ -603,6 +665,23 @@ paths:
         description: The initial index from which to return the results.
         schema:
           type: integer
+      - in: query
+        name: project_id
+        schema:
+          type: string
+        description: Narrow to one project this credential can read, by its id. An
+          id that names no readable project is refused with `invalid_parameter` —
+          never an empty list.
+      - in: query
+        name: project
+        schema:
+          type: string
+        description: 'Narrow to one project this credential can read, by its id or
+          its exact name (case does not matter). A value that names no readable project
+          is refused with `invalid_parameter` — never an empty list. The JSON natural
+          key some app endpoints take (`{"name": …, "company": …}`) is not a form
+          this parameter accepts: it is refused with `invalid_parameter` too — send
+          the id.'
       tags:
       - Discovery
       security:
@@ -927,6 +1006,23 @@ paths:
         description: The initial index from which to return the results.
         schema:
           type: integer
+      - in: query
+        name: project_id
+        schema:
+          type: string
+        description: Narrow to one project this credential can read, by its id. An
+          id that names no readable project is refused with `invalid_parameter` —
+          never an empty list.
+      - in: query
+        name: project
+        schema:
+          type: string
+        description: 'Narrow to one project this credential can read, by its id or
+          its exact name (case does not matter). A value that names no readable project
+          is refused with `invalid_parameter` — never an empty list. The JSON natural
+          key some app endpoints take (`{"name": …, "company": …}`) is not a form
+          this parameter accepts: it is refused with `invalid_parameter` too — send
+          the id.'
       tags:
       - Drill Intervals
       security:
@@ -1071,6 +1167,23 @@ paths:
         description: The initial index from which to return the results.
         schema:
           type: integer
+      - in: query
+        name: project_id
+        schema:
+          type: string
+        description: Narrow to one project this credential can read, by its id. An
+          id that names no readable project is refused with `invalid_parameter` —
+          never an empty list.
+      - in: query
+        name: project
+        schema:
+          type: string
+        description: 'Narrow to one project this credential can read, by its id or
+          its exact name (case does not matter). A value that names no readable project
+          is refused with `invalid_parameter` — never an empty list. The JSON natural
+          key some app endpoints take (`{"name": …, "company": …}`) is not a form
+          this parameter accepts: it is refused with `invalid_parameter` too — send
+          the id.'
       tags:
       - Drill Intervals
       security:
@@ -1264,6 +1377,30 @@ paths:
           type: string
         description: 'skip_count=1: suppress the per-page COUNT(*). count is null;
           next is present exactly while a full page was returned.'
+      - in: query
+        name: project_id
+        schema:
+          type: string
+        description: Narrow to one project this credential can read, by its id. An
+          id that names no readable project is refused with `invalid_parameter` —
+          never an empty list.
+      - in: query
+        name: project
+        schema:
+          type: string
+        description: 'Narrow to one project this credential can read, by its id or
+          its exact name (case does not matter). A value that names no readable project
+          is refused with `invalid_parameter` — never an empty list. The JSON natural
+          key some app endpoints take (`{"name": …, "company": …}`) is not a form
+          this parameter accepts: it is refused with `invalid_parameter` too — send
+          the id.'
+      - in: query
+        name: bhid
+        schema:
+          type: string
+        description: Narrow to one drill hole, by its id or its exact name (case does
+          not matter). A name that matches no readable hole is refused with `invalid_parameter`
+          — never an empty list.
       tags:
       - Drill Intervals
       security:
@@ -1461,6 +1598,23 @@ paths:
           type: string
         description: 'skip_count=1: suppress the per-page COUNT(*). count is null;
           next is present exactly while a full page was returned.'
+      - in: query
+        name: project_id
+        schema:
+          type: string
+        description: Narrow to one project this credential can read, by its id. An
+          id that names no readable project is refused with `invalid_parameter` —
+          never an empty list.
+      - in: query
+        name: project
+        schema:
+          type: string
+        description: 'Narrow to one project this credential can read, by its id or
+          its exact name (case does not matter). A value that names no readable project
+          is refused with `invalid_parameter` — never an empty list. The JSON natural
+          key some app endpoints take (`{"name": …, "company": …}`) is not a form
+          this parameter accepts: it is refused with `invalid_parameter` too — send
+          the id.'
       tags:
       - Drill Holes
       security:
@@ -1743,6 +1897,23 @@ paths:
         description: The initial index from which to return the results.
         schema:
           type: integer
+      - in: query
+        name: project_id
+        schema:
+          type: string
+        description: Narrow to one project this credential can read, by its id. An
+          id that names no readable project is refused with `invalid_parameter` —
+          never an empty list.
+      - in: query
+        name: project
+        schema:
+          type: string
+        description: 'Narrow to one project this credential can read, by its id or
+          its exact name (case does not matter). A value that names no readable project
+          is refused with `invalid_parameter` — never an empty list. The JSON natural
+          key some app endpoints take (`{"name": …, "company": …}`) is not a form
+          this parameter accepts: it is refused with `invalid_parameter` too — send
+          the id.'
       tags:
       - Drill Intervals
       security:
@@ -1937,6 +2108,30 @@ paths:
           type: string
         description: 'skip_count=1: suppress the per-page COUNT(*). count is null;
           next is present exactly while a full page was returned.'
+      - in: query
+        name: project_id
+        schema:
+          type: string
+        description: Narrow to one project this credential can read, by its id. An
+          id that names no readable project is refused with `invalid_parameter` —
+          never an empty list.
+      - in: query
+        name: project
+        schema:
+          type: string
+        description: 'Narrow to one project this credential can read, by its id or
+          its exact name (case does not matter). A value that names no readable project
+          is refused with `invalid_parameter` — never an empty list. The JSON natural
+          key some app endpoints take (`{"name": …, "company": …}`) is not a form
+          this parameter accepts: it is refused with `invalid_parameter` too — send
+          the id.'
+      - in: query
+        name: bhid
+        schema:
+          type: string
+        description: Narrow to one drill hole, by its id or its exact name (case does
+          not matter). A name that matches no readable hole is refused with `invalid_parameter`
+          — never an empty list.
       tags:
       - Drill Intervals
       security:
@@ -2132,6 +2327,30 @@ paths:
           type: string
         description: 'skip_count=1: suppress the per-page COUNT(*). count is null;
           next is present exactly while a full page was returned.'
+      - in: query
+        name: project_id
+        schema:
+          type: string
+        description: Narrow to one project this credential can read, by its id. An
+          id that names no readable project is refused with `invalid_parameter` —
+          never an empty list.
+      - in: query
+        name: project
+        schema:
+          type: string
+        description: 'Narrow to one project this credential can read, by its id or
+          its exact name (case does not matter). A value that names no readable project
+          is refused with `invalid_parameter` — never an empty list. The JSON natural
+          key some app endpoints take (`{"name": …, "company": …}`) is not a form
+          this parameter accepts: it is refused with `invalid_parameter` too — send
+          the id.'
+      - in: query
+        name: bhid
+        schema:
+          type: string
+        description: Narrow to one drill hole, by its id or its exact name (case does
+          not matter). A name that matches no readable hole is refused with `invalid_parameter`
+          — never an empty list.
       tags:
       - Drill Intervals
       security:
@@ -2276,6 +2495,23 @@ paths:
         description: The initial index from which to return the results.
         schema:
           type: integer
+      - in: query
+        name: project_id
+        schema:
+          type: string
+        description: Narrow to one project this credential can read, by its id. An
+          id that names no readable project is refused with `invalid_parameter` —
+          never an empty list.
+      - in: query
+        name: project
+        schema:
+          type: string
+        description: 'Narrow to one project this credential can read, by its id or
+          its exact name (case does not matter). A value that names no readable project
+          is refused with `invalid_parameter` — never an empty list. The JSON natural
+          key some app endpoints take (`{"name": …, "company": …}`) is not a form
+          this parameter accepts: it is refused with `invalid_parameter` too — send
+          the id.'
       tags:
       - Drill Intervals
       security:
@@ -2421,6 +2657,23 @@ paths:
         description: The initial index from which to return the results.
         schema:
           type: integer
+      - in: query
+        name: project_id
+        schema:
+          type: string
+        description: Narrow to one project this credential can read, by its id. An
+          id that names no readable project is refused with `invalid_parameter` —
+          never an empty list.
+      - in: query
+        name: project
+        schema:
+          type: string
+        description: 'Narrow to one project this credential can read, by its id or
+          its exact name (case does not matter). A value that names no readable project
+          is refused with `invalid_parameter` — never an empty list. The JSON natural
+          key some app endpoints take (`{"name": …, "company": …}`) is not a form
+          this parameter accepts: it is refused with `invalid_parameter` too — send
+          the id.'
       tags:
       - Drill Intervals
       security:
@@ -2615,6 +2868,30 @@ paths:
           type: string
         description: 'skip_count=1: suppress the per-page COUNT(*). count is null;
           next is present exactly while a full page was returned.'
+      - in: query
+        name: project_id
+        schema:
+          type: string
+        description: Narrow to one project this credential can read, by its id. An
+          id that names no readable project is refused with `invalid_parameter` —
+          never an empty list.
+      - in: query
+        name: project
+        schema:
+          type: string
+        description: 'Narrow to one project this credential can read, by its id or
+          its exact name (case does not matter). A value that names no readable project
+          is refused with `invalid_parameter` — never an empty list. The JSON natural
+          key some app endpoints take (`{"name": …, "company": …}`) is not a form
+          this parameter accepts: it is refused with `invalid_parameter` too — send
+          the id.'
+      - in: query
+        name: bhid
+        schema:
+          type: string
+        description: Narrow to one drill hole, by its id or its exact name (case does
+          not matter). A name that matches no readable hole is refused with `invalid_parameter`
+          — never an empty list.
       tags:
       - Drill Intervals
       security:
@@ -2770,6 +3047,23 @@ paths:
           requester (or a project-pinned grant) is refused / degrades to its one project.
           Rows carry flat project_id / project_name so results can be grouped by project.
           Any other scope value is left to endpoint-specific meaning.'
+      - in: query
+        name: project_id
+        schema:
+          type: string
+        description: Narrow to one project this credential can read, by its id. An
+          id that names no readable project is refused with `invalid_parameter` —
+          never an empty list.
+      - in: query
+        name: project
+        schema:
+          type: string
+        description: 'Narrow to one project this credential can read, by its id or
+          its exact name (case does not matter). A value that names no readable project
+          is refused with `invalid_parameter` — never an empty list. The JSON natural
+          key some app endpoints take (`{"name": …, "company": …}`) is not a form
+          this parameter accepts: it is refused with `invalid_parameter` too — send
+          the id.'
       tags:
       - Drill Holes
       security:
@@ -3090,6 +3384,30 @@ paths:
           type: string
         description: 'skip_count=1: suppress the per-page COUNT(*). count is null;
           next is present exactly while a full page was returned.'
+      - in: query
+        name: project_id
+        schema:
+          type: string
+        description: Narrow to one project this credential can read, by its id. An
+          id that names no readable project is refused with `invalid_parameter` —
+          never an empty list.
+      - in: query
+        name: project
+        schema:
+          type: string
+        description: 'Narrow to one project this credential can read, by its id or
+          its exact name (case does not matter). A value that names no readable project
+          is refused with `invalid_parameter` — never an empty list. The JSON natural
+          key some app endpoints take (`{"name": …, "company": …}`) is not a form
+          this parameter accepts: it is refused with `invalid_parameter` too — send
+          the id.'
+      - in: query
+        name: bhid
+        schema:
+          type: string
+        description: Narrow to one drill hole, by its id or its exact name (case does
+          not matter). A name that matches no readable hole is refused with `invalid_parameter`
+          — never an empty list.
       tags:
       - Photos
       security:
@@ -3294,6 +3612,23 @@ paths:
         description: The initial index from which to return the results.
         schema:
           type: integer
+      - in: query
+        name: project_id
+        schema:
+          type: string
+        description: Narrow to one project this credential can read, by its id. An
+          id that names no readable project is refused with `invalid_parameter` —
+          never an empty list.
+      - in: query
+        name: project
+        schema:
+          type: string
+        description: 'Narrow to one project this credential can read, by its id or
+          its exact name (case does not matter). A value that names no readable project
+          is refused with `invalid_parameter` — never an empty list. The JSON natural
+          key some app endpoints take (`{"name": …, "company": …}`) is not a form
+          this parameter accepts: it is refused with `invalid_parameter` too — send
+          the id.'
       tags:
       - Drill Intervals
       security:
@@ -3489,6 +3824,30 @@ paths:
           type: string
         description: 'skip_count=1: suppress the per-page COUNT(*). count is null;
           next is present exactly while a full page was returned.'
+      - in: query
+        name: project_id
+        schema:
+          type: string
+        description: Narrow to one project this credential can read, by its id. An
+          id that names no readable project is refused with `invalid_parameter` —
+          never an empty list.
+      - in: query
+        name: project
+        schema:
+          type: string
+        description: 'Narrow to one project this credential can read, by its id or
+          its exact name (case does not matter). A value that names no readable project
+          is refused with `invalid_parameter` — never an empty list. The JSON natural
+          key some app endpoints take (`{"name": …, "company": …}`) is not a form
+          this parameter accepts: it is refused with `invalid_parameter` too — send
+          the id.'
+      - in: query
+        name: bhid
+        schema:
+          type: string
+        description: Narrow to one drill hole, by its id or its exact name (case does
+          not matter). A name that matches no readable hole is refused with `invalid_parameter`
+          — never an empty list.
       tags:
       - Drill Intervals
       security:
@@ -3675,6 +4034,30 @@ paths:
           type: string
         description: 'skip_count=1: suppress the per-page COUNT(*). count is null;
           next is present exactly while a full page was returned.'
+      - in: query
+        name: project_id
+        schema:
+          type: string
+        description: Narrow to one project this credential can read, by its id. An
+          id that names no readable project is refused with `invalid_parameter` —
+          never an empty list.
+      - in: query
+        name: project
+        schema:
+          type: string
+        description: 'Narrow to one project this credential can read, by its id or
+          its exact name (case does not matter). A value that names no readable project
+          is refused with `invalid_parameter` — never an empty list. The JSON natural
+          key some app endpoints take (`{"name": …, "company": …}`) is not a form
+          this parameter accepts: it is refused with `invalid_parameter` too — send
+          the id.'
+      - in: query
+        name: bhid
+        schema:
+          type: string
+        description: Narrow to one drill hole, by its id or its exact name (case does
+          not matter). A name that matches no readable hole is refused with `invalid_parameter`
+          — never an empty list.
       tags:
       - Samples
       security:
@@ -3933,6 +4316,30 @@ paths:
           type: string
         description: 'skip_count=1: suppress the per-page COUNT(*). count is null;
           next is present exactly while a full page was returned.'
+      - in: query
+        name: project_id
+        schema:
+          type: string
+        description: Narrow to one project this credential can read, by its id. An
+          id that names no readable project is refused with `invalid_parameter` —
+          never an empty list.
+      - in: query
+        name: project
+        schema:
+          type: string
+        description: 'Narrow to one project this credential can read, by its id or
+          its exact name (case does not matter). A value that names no readable project
+          is refused with `invalid_parameter` — never an empty list. The JSON natural
+          key some app endpoints take (`{"name": …, "company": …}`) is not a form
+          this parameter accepts: it is refused with `invalid_parameter` too — send
+          the id.'
+      - in: query
+        name: bhid
+        schema:
+          type: string
+        description: Narrow to one drill hole, by its id or its exact name (case does
+          not matter). A name that matches no readable hole is refused with `invalid_parameter`
+          — never an empty list.
       tags:
       - Drill Intervals
       security:
@@ -4077,6 +4484,23 @@ paths:
         description: The initial index from which to return the results.
         schema:
           type: integer
+      - in: query
+        name: project_id
+        schema:
+          type: string
+        description: Narrow to one project this credential can read, by its id. An
+          id that names no readable project is refused with `invalid_parameter` —
+          never an empty list.
+      - in: query
+        name: project
+        schema:
+          type: string
+        description: 'Narrow to one project this credential can read, by its id or
+          its exact name (case does not matter). A value that names no readable project
+          is refused with `invalid_parameter` — never an empty list. The JSON natural
+          key some app endpoints take (`{"name": …, "company": …}`) is not a form
+          this parameter accepts: it is refused with `invalid_parameter` too — send
+          the id.'
       tags:
       - Drill Intervals
       security:
@@ -4220,6 +4644,23 @@ paths:
         description: The initial index from which to return the results.
         schema:
           type: integer
+      - in: query
+        name: project_id
+        schema:
+          type: string
+        description: Narrow to one project this credential can read, by its id. An
+          id that names no readable project is refused with `invalid_parameter` —
+          never an empty list.
+      - in: query
+        name: project
+        schema:
+          type: string
+        description: 'Narrow to one project this credential can read, by its id or
+          its exact name (case does not matter). A value that names no readable project
+          is refused with `invalid_parameter` — never an empty list. The JSON natural
+          key some app endpoints take (`{"name": …, "company": …}`) is not a form
+          this parameter accepts: it is refused with `invalid_parameter` too — send
+          the id.'
       tags:
       - Drill Intervals
       security:
@@ -4414,6 +4855,30 @@ paths:
           type: string
         description: 'skip_count=1: suppress the per-page COUNT(*). count is null;
           next is present exactly while a full page was returned.'
+      - in: query
+        name: project_id
+        schema:
+          type: string
+        description: Narrow to one project this credential can read, by its id. An
+          id that names no readable project is refused with `invalid_parameter` —
+          never an empty list.
+      - in: query
+        name: project
+        schema:
+          type: string
+        description: 'Narrow to one project this credential can read, by its id or
+          its exact name (case does not matter). A value that names no readable project
+          is refused with `invalid_parameter` — never an empty list. The JSON natural
+          key some app endpoints take (`{"name": …, "company": …}`) is not a form
+          this parameter accepts: it is refused with `invalid_parameter` too — send
+          the id.'
+      - in: query
+        name: bhid
+        schema:
+          type: string
+        description: Narrow to one drill hole, by its id or its exact name (case does
+          not matter). A name that matches no readable hole is refused with `invalid_parameter`
+          — never an empty list.
       tags:
       - Drill Intervals
       security:
@@ -4610,6 +5075,30 @@ paths:
           type: string
         description: 'skip_count=1: suppress the per-page COUNT(*). count is null;
           next is present exactly while a full page was returned.'
+      - in: query
+        name: project_id
+        schema:
+          type: string
+        description: Narrow to one project this credential can read, by its id. An
+          id that names no readable project is refused with `invalid_parameter` —
+          never an empty list.
+      - in: query
+        name: project
+        schema:
+          type: string
+        description: 'Narrow to one project this credential can read, by its id or
+          its exact name (case does not matter). A value that names no readable project
+          is refused with `invalid_parameter` — never an empty list. The JSON natural
+          key some app endpoints take (`{"name": …, "company": …}`) is not a form
+          this parameter accepts: it is refused with `invalid_parameter` too — send
+          the id.'
+      - in: query
+        name: bhid
+        schema:
+          type: string
+        description: Narrow to one drill hole, by its id or its exact name (case does
+          not matter). A name that matches no readable hole is refused with `invalid_parameter`
+          — never an empty list.
       tags:
       - Drill Holes
       security:
@@ -4768,6 +5257,23 @@ paths:
           requester (or a project-pinned grant) is refused / degrades to its one project.
           Rows carry flat project_id / project_name so results can be grouped by project.
           Any other scope value is left to endpoint-specific meaning.'
+      - in: query
+        name: project_id
+        schema:
+          type: string
+        description: Narrow to one project this credential can read, by its id. An
+          id that names no readable project is refused with `invalid_parameter` —
+          never an empty list.
+      - in: query
+        name: project
+        schema:
+          type: string
+        description: 'Narrow to one project this credential can read, by its id or
+          its exact name (case does not matter). A value that names no readable project
+          is refused with `invalid_parameter` — never an empty list. The JSON natural
+          key some app endpoints take (`{"name": …, "company": …}`) is not a form
+          this parameter accepts: it is refused with `invalid_parameter` too — send
+          the id.'
       tags:
       - Drill Holes
       security:
@@ -4979,6 +5485,23 @@ paths:
         description: The initial index from which to return the results.
         schema:
           type: integer
+      - in: query
+        name: project_id
+        schema:
+          type: string
+        description: Narrow to one project this credential can read, by its id. An
+          id that names no readable project is refused with `invalid_parameter` —
+          never an empty list.
+      - in: query
+        name: project
+        schema:
+          type: string
+        description: 'Narrow to one project this credential can read, by its id or
+          its exact name (case does not matter). A value that names no readable project
+          is refused with `invalid_parameter` — never an empty list. The JSON natural
+          key some app endpoints take (`{"name": …, "company": …}`) is not a form
+          this parameter accepts: it is refused with `invalid_parameter` too — send
+          the id.'
       tags:
       - Drill Intervals
       security:
@@ -5172,6 +5695,30 @@ paths:
           type: string
         description: 'skip_count=1: suppress the per-page COUNT(*). count is null;
           next is present exactly while a full page was returned.'
+      - in: query
+        name: project_id
+        schema:
+          type: string
+        description: Narrow to one project this credential can read, by its id. An
+          id that names no readable project is refused with `invalid_parameter` —
+          never an empty list.
+      - in: query
+        name: project
+        schema:
+          type: string
+        description: 'Narrow to one project this credential can read, by its id or
+          its exact name (case does not matter). A value that names no readable project
+          is refused with `invalid_parameter` — never an empty list. The JSON natural
+          key some app endpoints take (`{"name": …, "company": …}`) is not a form
+          this parameter accepts: it is refused with `invalid_parameter` too — send
+          the id.'
+      - in: query
+        name: bhid
+        schema:
+          type: string
+        description: Narrow to one drill hole, by its id or its exact name (case does
+          not matter). A name that matches no readable hole is refused with `invalid_parameter`
+          — never an empty list.
       tags:
       - Drill Intervals
       security:
@@ -5562,6 +6109,23 @@ paths:
           requester (or a project-pinned grant) is refused / degrades to its one project.
           Rows carry flat project_id / project_name so results can be grouped by project.
           Any other scope value is left to endpoint-specific meaning.'
+      - in: query
+        name: project_id
+        schema:
+          type: string
+        description: Narrow to one project this credential can read, by its id. An
+          id that names no readable project is refused with `invalid_parameter` —
+          never an empty list.
+      - in: query
+        name: project
+        schema:
+          type: string
+        description: 'Narrow to one project this credential can read, by its id or
+          its exact name (case does not matter). A value that names no readable project
+          is refused with `invalid_parameter` — never an empty list. The JSON natural
+          key some app endpoints take (`{"name": …, "company": …}`) is not a form
+          this parameter accepts: it is refused with `invalid_parameter` too — send
+          the id.'
       tags:
       - Surface Geology
       security:
@@ -5706,6 +6270,23 @@ paths:
         description: The initial index from which to return the results.
         schema:
           type: integer
+      - in: query
+        name: project_id
+        schema:
+          type: string
+        description: Narrow to one project this credential can read, by its id. An
+          id that names no readable project is refused with `invalid_parameter` —
+          never an empty list.
+      - in: query
+        name: project
+        schema:
+          type: string
+        description: 'Narrow to one project this credential can read, by its id or
+          its exact name (case does not matter). A value that names no readable project
+          is refused with `invalid_parameter` — never an empty list. The JSON natural
+          key some app endpoints take (`{"name": …, "company": …}`) is not a form
+          this parameter accepts: it is refused with `invalid_parameter` too — send
+          the id.'
       tags:
       - Surface Geology
       security:
@@ -5901,6 +6482,23 @@ paths:
           type: string
         description: 'skip_count=1: suppress the per-page COUNT(*). count is null;
           next is present exactly while a full page was returned.'
+      - in: query
+        name: project_id
+        schema:
+          type: string
+        description: Narrow to one project this credential can read, by its id. An
+          id that names no readable project is refused with `invalid_parameter` —
+          never an empty list.
+      - in: query
+        name: project
+        schema:
+          type: string
+        description: 'Narrow to one project this credential can read, by its id or
+          its exact name (case does not matter). A value that names no readable project
+          is refused with `invalid_parameter` — never an empty list. The JSON natural
+          key some app endpoints take (`{"name": …, "company": …}`) is not a form
+          this parameter accepts: it is refused with `invalid_parameter` too — send
+          the id.'
       tags:
       - Geophysics
       security:
@@ -6143,6 +6741,23 @@ paths:
           type: string
         description: 'skip_count=1: suppress the per-page COUNT(*). count is null;
           next is present exactly while a full page was returned.'
+      - in: query
+        name: project_id
+        schema:
+          type: string
+        description: Narrow to one project this credential can read, by its id. An
+          id that names no readable project is refused with `invalid_parameter` —
+          never an empty list.
+      - in: query
+        name: project
+        schema:
+          type: string
+        description: 'Narrow to one project this credential can read, by its id or
+          its exact name (case does not matter). A value that names no readable project
+          is refused with `invalid_parameter` — never an empty list. The JSON natural
+          key some app endpoints take (`{"name": …, "company": …}`) is not a form
+          this parameter accepts: it is refused with `invalid_parameter` too — send
+          the id.'
       tags:
       - Assays
       security:
@@ -6300,6 +6915,23 @@ paths:
           requester (or a project-pinned grant) is refused / degrades to its one project.
           Rows carry flat project_id / project_name so results can be grouped by project.
           Any other scope value is left to endpoint-specific meaning.'
+      - in: query
+        name: project_id
+        schema:
+          type: string
+        description: Narrow to one project this credential can read, by its id. An
+          id that names no readable project is refused with `invalid_parameter` —
+          never an empty list.
+      - in: query
+        name: project
+        schema:
+          type: string
+        description: 'Narrow to one project this credential can read, by its id or
+          its exact name (case does not matter). A value that names no readable project
+          is refused with `invalid_parameter` — never an empty list. The JSON natural
+          key some app endpoints take (`{"name": …, "company": …}`) is not a form
+          this parameter accepts: it is refused with `invalid_parameter` too — send
+          the id.'
       tags:
       - Land Holdings
       security:
@@ -6444,6 +7076,23 @@ paths:
         description: The initial index from which to return the results.
         schema:
           type: integer
+      - in: query
+        name: project_id
+        schema:
+          type: string
+        description: Narrow to one project this credential can read, by its id. An
+          id that names no readable project is refused with `invalid_parameter` —
+          never an empty list.
+      - in: query
+        name: project
+        schema:
+          type: string
+        description: 'Narrow to one project this credential can read, by its id or
+          its exact name (case does not matter). A value that names no readable project
+          is refused with `invalid_parameter` — never an empty list. The JSON natural
+          key some app endpoints take (`{"name": …, "company": …}`) is not a form
+          this parameter accepts: it is refused with `invalid_parameter` too — send
+          the id.'
       tags:
       - Surface Geology
       security:
@@ -6588,6 +7237,23 @@ paths:
         description: The initial index from which to return the results.
         schema:
           type: integer
+      - in: query
+        name: project_id
+        schema:
+          type: string
+        description: Narrow to one project this credential can read, by its id. An
+          id that names no readable project is refused with `invalid_parameter` —
+          never an empty list.
+      - in: query
+        name: project
+        schema:
+          type: string
+        description: 'Narrow to one project this credential can read, by its id or
+          its exact name (case does not matter). A value that names no readable project
+          is refused with `invalid_parameter` — never an empty list. The JSON natural
+          key some app endpoints take (`{"name": …, "company": …}`) is not a form
+          this parameter accepts: it is refused with `invalid_parameter` too — send
+          the id.'
       tags:
       - Assays
       security:
@@ -6732,6 +7398,23 @@ paths:
         description: The initial index from which to return the results.
         schema:
           type: integer
+      - in: query
+        name: project_id
+        schema:
+          type: string
+        description: Narrow to one project this credential can read, by its id. An
+          id that names no readable project is refused with `invalid_parameter` —
+          never an empty list.
+      - in: query
+        name: project
+        schema:
+          type: string
+        description: 'Narrow to one project this credential can read, by its id or
+          its exact name (case does not matter). A value that names no readable project
+          is refused with `invalid_parameter` — never an empty list. The JSON natural
+          key some app endpoints take (`{"name": …, "company": …}`) is not a form
+          this parameter accepts: it is refused with `invalid_parameter` too — send
+          the id.'
       tags:
       - Surface Geology
       security:
@@ -6875,6 +7558,23 @@ paths:
         description: The initial index from which to return the results.
         schema:
           type: integer
+      - in: query
+        name: project_id
+        schema:
+          type: string
+        description: Narrow to one project this credential can read, by its id. An
+          id that names no readable project is refused with `invalid_parameter` —
+          never an empty list.
+      - in: query
+        name: project
+        schema:
+          type: string
+        description: 'Narrow to one project this credential can read, by its id or
+          its exact name (case does not matter). A value that names no readable project
+          is refused with `invalid_parameter` — never an empty list. The JSON natural
+          key some app endpoints take (`{"name": …, "company": …}`) is not a form
+          this parameter accepts: it is refused with `invalid_parameter` too — send
+          the id.'
       tags:
       - Surface Geology
       security:
@@ -7196,6 +7896,23 @@ paths:
         description: The initial index from which to return the results.
         schema:
           type: integer
+      - in: query
+        name: project_id
+        schema:
+          type: string
+        description: Narrow to one project this credential can read, by its id. An
+          id that names no readable project is refused with `invalid_parameter` —
+          never an empty list.
+      - in: query
+        name: project
+        schema:
+          type: string
+        description: 'Narrow to one project this credential can read, by its id or
+          its exact name (case does not matter). A value that names no readable project
+          is refused with `invalid_parameter` — never an empty list. The JSON natural
+          key some app endpoints take (`{"name": …, "company": …}`) is not a form
+          this parameter accepts: it is refused with `invalid_parameter` too — send
+          the id.'
       tags:
       - Photos
       security:
@@ -7393,6 +8110,23 @@ paths:
           type: string
         description: 'skip_count=1: suppress the per-page COUNT(*). count is null;
           next is present exactly while a full page was returned.'
+      - in: query
+        name: project_id
+        schema:
+          type: string
+        description: Narrow to one project this credential can read, by its id. An
+          id that names no readable project is refused with `invalid_parameter` —
+          never an empty list.
+      - in: query
+        name: project
+        schema:
+          type: string
+        description: 'Narrow to one project this credential can read, by its id or
+          its exact name (case does not matter). A value that names no readable project
+          is refused with `invalid_parameter` — never an empty list. The JSON natural
+          key some app endpoints take (`{"name": …, "company": …}`) is not a form
+          this parameter accepts: it is refused with `invalid_parameter` too — send
+          the id.'
       tags:
       - Samples
       security:
@@ -7612,6 +8346,23 @@ paths:
           requester (or a project-pinned grant) is refused / degrades to its one project.
           Rows carry flat project_id / project_name so results can be grouped by project.
           Any other scope value is left to endpoint-specific meaning.'
+      - in: query
+        name: project_id
+        schema:
+          type: string
+        description: Narrow to one project this credential can read, by its id. An
+          id that names no readable project is refused with `invalid_parameter` —
+          never an empty list.
+      - in: query
+        name: project
+        schema:
+          type: string
+        description: 'Narrow to one project this credential can read, by its id or
+          its exact name (case does not matter). A value that names no readable project
+          is refused with `invalid_parameter` — never an empty list. The JSON natural
+          key some app endpoints take (`{"name": …, "company": …}`) is not a form
+          this parameter accepts: it is refused with `invalid_parameter` too — send
+          the id.'
       tags:
       - Files
       security:
@@ -8094,6 +8845,24 @@ paths:
                 response.
               schema:
                 type: integer
+      parameters:
+      - in: query
+        name: project_id
+        schema:
+          type: string
+        description: Narrow to one project this credential can read, by its id. An
+          id that names no readable project is refused with `invalid_parameter` —
+          never an empty list.
+      - in: query
+        name: project
+        schema:
+          type: string
+        description: 'Narrow to one project this credential can read, by its id or
+          its exact name (case does not matter). A value that names no readable project
+          is refused with `invalid_parameter` — never an empty list. The JSON natural
+          key some app endpoints take (`{"name": …, "company": …}`) is not a form
+          this parameter accepts: it is refused with `invalid_parameter` too — send
+          the id.'
       summary: List QAQC protocol
       x-geodb-extension: true
   /api/v2/qaqc-protocols/{id}/:
@@ -8241,30 +9010,32 @@ paths:
 
         ⚠️ `modified_since` is DAY-granular: it returns everything changed on that day or later, so a repeated pull re-sends the current day's rows. Deduplicate by `id` rather than assuming a strict watermark.
       parameters:
+      - in: query
+        name: compact
+        schema:
+          type: string
+        description: 'compact=1: lean sync serialization — flat scalars with FK ids
+          (project_id, bhid_id, ...), raw extra_data dict, no nested natural keys
+          / derived fields / geometry columns. Same pagination envelope and deleted_ids
+          metadata. Assays inline their element values as flat dicts. Any other value
+          = default rich shape.'
+      - in: query
+        name: deleted_since
+        schema:
+          type: string
+        description: 'Deletion sync: restrict deleted_ids to records soft-deleted
+          on or after the DATE part of this ISO 8601 date/datetime. DAY-granular and
+          inclusive, for the same reason as modified_since — removal is idempotent,
+          so over-including a deletion is harmless and under-including leaves a ghost
+          record. Omit it on a first sync to receive every deleted id. The response
+          echoes deleted_since_applied, and sync_timestamp is the value to send next
+          time.'
       - name: limit
         required: false
         in: query
         description: Number of results to return per page.
         schema:
           type: integer
-      - name: offset
-        required: false
-        in: query
-        description: The initial index from which to return the results.
-        schema:
-          type: integer
-      - in: query
-        name: scope
-        schema:
-          type: string
-          enum:
-          - company
-        description: 'scope=company: read the UNION of the requester''s allowed projects
-          WITHIN THE ACTIVE COMPANY (never cross-company), instead of the single active
-          project. Read-only — write verbs are refused (403) under this scope. A single-project
-          requester (or a project-pinned grant) is refused / degrades to its one project.
-          Rows carry flat project_id / project_name so results can be grouped by project.
-          Any other scope value is left to endpoint-specific meaning.'
       - in: query
         name: modified_since
         schema:
@@ -8277,32 +9048,42 @@ paths:
           reflected here; keep using deleted_since / deleted_ids. A value that cannot
           be parsed is REFUSED with 400 reason_code=invalid_parameter. When sent,
           the response echoes modified_since_applied.'
-      - in: query
-        name: deleted_since
+      - name: offset
+        required: false
+        in: query
+        description: The initial index from which to return the results.
         schema:
-          type: string
-        description: 'Deletion sync: restrict deleted_ids to records soft-deleted
-          on or after the DATE part of this ISO 8601 date/datetime. DAY-granular and
-          inclusive, for the same reason as modified_since — removal is idempotent,
-          so over-including a deletion is harmless and under-including leaves a ghost
-          record. Omit it on a first sync to receive every deleted id. The response
-          echoes deleted_since_applied, and sync_timestamp is the value to send next
-          time.'
-      - in: query
-        name: compact
-        schema:
-          type: string
-        description: 'compact=1: lean sync serialization — flat scalars with FK ids
-          (project_id, bhid_id, ...), raw extra_data dict, no nested natural keys
-          / derived fields / geometry columns. Same pagination envelope and deleted_ids
-          metadata. Assays inline their element values as flat dicts. Any other value
-          = default rich shape.'
+          type: integer
       - in: query
         name: skip_count
         schema:
           type: string
         description: 'skip_count=1: suppress the per-page COUNT(*). count is null;
           next is present exactly while a full page was returned.'
+      - in: query
+        name: project_id
+        schema:
+          type: string
+        description: Narrow to one project this credential can read, by its id. An
+          id that names no readable project is refused with `invalid_parameter` —
+          never an empty list.
+      - in: query
+        name: project
+        schema:
+          type: string
+        description: 'Narrow to one project this credential can read, by its id or
+          its exact name (case does not matter). A value that names no readable project
+          is refused with `invalid_parameter` — never an empty list. The JSON natural
+          key some app endpoints take (`{"name": …, "company": …}`) is not a form
+          this parameter accepts: it is refused with `invalid_parameter` too — send
+          the id.'
+      - in: query
+        name: bhid
+        schema:
+          type: string
+        description: Narrow to one drill hole, by its id or its exact name (case does
+          not matter). A name that matches no readable hole is refused with `invalid_parameter`
+          — never an empty list.
       tags:
       - Quality Control
       security:
@@ -8449,6 +9230,23 @@ paths:
         description: The initial index from which to return the results.
         schema:
           type: integer
+      - in: query
+        name: project_id
+        schema:
+          type: string
+        description: Narrow to one project this credential can read, by its id. An
+          id that names no readable project is refused with `invalid_parameter` —
+          never an empty list.
+      - in: query
+        name: project
+        schema:
+          type: string
+        description: 'Narrow to one project this credential can read, by its id or
+          its exact name (case does not matter). A value that names no readable project
+          is refused with `invalid_parameter` — never an empty list. The JSON natural
+          key some app endpoints take (`{"name": …, "company": …}`) is not a form
+          this parameter accepts: it is refused with `invalid_parameter` too — send
+          the id.'
       tags:
       - Quality Control
       security:
@@ -8643,6 +9441,23 @@ paths:
           type: string
         description: 'skip_count=1: suppress the per-page COUNT(*). count is null;
           next is present exactly while a full page was returned.'
+      - in: query
+        name: project_id
+        schema:
+          type: string
+        description: Narrow to one project this credential can read, by its id. An
+          id that names no readable project is refused with `invalid_parameter` —
+          never an empty list.
+      - in: query
+        name: project
+        schema:
+          type: string
+        description: 'Narrow to one project this credential can read, by its id or
+          its exact name (case does not matter). A value that names no readable project
+          is refused with `invalid_parameter` — never an empty list. The JSON natural
+          key some app endpoints take (`{"name": …, "company": …}`) is not a form
+          this parameter accepts: it is refused with `invalid_parameter` too — send
+          the id.'
       tags:
       - Map Layers
       security:
@@ -9289,6 +10104,23 @@ paths:
         description: The initial index from which to return the results.
         schema:
           type: integer
+      - in: query
+        name: project_id
+        schema:
+          type: string
+        description: Narrow to one project this credential can read, by its id. An
+          id that names no readable project is refused with `invalid_parameter` —
+          never an empty list.
+      - in: query
+        name: project
+        schema:
+          type: string
+        description: 'Narrow to one project this credential can read, by its id or
+          its exact name (case does not matter). A value that names no readable project
+          is refused with `invalid_parameter` — never an empty list. The JSON natural
+          key some app endpoints take (`{"name": …, "company": …}`) is not a form
+          this parameter accepts: it is refused with `invalid_parameter` too — send
+          the id.'
       tags:
       - Quality Control
       security:
@@ -9446,6 +10278,23 @@ paths:
           requester (or a project-pinned grant) is refused / degrades to its one project.
           Rows carry flat project_id / project_name so results can be grouped by project.
           Any other scope value is left to endpoint-specific meaning.'
+      - in: query
+        name: project_id
+        schema:
+          type: string
+        description: Narrow to one project this credential can read, by its id. An
+          id that names no readable project is refused with `invalid_parameter` —
+          never an empty list.
+      - in: query
+        name: project
+        schema:
+          type: string
+        description: 'Narrow to one project this credential can read, by its id or
+          its exact name (case does not matter). A value that names no readable project
+          is refused with `invalid_parameter` — never an empty list. The JSON natural
+          key some app endpoints take (`{"name": …, "company": …}`) is not a form
+          this parameter accepts: it is refused with `invalid_parameter` too — send
+          the id.'
       tags:
       - Surface Geology
       security:
@@ -9590,6 +10439,23 @@ paths:
         description: The initial index from which to return the results.
         schema:
           type: integer
+      - in: query
+        name: project_id
+        schema:
+          type: string
+        description: Narrow to one project this credential can read, by its id. An
+          id that names no readable project is refused with `invalid_parameter` —
+          never an empty list.
+      - in: query
+        name: project
+        schema:
+          type: string
+        description: 'Narrow to one project this credential can read, by its id or
+          its exact name (case does not matter). A value that names no readable project
+          is refused with `invalid_parameter` — never an empty list. The JSON natural
+          key some app endpoints take (`{"name": …, "company": …}`) is not a form
+          this parameter accepts: it is refused with `invalid_parameter` too — send
+          the id.'
       tags:
       - Surface Geology
       security:
@@ -9758,6 +10624,23 @@ paths:
         description: OPT-IN topology-preserving simplification tolerance in degrees
           (e.g. 0.0002 ≈ 22 m). Omit for full-resolution geometry — the default, and
           the only safe input for an edit round-trip.
+      - in: query
+        name: project_id
+        schema:
+          type: string
+        description: Narrow to one project this credential can read, by its id. An
+          id that names no readable project is refused with `invalid_parameter` —
+          never an empty list.
+      - in: query
+        name: project
+        schema:
+          type: string
+        description: 'Narrow to one project this credential can read, by its id or
+          its exact name (case does not matter). A value that names no readable project
+          is refused with `invalid_parameter` — never an empty list. The JSON natural
+          key some app endpoints take (`{"name": …, "company": …}`) is not a form
+          this parameter accepts: it is refused with `invalid_parameter` too — send
+          the id.'
       tags:
       - Map Layers
       security:
@@ -9903,6 +10786,23 @@ paths:
         description: The initial index from which to return the results.
         schema:
           type: integer
+      - in: query
+        name: project_id
+        schema:
+          type: string
+        description: Narrow to one project this credential can read, by its id. An
+          id that names no readable project is refused with `invalid_parameter` —
+          never an empty list.
+      - in: query
+        name: project
+        schema:
+          type: string
+        description: 'Narrow to one project this credential can read, by its id or
+          its exact name (case does not matter). A value that names no readable project
+          is refused with `invalid_parameter` — never an empty list. The JSON natural
+          key some app endpoints take (`{"name": …, "company": …}`) is not a form
+          this parameter accepts: it is refused with `invalid_parameter` too — send
+          the id.'
       tags:
       - Map Layers
       security:
@@ -10058,6 +10958,23 @@ paths:
         description: OPT-IN topology-preserving simplification tolerance in degrees
           (e.g. 0.0002 ≈ 22 m). Omit for full-resolution geometry — the default, and
           the only safe input for an edit round-trip.
+      - in: query
+        name: project_id
+        schema:
+          type: string
+        description: Narrow to one project this credential can read, by its id. An
+          id that names no readable project is refused with `invalid_parameter` —
+          never an empty list.
+      - in: query
+        name: project
+        schema:
+          type: string
+        description: 'Narrow to one project this credential can read, by its id or
+          its exact name (case does not matter). A value that names no readable project
+          is refused with `invalid_parameter` — never an empty list. The JSON natural
+          key some app endpoints take (`{"name": …, "company": …}`) is not a form
+          this parameter accepts: it is refused with `invalid_parameter` too — send
+          the id.'
       tags:
       - Map Layers
       security:
@@ -10135,6 +11052,23 @@ paths:
         description: The initial index from which to return the results.
         schema:
           type: integer
+      - in: query
+        name: project_id
+        schema:
+          type: string
+        description: Narrow to one project this credential can read, by its id. An
+          id that names no readable project is refused with `invalid_parameter` —
+          never an empty list.
+      - in: query
+        name: project
+        schema:
+          type: string
+        description: 'Narrow to one project this credential can read, by its id or
+          its exact name (case does not matter). A value that names no readable project
+          is refused with `invalid_parameter` — never an empty list. The JSON natural
+          key some app endpoints take (`{"name": …, "company": …}`) is not a form
+          this parameter accepts: it is refused with `invalid_parameter` too — send
+          the id.'
       tags:
       - Surface Geology
       security:
@@ -10328,6 +11262,23 @@ paths:
           type: string
         description: 'skip_count=1: suppress the per-page COUNT(*). count is null;
           next is present exactly while a full page was returned.'
+      - in: query
+        name: project_id
+        schema:
+          type: string
+        description: Narrow to one project this credential can read, by its id. An
+          id that names no readable project is refused with `invalid_parameter` —
+          never an empty list.
+      - in: query
+        name: project
+        schema:
+          type: string
+        description: 'Narrow to one project this credential can read, by its id or
+          its exact name (case does not matter). A value that names no readable project
+          is refused with `invalid_parameter` — never an empty list. The JSON natural
+          key some app endpoints take (`{"name": …, "company": …}`) is not a form
+          this parameter accepts: it is refused with `invalid_parameter` too — send
+          the id.'
       tags:
       - Water
       security:
@@ -10523,6 +11474,23 @@ paths:
           type: string
         description: 'skip_count=1: suppress the per-page COUNT(*). count is null;
           next is present exactly while a full page was returned.'
+      - in: query
+        name: project_id
+        schema:
+          type: string
+        description: Narrow to one project this credential can read, by its id. An
+          id that names no readable project is refused with `invalid_parameter` —
+          never an empty list.
+      - in: query
+        name: project
+        schema:
+          type: string
+        description: 'Narrow to one project this credential can read, by its id or
+          its exact name (case does not matter). A value that names no readable project
+          is refused with `invalid_parameter` — never an empty list. The JSON natural
+          key some app endpoints take (`{"name": …, "company": …}`) is not a form
+          this parameter accepts: it is refused with `invalid_parameter` too — send
+          the id.'
       tags:
       - Water
       security:
@@ -10863,20 +11831,66 @@ components:
           type: string
           readOnly: true
           nullable: true
+        excluded:
+          type: boolean
+          description: 'True when a QAQC review WITHHOLDS this row from results by
+            default: it is returned only so you can explain why it is missing. Never
+            average, plot or report a flagged row as a result.'
+          readOnly: true
+        excluded_reason:
+          nullable: true
+          description: 'Why the row is withheld, or null when it is not. `certificate_rejected`:
+            its certificate failed QAQC review. `certificate_superseded`: its certificate
+            was replaced by a re-assay — read `superseded_by` on the certificate for
+            the job that carries the live values. `certificate_pending_approval`:
+            the project requires QAQC approval before results are used and this certificate''s
+            review is still pending.'
+          readOnly: true
+          allOf:
+          - $ref: '#/components/schemas/ExcludedReasonEnum'
+        excluded_by_certificate:
+          type: object
+          nullable: true
+          description: The certificate whose review withholds this row — name it when
+            you explain the gap. Usually the row's own certificate; on a merged row
+            it can be the rejected job that produced the values. Null when the row
+            is not withheld.
+          properties:
+            id:
+              type: integer
+            name:
+              type: string
+          readOnly: true
+        source_type:
+          allOf:
+          - $ref: '#/components/schemas/AssayReadSourceTypeEnum'
+          description: '`lab` — laboratory results. `field_xrf` — a portable-XRF reading
+            (field guidance, never a reportable grade; left out of lab analytics,
+            QC and intercepts by default).'
+          readOnly: true
       required:
       - analyte_mass_g
       - certificate
       - date_created
       - detection_limit_per_sample
       - elements
+      - excluded
+      - excluded_by_certificate
+      - excluded_reason
       - id
       - lab_status_code
       - name
       - precision_per_sample
       - project
       - qaqc_status
+      - source_type
       - weight
       additionalProperties: false
+    AssayReadSourceTypeEnum:
+      type: string
+      enum:
+      - lab
+      - field_xrf
     AssayUnitNested:
       type: object
       properties:
@@ -10964,9 +11978,28 @@ components:
               type: string
               nullable: true
           readOnly: true
+        below_detection:
+          type: boolean
+          description: 'True when the laboratory reported this value BELOW its detection
+            limit. `value` then holds the sentinel `-1.0000`, which is a marker, never
+            a grade: the threshold is `detection_limit` (`detection_limit_per_sample`
+            on the assay row for a method that reports one per sample). geoDB stores
+            the sentinel and substitutes only when it MERGES values (half the detection
+            limit by default, per the project''s merge settings) — do not substitute
+            twice.'
+          readOnly: true
+        certificate_id:
+          type: integer
+          nullable: true
+          description: Id of the certificate (laboratory job) that produced THIS value
+            — the same job as `certificate.id`, flat. Null when the value carries
+            no provenance of its own and the row's job could not be resolved.
+          readOnly: true
       required:
       - above_det_limit
+      - below_detection
       - certificate
+      - certificate_id
       - detection_limit
       - element
       - method
@@ -11076,6 +12109,48 @@ components:
           description: 'How many assay rows this certificate produced. A zero is INFORMATION,
             not an error: an intentionally empty placeholder certificate is a legitimate
             record to hold.'
+        qaqc_status:
+          allOf:
+          - $ref: '#/components/schemas/QaqcStatusEnum'
+          description: 'The QAQC review verdict on this certificate. `pending`: review
+            not finished — on a project that requires approval, its results are withheld
+            until it is. `approved` / `conditional`: results are in use. `none`: no
+            review recorded. This is geoDB''s verdict; report it, do not recompute
+            it.'
+          readOnly: true
+        superseded_by:
+          type: object
+          nullable: true
+          description: The re-assay certificate that REPLACED this one, or null. A
+            superseded certificate's results are withheld; the live values are on
+            the certificate named here.
+          properties:
+            id:
+              type: integer
+            name:
+              type: string
+          readOnly: true
+        supersedes:
+          type: array
+          description: The earlier certificates this one replaced as their re-assay
+            (empty when it replaced none).
+          items:
+            type: object
+            properties:
+              id:
+                type: integer
+              name:
+                type: string
+          readOnly: true
+        source_type:
+          allOf:
+          - $ref: '#/components/schemas/CertificateReadSourceTypeEnum'
+          readOnly: true
+          description: |-
+            `lab` — a laboratory job. `field_xrf` — a portable-XRF reading session: field guidance, never a reportable grade. Field-XRF results are left out of geoDB's lab analytics, QC verdicts, intercepts and merged reads by default.
+
+            * `lab` - Laboratory
+            * `field_xrf` - Field XRF
         date_created:
           type: string
           format: date
@@ -11098,10 +12173,22 @@ components:
       - methods
       - name
       - project
+      - qaqc_status
       - result_count
+      - source_type
       - status
+      - superseded_by
+      - supersedes
       - weight_units
       additionalProperties: false
+    CertificateReadSourceTypeEnum:
+      enum:
+      - lab
+      - field_xrf
+      type: string
+      description: |-
+        * `lab` - Laboratory
+        * `field_xrf` - Field XRF
     CertificateReadStatusEnum:
       enum:
       - preliminary
@@ -14355,6 +15442,12 @@ components:
       - project
       - vein_count
       additionalProperties: false
+    ExcludedReasonEnum:
+      type: string
+      enum:
+      - certificate_rejected
+      - certificate_superseded
+      - certificate_pending_approval
     ExportCreateRequestRequest:
       type: object
       properties:
@@ -15686,6 +16779,27 @@ components:
           nullable: true
           description: Echo of the `modified_since` value applied. Present only when
             the request sent `modified_since`.
+        withheld:
+          type: object
+          nullable: true
+          additionalProperties:
+            type: integer
+          description: 'What this list''s DEFAULT filters left out, as counts, so
+            a gap is never silent. The counts cover the whole list, not one page:
+            they are sent on the FIRST page (no `offset`, or `offset=0`) and later
+            pages carry null. `soft_deleted`: rows deleted on the server (their ids
+            are in `deleted_ids`). `planned` (QC samples): planned bags not yet collected,
+            held back unless you filter by `lab_status`. Mention these when you summarise:
+            a count or a pass rate over this list is a count over what is here.'
+          properties:
+            soft_deleted:
+              type: integer
+            qaqc_excluded:
+              type: integer
+            planned:
+              type: integer
+          required:
+          - soft_deleted
       additionalProperties: false
     PaginatedCertificateReadList:
       type: object
@@ -15733,6 +16847,27 @@ components:
           nullable: true
           description: Echo of the `modified_since` value applied. Present only when
             the request sent `modified_since`.
+        withheld:
+          type: object
+          nullable: true
+          additionalProperties:
+            type: integer
+          description: 'What this list''s DEFAULT filters left out, as counts, so
+            a gap is never silent. The counts cover the whole list, not one page:
+            they are sent on the FIRST page (no `offset`, or `offset=0`) and later
+            pages carry null. `soft_deleted`: rows deleted on the server (their ids
+            are in `deleted_ids`). `planned` (QC samples): planned bags not yet collected,
+            held back unless you filter by `lab_status`. Mention these when you summarise:
+            a count or a pass rate over this list is a count over what is here.'
+          properties:
+            soft_deleted:
+              type: integer
+            qaqc_excluded:
+              type: integer
+            planned:
+              type: integer
+          required:
+          - soft_deleted
       additionalProperties: false
     PaginatedCustomFieldSchemaListList:
       type: object
@@ -15838,6 +16973,27 @@ components:
           nullable: true
           description: Echo of the `modified_since` value applied. Present only when
             the request sent `modified_since`.
+        withheld:
+          type: object
+          nullable: true
+          additionalProperties:
+            type: integer
+          description: 'What this list''s DEFAULT filters left out, as counts, so
+            a gap is never silent. The counts cover the whole list, not one page:
+            they are sent on the FIRST page (no `offset`, or `offset=0`) and later
+            pages carry null. `soft_deleted`: rows deleted on the server (their ids
+            are in `deleted_ids`). `planned` (QC samples): planned bags not yet collected,
+            held back unless you filter by `lab_status`. Mention these when you summarise:
+            a count or a pass rate over this list is a count over what is here.'
+          properties:
+            soft_deleted:
+              type: integer
+            qaqc_excluded:
+              type: integer
+            planned:
+              type: integer
+          required:
+          - soft_deleted
       additionalProperties: false
     PaginatedDrillAlterationSetReadList:
       type: object
@@ -15914,6 +17070,27 @@ components:
           nullable: true
           description: Echo of the `modified_since` value applied. Present only when
             the request sent `modified_since`.
+        withheld:
+          type: object
+          nullable: true
+          additionalProperties:
+            type: integer
+          description: 'What this list''s DEFAULT filters left out, as counts, so
+            a gap is never silent. The counts cover the whole list, not one page:
+            they are sent on the FIRST page (no `offset`, or `offset=0`) and later
+            pages carry null. `soft_deleted`: rows deleted on the server (their ids
+            are in `deleted_ids`). `planned` (QC samples): planned bags not yet collected,
+            held back unless you filter by `lab_status`. Mention these when you summarise:
+            a count or a pass rate over this list is a count over what is here.'
+          properties:
+            soft_deleted:
+              type: integer
+            qaqc_excluded:
+              type: integer
+            planned:
+              type: integer
+          required:
+          - soft_deleted
       additionalProperties: false
     PaginatedDrillCustomIntervalReadList:
       type: object
@@ -15961,6 +17138,27 @@ components:
           nullable: true
           description: Echo of the `modified_since` value applied. Present only when
             the request sent `modified_since`.
+        withheld:
+          type: object
+          nullable: true
+          additionalProperties:
+            type: integer
+          description: 'What this list''s DEFAULT filters left out, as counts, so
+            a gap is never silent. The counts cover the whole list, not one page:
+            they are sent on the FIRST page (no `offset`, or `offset=0`) and later
+            pages carry null. `soft_deleted`: rows deleted on the server (their ids
+            are in `deleted_ids`). `planned` (QC samples): planned bags not yet collected,
+            held back unless you filter by `lab_status`. Mention these when you summarise:
+            a count or a pass rate over this list is a count over what is here.'
+          properties:
+            soft_deleted:
+              type: integer
+            qaqc_excluded:
+              type: integer
+            planned:
+              type: integer
+          required:
+          - soft_deleted
       additionalProperties: false
     PaginatedDrillCustomIntervalSetReadList:
       type: object
@@ -16037,6 +17235,27 @@ components:
           nullable: true
           description: Echo of the `modified_since` value applied. Present only when
             the request sent `modified_since`.
+        withheld:
+          type: object
+          nullable: true
+          additionalProperties:
+            type: integer
+          description: 'What this list''s DEFAULT filters left out, as counts, so
+            a gap is never silent. The counts cover the whole list, not one page:
+            they are sent on the FIRST page (no `offset`, or `offset=0`) and later
+            pages carry null. `soft_deleted`: rows deleted on the server (their ids
+            are in `deleted_ids`). `planned` (QC samples): planned bags not yet collected,
+            held back unless you filter by `lab_status`. Mention these when you summarise:
+            a count or a pass rate over this list is a count over what is here.'
+          properties:
+            soft_deleted:
+              type: integer
+            qaqc_excluded:
+              type: integer
+            planned:
+              type: integer
+          required:
+          - soft_deleted
       additionalProperties: false
     PaginatedDrillLithologySetReadList:
       type: object
@@ -16113,6 +17332,27 @@ components:
           nullable: true
           description: Echo of the `modified_since` value applied. Present only when
             the request sent `modified_since`.
+        withheld:
+          type: object
+          nullable: true
+          additionalProperties:
+            type: integer
+          description: 'What this list''s DEFAULT filters left out, as counts, so
+            a gap is never silent. The counts cover the whole list, not one page:
+            they are sent on the FIRST page (no `offset`, or `offset=0`) and later
+            pages carry null. `soft_deleted`: rows deleted on the server (their ids
+            are in `deleted_ids`). `planned` (QC samples): planned bags not yet collected,
+            held back unless you filter by `lab_status`. Mention these when you summarise:
+            a count or a pass rate over this list is a count over what is here.'
+          properties:
+            soft_deleted:
+              type: integer
+            qaqc_excluded:
+              type: integer
+            planned:
+              type: integer
+          required:
+          - soft_deleted
       additionalProperties: false
     PaginatedDrillMineralizationSetReadList:
       type: object
@@ -16218,6 +17458,27 @@ components:
           nullable: true
           description: Echo of the `modified_since` value applied. Present only when
             the request sent `modified_since`.
+        withheld:
+          type: object
+          nullable: true
+          additionalProperties:
+            type: integer
+          description: 'What this list''s DEFAULT filters left out, as counts, so
+            a gap is never silent. The counts cover the whole list, not one page:
+            they are sent on the FIRST page (no `offset`, or `offset=0`) and later
+            pages carry null. `soft_deleted`: rows deleted on the server (their ids
+            are in `deleted_ids`). `planned` (QC samples): planned bags not yet collected,
+            held back unless you filter by `lab_status`. Mention these when you summarise:
+            a count or a pass rate over this list is a count over what is here.'
+          properties:
+            soft_deleted:
+              type: integer
+            qaqc_excluded:
+              type: integer
+            planned:
+              type: integer
+          required:
+          - soft_deleted
       additionalProperties: false
     PaginatedDrillRQDReadList:
       type: object
@@ -16265,6 +17526,27 @@ components:
           nullable: true
           description: Echo of the `modified_since` value applied. Present only when
             the request sent `modified_since`.
+        withheld:
+          type: object
+          nullable: true
+          additionalProperties:
+            type: integer
+          description: 'What this list''s DEFAULT filters left out, as counts, so
+            a gap is never silent. The counts cover the whole list, not one page:
+            they are sent on the FIRST page (no `offset`, or `offset=0`) and later
+            pages carry null. `soft_deleted`: rows deleted on the server (their ids
+            are in `deleted_ids`). `planned` (QC samples): planned bags not yet collected,
+            held back unless you filter by `lab_status`. Mention these when you summarise:
+            a count or a pass rate over this list is a count over what is here.'
+          properties:
+            soft_deleted:
+              type: integer
+            qaqc_excluded:
+              type: integer
+            planned:
+              type: integer
+          required:
+          - soft_deleted
       additionalProperties: false
     PaginatedDrillRQDSetReadList:
       type: object
@@ -16341,6 +17623,27 @@ components:
           nullable: true
           description: Echo of the `modified_since` value applied. Present only when
             the request sent `modified_since`.
+        withheld:
+          type: object
+          nullable: true
+          additionalProperties:
+            type: integer
+          description: 'What this list''s DEFAULT filters left out, as counts, so
+            a gap is never silent. The counts cover the whole list, not one page:
+            they are sent on the FIRST page (no `offset`, or `offset=0`) and later
+            pages carry null. `soft_deleted`: rows deleted on the server (their ids
+            are in `deleted_ids`). `planned` (QC samples): planned bags not yet collected,
+            held back unless you filter by `lab_status`. Mention these when you summarise:
+            a count or a pass rate over this list is a count over what is here.'
+          properties:
+            soft_deleted:
+              type: integer
+            qaqc_excluded:
+              type: integer
+            planned:
+              type: integer
+          required:
+          - soft_deleted
       additionalProperties: false
     PaginatedDrillSpectralIntervalReadList:
       type: object
@@ -16388,6 +17691,27 @@ components:
           nullable: true
           description: Echo of the `modified_since` value applied. Present only when
             the request sent `modified_since`.
+        withheld:
+          type: object
+          nullable: true
+          additionalProperties:
+            type: integer
+          description: 'What this list''s DEFAULT filters left out, as counts, so
+            a gap is never silent. The counts cover the whole list, not one page:
+            they are sent on the FIRST page (no `offset`, or `offset=0`) and later
+            pages carry null. `soft_deleted`: rows deleted on the server (their ids
+            are in `deleted_ids`). `planned` (QC samples): planned bags not yet collected,
+            held back unless you filter by `lab_status`. Mention these when you summarise:
+            a count or a pass rate over this list is a count over what is here.'
+          properties:
+            soft_deleted:
+              type: integer
+            qaqc_excluded:
+              type: integer
+            planned:
+              type: integer
+          required:
+          - soft_deleted
       additionalProperties: false
     PaginatedDrillSpectralSetReadList:
       type: object
@@ -16493,6 +17817,27 @@ components:
           nullable: true
           description: Echo of the `modified_since` value applied. Present only when
             the request sent `modified_since`.
+        withheld:
+          type: object
+          nullable: true
+          additionalProperties:
+            type: integer
+          description: 'What this list''s DEFAULT filters left out, as counts, so
+            a gap is never silent. The counts cover the whole list, not one page:
+            they are sent on the FIRST page (no `offset`, or `offset=0`) and later
+            pages carry null. `soft_deleted`: rows deleted on the server (their ids
+            are in `deleted_ids`). `planned` (QC samples): planned bags not yet collected,
+            held back unless you filter by `lab_status`. Mention these when you summarise:
+            a count or a pass rate over this list is a count over what is here.'
+          properties:
+            soft_deleted:
+              type: integer
+            qaqc_excluded:
+              type: integer
+            planned:
+              type: integer
+          required:
+          - soft_deleted
       additionalProperties: false
     PaginatedDrillSurveyReadList:
       type: object
@@ -16540,6 +17885,27 @@ components:
           nullable: true
           description: Echo of the `modified_since` value applied. Present only when
             the request sent `modified_since`.
+        withheld:
+          type: object
+          nullable: true
+          additionalProperties:
+            type: integer
+          description: 'What this list''s DEFAULT filters left out, as counts, so
+            a gap is never silent. The counts cover the whole list, not one page:
+            they are sent on the FIRST page (no `offset`, or `offset=0`) and later
+            pages carry null. `soft_deleted`: rows deleted on the server (their ids
+            are in `deleted_ids`). `planned` (QC samples): planned bags not yet collected,
+            held back unless you filter by `lab_status`. Mention these when you summarise:
+            a count or a pass rate over this list is a count over what is here.'
+          properties:
+            soft_deleted:
+              type: integer
+            qaqc_excluded:
+              type: integer
+            planned:
+              type: integer
+          required:
+          - soft_deleted
       additionalProperties: false
     PaginatedDrillTraceSummaryList:
       type: object
@@ -16616,6 +17982,27 @@ components:
           nullable: true
           description: Echo of the `modified_since` value applied. Present only when
             the request sent `modified_since`.
+        withheld:
+          type: object
+          nullable: true
+          additionalProperties:
+            type: integer
+          description: 'What this list''s DEFAULT filters left out, as counts, so
+            a gap is never silent. The counts cover the whole list, not one page:
+            they are sent on the FIRST page (no `offset`, or `offset=0`) and later
+            pages carry null. `soft_deleted`: rows deleted on the server (their ids
+            are in `deleted_ids`). `planned` (QC samples): planned bags not yet collected,
+            held back unless you filter by `lab_status`. Mention these when you summarise:
+            a count or a pass rate over this list is a count over what is here.'
+          properties:
+            soft_deleted:
+              type: integer
+            qaqc_excluded:
+              type: integer
+            planned:
+              type: integer
+          required:
+          - soft_deleted
       additionalProperties: false
     PaginatedDrillVeinSetReadList:
       type: object
@@ -16750,6 +18137,27 @@ components:
           nullable: true
           description: Echo of the `modified_since` value applied. Present only when
             the request sent `modified_since`.
+        withheld:
+          type: object
+          nullable: true
+          additionalProperties:
+            type: integer
+          description: 'What this list''s DEFAULT filters left out, as counts, so
+            a gap is never silent. The counts cover the whole list, not one page:
+            they are sent on the FIRST page (no `offset`, or `offset=0`) and later
+            pages carry null. `soft_deleted`: rows deleted on the server (their ids
+            are in `deleted_ids`). `planned` (QC samples): planned bags not yet collected,
+            held back unless you filter by `lab_status`. Mention these when you summarise:
+            a count or a pass rate over this list is a count over what is here.'
+          properties:
+            soft_deleted:
+              type: integer
+            qaqc_excluded:
+              type: integer
+            planned:
+              type: integer
+          required:
+          - soft_deleted
       additionalProperties: false
     PaginatedLaboratoryReadList:
       type: object
@@ -16797,6 +18205,27 @@ components:
           nullable: true
           description: Echo of the `modified_since` value applied. Present only when
             the request sent `modified_since`.
+        withheld:
+          type: object
+          nullable: true
+          additionalProperties:
+            type: integer
+          description: 'What this list''s DEFAULT filters left out, as counts, so
+            a gap is never silent. The counts cover the whole list, not one page:
+            they are sent on the FIRST page (no `offset`, or `offset=0`) and later
+            pages carry null. `soft_deleted`: rows deleted on the server (their ids
+            are in `deleted_ids`). `planned` (QC samples): planned bags not yet collected,
+            held back unless you filter by `lab_status`. Mention these when you summarise:
+            a count or a pass rate over this list is a count over what is here.'
+          properties:
+            soft_deleted:
+              type: integer
+            qaqc_excluded:
+              type: integer
+            planned:
+              type: integer
+          required:
+          - soft_deleted
       additionalProperties: false
     PaginatedLandHoldingOutlineList:
       type: object
@@ -17018,6 +18447,27 @@ components:
           nullable: true
           description: Echo of the `modified_since` value applied. Present only when
             the request sent `modified_since`.
+        withheld:
+          type: object
+          nullable: true
+          additionalProperties:
+            type: integer
+          description: 'What this list''s DEFAULT filters left out, as counts, so
+            a gap is never silent. The counts cover the whole list, not one page:
+            they are sent on the FIRST page (no `offset`, or `offset=0`) and later
+            pages carry null. `soft_deleted`: rows deleted on the server (their ids
+            are in `deleted_ids`). `planned` (QC samples): planned bags not yet collected,
+            held back unless you filter by `lab_status`. Mention these when you summarise:
+            a count or a pass rate over this list is a count over what is here.'
+          properties:
+            soft_deleted:
+              type: integer
+            qaqc_excluded:
+              type: integer
+            planned:
+              type: integer
+          required:
+          - soft_deleted
       additionalProperties: false
     PaginatedProjectFileReadList:
       type: object
@@ -17094,6 +18544,27 @@ components:
           nullable: true
           description: Echo of the `modified_since` value applied. Present only when
             the request sent `modified_since`.
+        withheld:
+          type: object
+          nullable: true
+          additionalProperties:
+            type: integer
+          description: 'What this list''s DEFAULT filters left out, as counts, so
+            a gap is never silent. The counts cover the whole list, not one page:
+            they are sent on the FIRST page (no `offset`, or `offset=0`) and later
+            pages carry null. `soft_deleted`: rows deleted on the server (their ids
+            are in `deleted_ids`). `planned` (QC samples): planned bags not yet collected,
+            held back unless you filter by `lab_status`. Mention these when you summarise:
+            a count or a pass rate over this list is a count over what is here.'
+          properties:
+            soft_deleted:
+              type: integer
+            qaqc_excluded:
+              type: integer
+            planned:
+              type: integer
+          required:
+          - soft_deleted
       additionalProperties: false
     PaginatedQCTypeReadList:
       type: object
@@ -17199,6 +18670,27 @@ components:
           nullable: true
           description: Echo of the `modified_since` value applied. Present only when
             the request sent `modified_since`.
+        withheld:
+          type: object
+          nullable: true
+          additionalProperties:
+            type: integer
+          description: 'What this list''s DEFAULT filters left out, as counts, so
+            a gap is never silent. The counts cover the whole list, not one page:
+            they are sent on the FIRST page (no `offset`, or `offset=0`) and later
+            pages carry null. `soft_deleted`: rows deleted on the server (their ids
+            are in `deleted_ids`). `planned` (QC samples): planned bags not yet collected,
+            held back unless you filter by `lab_status`. Mention these when you summarise:
+            a count or a pass rate over this list is a count over what is here.'
+          properties:
+            soft_deleted:
+              type: integer
+            qaqc_excluded:
+              type: integer
+            planned:
+              type: integer
+          required:
+          - soft_deleted
       additionalProperties: false
     PaginatedStandardReadList:
       type: object
@@ -17420,6 +18912,27 @@ components:
           nullable: true
           description: Echo of the `modified_since` value applied. Present only when
             the request sent `modified_since`.
+        withheld:
+          type: object
+          nullable: true
+          additionalProperties:
+            type: integer
+          description: 'What this list''s DEFAULT filters left out, as counts, so
+            a gap is never silent. The counts cover the whole list, not one page:
+            they are sent on the FIRST page (no `offset`, or `offset=0`) and later
+            pages carry null. `soft_deleted`: rows deleted on the server (their ids
+            are in `deleted_ids`). `planned` (QC samples): planned bags not yet collected,
+            held back unless you filter by `lab_status`. Mention these when you summarise:
+            a count or a pass rate over this list is a count over what is here.'
+          properties:
+            soft_deleted:
+              type: integer
+            qaqc_excluded:
+              type: integer
+            planned:
+              type: integer
+          required:
+          - soft_deleted
       additionalProperties: false
     PaginatedWaterSiteReadList:
       type: object
@@ -17467,6 +18980,27 @@ components:
           nullable: true
           description: Echo of the `modified_since` value applied. Present only when
             the request sent `modified_since`.
+        withheld:
+          type: object
+          nullable: true
+          additionalProperties:
+            type: integer
+          description: 'What this list''s DEFAULT filters left out, as counts, so
+            a gap is never silent. The counts cover the whole list, not one page:
+            they are sent on the FIRST page (no `offset`, or `offset=0`) and later
+            pages carry null. `soft_deleted`: rows deleted on the server (their ids
+            are in `deleted_ids`). `planned` (QC samples): planned bags not yet collected,
+            held back unless you filter by `lab_status`. Mention these when you summarise:
+            a count or a pass rate over this list is a count over what is here.'
+          properties:
+            soft_deleted:
+              type: integer
+            qaqc_excluded:
+              type: integer
+            planned:
+              type: integer
+          required:
+          - soft_deleted
       additionalProperties: false
     PhotoRead:
       type: object
@@ -18588,6 +20122,36 @@ components:
           format: date
           readOnly: true
           nullable: true
+        excluded:
+          type: boolean
+          description: 'True when a QAQC review WITHHOLDS this row from results by
+            default: it is returned only so you can explain why it is missing. Never
+            average, plot or report a flagged row as a result.'
+          readOnly: true
+        excluded_reason:
+          nullable: true
+          description: 'Why the row is withheld, or null when it is not. `certificate_rejected`:
+            its certificate failed QAQC review. `certificate_superseded`: its certificate
+            was replaced by a re-assay — read `superseded_by` on the certificate for
+            the job that carries the live values. `certificate_pending_approval`:
+            the project requires QAQC approval before results are used and this certificate''s
+            review is still pending.'
+          readOnly: true
+          allOf:
+          - $ref: '#/components/schemas/ExcludedReasonEnum'
+        excluded_by_certificate:
+          type: object
+          nullable: true
+          description: The certificate whose review withholds this row — name it when
+            you explain the gap. Usually the row's own certificate; on a merged row
+            it can be the rejected job that produced the values. Null when the row
+            is not withheld.
+          properties:
+            id:
+              type: integer
+            name:
+              type: string
+          readOnly: true
         metal_equivalent_config:
           type: string
           nullable: true
@@ -18611,6 +20175,9 @@ components:
       - date_created
       - ds_duplicate
       - ds_duplicate_detail
+      - excluded
+      - excluded_by_certificate
+      - excluded_reason
       - id
       - lab_status
       - last_edited
@@ -18693,6 +20260,14 @@ components:
       - id
       - name
       additionalProperties: false
+    QaqcStatusEnum:
+      type: string
+      enum:
+      - approved
+      - conditional
+      - pending
+      - rejected
+      - none
     RegionalVectorFeature:
       type: object
       properties:

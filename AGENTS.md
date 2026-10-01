@@ -78,7 +78,7 @@ anything.
 
 ---
 
-## 3. Six traps
+## 3. Eight traps
 
 These are the things that produce confidently wrong answers. They are not edge
 cases; the first one will affect nearly every project you touch.
@@ -262,6 +262,23 @@ blob = session.get(r.headers["Location"])          # NO auth header here
 ```
 
 The `geodb-client` library does this for you.
+
+### 3.7 Some rows are withheld — and every list says how many
+
+Results from a certificate that failed QAQC review (**rejected**, or **superseded** by a re-assay)
+are left out of `assays` and `qc-samples`, as are soft-deleted rows. A gap is never silent: every
+list that has a deletion feed carries `withheld`, e.g. `{"soft_deleted": 0, "qaqc_excluded": 274}`,
+counted over the whole list and sent on the first page (later pages carry `null`). A certificate
+row carries the review itself: `qaqc_status`, `superseded_by`, `supersedes`. Use them to say *why*
+a sample is missing ("it is on CERT-102, which failed QAQC review") instead of reporting a gap
+as if the sample had never been assayed.
+
+### 3.8 Below detection is a flag beside a sentinel
+
+A value the laboratory reported below its detection limit is stored as `-1.0000` with
+`below_detection: true` on the value; the threshold is that value's `detection_limit`. The
+sentinel is a marker, never a grade. Merged reads (exports) have already substituted it once per
+the project's settings (half the detection limit by default) — do not substitute it again.
 
 ### Bonus trap: paging is `limit`/`offset`
 

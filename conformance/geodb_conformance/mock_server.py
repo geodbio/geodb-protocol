@@ -378,6 +378,8 @@ def _element(symbol, value, units, detection_limit):
         'method': copy.deepcopy(METHOD),
         'certificate': {'id': CERTIFICATE['id'], 'name': CERTIFICATE['name'],
                         'laboratory': CERTIFICATE['laboratory']},
+        'certificate_id': CERTIFICATE['id'],
+        'below_detection': False,            # a detected value; BDL = -1 + True
     }
 
 
@@ -401,6 +403,11 @@ def _make_assays(samples):
             ],
             'date_created': '2026-09-21',
             'qaqc_status': None,
+            # What-is-withheld flags (B9): a live row is not withheld.
+            'excluded': False,
+            'excluded_reason': None,
+            'excluded_by_certificate': None,
+            'source_type': 'lab',
         })
     return rows
 

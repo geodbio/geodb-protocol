@@ -240,11 +240,24 @@
                 ]
               }
             }
+          },
+          "below_detection": {
+            "type": "boolean",
+            "description": "True when the laboratory reported this value BELOW its detection limit. `value` then holds the sentinel `-1.0000`, which is a marker, never a grade: the threshold is `detection_limit` (`detection_limit_per_sample` on the assay row for a method that reports one per sample). geoDB stores the sentinel and substitutes only when it MERGES values (half the detection limit by default, per the project's merge settings) — do not substitute twice."
+          },
+          "certificate_id": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "Id of the certificate (laboratory job) that produced THIS value — the same job as `certificate.id`, flat. Null when the value carries no provenance of its own and the row's job could not be resolved."
           }
         },
         "required": [
           "above_det_limit",
+          "below_detection",
           "certificate",
+          "certificate_id",
           "detection_limit",
           "element",
           "method",
@@ -267,6 +280,46 @@
         "string",
         "null"
       ]
+    },
+    "excluded": {
+      "type": "boolean",
+      "description": "True when a QAQC review WITHHOLDS this row from results by default: it is returned only so you can explain why it is missing. Never average, plot or report a flagged row as a result."
+    },
+    "excluded_reason": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "certificate_rejected",
+        "certificate_superseded",
+        "certificate_pending_approval",
+        null
+      ],
+      "description": "Why the row is withheld, or null when it is not. `certificate_rejected`: its certificate failed QAQC review. `certificate_superseded`: its certificate was replaced by a re-assay — read `superseded_by` on the certificate for the job that carries the live values. `certificate_pending_approval`: the project requires QAQC approval before results are used and this certificate's review is still pending."
+    },
+    "excluded_by_certificate": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "description": "The certificate whose review withholds this row — name it when you explain the gap. Usually the row's own certificate; on a merged row it can be the rejected job that produced the values. Null when the row is not withheld.",
+      "properties": {
+        "id": {
+          "type": "integer"
+        },
+        "name": {
+          "type": "string"
+        }
+      }
+    },
+    "source_type": {
+      "type": "string",
+      "enum": [
+        "lab",
+        "field_xrf"
+      ],
+      "description": "`lab` — laboratory results. `field_xrf` — a portable-XRF reading (field guidance, never a reportable grade; left out of lab analytics, QC and intercepts by default)."
     }
   },
   "required": [
@@ -275,12 +328,16 @@
     "date_created",
     "detection_limit_per_sample",
     "elements",
+    "excluded",
+    "excluded_by_certificate",
+    "excluded_reason",
     "id",
     "lab_status_code",
     "name",
     "precision_per_sample",
     "project",
     "qaqc_status",
+    "source_type",
     "weight"
   ],
   "additionalProperties": false

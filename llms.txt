@@ -9,7 +9,7 @@
 
 ## Start here
 
-- [AGENTS.md](AGENTS.md): the entry point. Token, the six domain traps that
+- [AGENTS.md](AGENTS.md): the entry point. Token, the eight domain traps that
   produce wrong answers silently, the core profile, the sync loop as runnable
   code, every error code with its remedy, retry policy. Read this first.
 

@@ -65,7 +65,7 @@ Existing first-party clients (mobile, QGIS, Blender) keep using Knox tokens
 
 ```
 AGENTS.md                  READ THIS FIRST if you are integrating. The entry point
-                           for an AI coding agent: the six traps, the core profile,
+                           for an AI coding agent: the eight traps, the core profile,
                            the sync loop, every error code (tables generated)
 llms.txt                   One-line index of this repo, for LLM crawlers
 errors.json                Every reason_code with its meaning, remedy and whether

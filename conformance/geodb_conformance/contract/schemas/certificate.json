@@ -111,6 +111,55 @@
       "type": "integer",
       "description": "How many assay rows this certificate produced. A zero is INFORMATION, not an error: an intentionally empty placeholder certificate is a legitimate record to hold."
     },
+    "qaqc_status": {
+      "type": "string",
+      "enum": [
+        "approved",
+        "conditional",
+        "pending",
+        "rejected",
+        "none"
+      ],
+      "description": "The QAQC review verdict on this certificate. `pending`: review not finished — on a project that requires approval, its results are withheld until it is. `approved` / `conditional`: results are in use. `none`: no review recorded. This is geoDB's verdict; report it, do not recompute it."
+    },
+    "superseded_by": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "description": "The re-assay certificate that REPLACED this one, or null. A superseded certificate's results are withheld; the live values are on the certificate named here.",
+      "properties": {
+        "id": {
+          "type": "integer"
+        },
+        "name": {
+          "type": "string"
+        }
+      }
+    },
+    "supersedes": {
+      "type": "array",
+      "description": "The earlier certificates this one replaced as their re-assay (empty when it replaced none).",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "source_type": {
+      "enum": [
+        "lab",
+        "field_xrf"
+      ],
+      "type": "string",
+      "description": "`lab` — a laboratory job. `field_xrf` — a portable-XRF reading session: field guidance, never a reportable grade. Field-XRF results are left out of geoDB's lab analytics, QC verdicts, intercepts and merged reads by default.\n\n* `lab` - Laboratory\n* `field_xrf` - Field XRF"
+    },
     "date_created": {
       "type": [
         "string",
@@ -138,8 +187,12 @@
     "methods",
     "name",
     "project",
+    "qaqc_status",
     "result_count",
+    "source_type",
     "status",
+    "superseded_by",
+    "supersedes",
     "weight_units"
   ],
   "additionalProperties": false
