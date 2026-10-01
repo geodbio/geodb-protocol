@@ -58,6 +58,32 @@ class WriteSession(Session):
         codes.update(self.write_profile.get('reason_codes') or {})
         return codes
 
+    # -- the transport: a throttled key is not a non-conforming server -----
+    #: Wait this long at most for a Retry-After before giving up on a call.
+    MAX_RETRY_AFTER = 30
+
+    def request(self, method, path, **kwargs):
+        response = super().request(method, path, **kwargs)
+        if response.status_code != 429:
+            return response
+        try:
+            wait = int(float(response.headers.get('Retry-After') or 0))
+        except ValueError:
+            wait = 0
+        if 0 < wait <= self.MAX_RETRY_AFTER:
+            import time
+            time.sleep(wait)
+            response = super().request(method, path, **kwargs)
+            if response.status_code != 429:
+                return response
+        raise Skipped(f'this key is throttled (HTTP 429; Retry-After '
+                      f'{response.headers.get("Retry-After") or "?"} s) — the write '
+                      f'suite makes about {self.REQUESTS_PER_RUN} requests; rerun when '
+                      f'the key\'s rate window allows it')
+
+    #: Roughly what one full run costs (measured against the reference server).
+    REQUESTS_PER_RUN = 130
+
     # -- the target --------------------------------------------------------
     def context(self) -> dict:
         """``grant-context``, once. A key that cannot write is a setup error,

@@ -120,7 +120,8 @@ def cmd_write(args):
     if not args.keep:
         cleanup = session.cleanup()
         if not args.quiet:
-            print(f'[geodb-conformance] clean-up: undid {cleanup["undone"]} write(s)'
+            print(f'[geodb-conformance] {len(session.exchanges)} requests; '
+                  f'clean-up: undid {cleanup["undone"]} write(s)'
                   + (f', {cleanup["already"]} already undone' if cleanup['already'] else '')
                   + (f'; could not undo {len(cleanup["failed"])}: {cleanup["failed"][:3]}'
                      if cleanup['failed'] else ''))

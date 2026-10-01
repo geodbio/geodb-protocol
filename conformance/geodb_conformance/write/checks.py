@@ -330,7 +330,8 @@ def retract_cascades_and_undo_restores(session):
 
 @R.add('write.restore_brings_a_batch_back',
        '`"intent": "restore"` with a retract\'s `audit_batch_id` brings that batch '
-       'back from the Trash, as a write of its own.')
+       'back from the Trash, as a write of its own — and undoing newest first '
+       '(the restore, then the retract) brings everything back.')
 def restore_brings_a_batch_back(session):
     hole_id, hole = session.new_hole('RESTORE')
     gone = session.records({'model': PARENT, 'intent': 'retract', 'confirm': 'retract',
@@ -342,6 +343,15 @@ def restore_brings_a_batch_back(session):
     require(back.get('write_id'), 'the restore is not a write of its own (no write_id)')
     require(session.row(COLLAR_PATH, hole_id) is not None,
             'the restored collar cannot be read')
+    # Undo newest first, through the restore: the restore and its undo cancel
+    # out, so the retract's undo brings the collar back, completely.
+    session.undo(back['write_id'])
+    require(session.row(COLLAR_PATH, hole_id) is None, 'undo of the restore left the collar')
+    again = session.undo(gone['write_id'])
+    require(again.get('complete') is True,
+            f'undo of the retract, after the restore was undone: {_rows(again)}')
+    require(session.row(COLLAR_PATH, hole_id) is not None,
+            'undoing newest first did not bring the collar back')
 
 
 # ---------------------------------------------------------------------------

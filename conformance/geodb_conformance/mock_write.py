@@ -83,6 +83,9 @@ WRITE_BREAKAGES = {
     'write.restore_brings_a_batch_back': (
         'write.restore_brings_a_batch_back',
         'a restore answers "restored" and leaves the rows in the Trash'),
+    'write.restore_brings_a_batch_back:undo_chain': (
+        'write.restore_brings_a_batch_back',
+        'undo of a retract is refused undo_stale once its restore was undone'),
     'write.resource_path_names_records_endpoint': (
         'write.resource_path_names_records_endpoint',
         'a resource-path write is refused without naming the records call'),
@@ -517,6 +520,12 @@ class WriteStore:
                 row.update(old)            # the values AND the stamp: an undo is neutral
             done(kind, pk)
         for kind, pk, stamp in write['retracted']:
+            if self.breakage == 'write.restore_brings_a_batch_back:undo_chain' and any(
+                    w['intent'] == 'restore' and (kind, pk) in w['restored']
+                    for w in self.writes):
+                done(kind, pk, 'refused', reason_code='undo_stale',
+                     remedy='Undo the later write first.')
+                continue
             if kind == 'sample' and self.breakage == 'write.retract_cascades_and_undo_restores':
                 done(kind, pk)
                 continue
