@@ -287,9 +287,11 @@ the project's settings (half the detection limit by default) — do not substitu
 ### Bonus trap: paging is `limit`/`offset`
 
 Lists page with **`limit`** (default 100, maximum 500) and **`offset`**. A
-`page_size` parameter is **silently ignored** — you will get the default page
-and may conclude the project is small. Follow the `next` URL instead of
-building your own, and see §5.
+parameter a list does not read — `page_size`, a guessed filter name — is
+**refused** `400 invalid_parameter`, and the refusal names the parameters that
+list honours; it is never silently ignored, so a wrong guess cannot quietly
+return the default page. Follow the `next` URL instead of building your own,
+and see §5.
 
 ---
 

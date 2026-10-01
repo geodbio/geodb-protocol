@@ -60,7 +60,8 @@ Every refusal carries `reason_code` + `remedy`: act on the remedy.
 - Every list answers one envelope: `count`, `next`, `previous`, `results`,
   plus `deleted_ids`, `deleted_since_applied` and `sync_timestamp`. Page with
   `limit` (max 500) and `offset`, and follow `next` rather than building
-  URLs; `page_size` is silently ignored.
+  URLs. A parameter a list does not read (`page_size`, a guessed filter) is
+  refused 400 `invalid_parameter`, naming the ones it honours.
 - **Incremental sync:** pass the last `sync_timestamp` as `modified_since`.
   The comparison is by DAY, so same-day rows come back again: UPSERT by `id`,
   never append, and remove every id in `deleted_ids`. Persist the new cursor

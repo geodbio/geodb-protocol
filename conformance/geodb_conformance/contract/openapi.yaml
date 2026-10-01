@@ -308,6 +308,20 @@ paths:
           key some app endpoints take (`{"name": …, "company": …}`) is not a form
           this parameter accepts: it is refused with `invalid_parameter` too — send
           the id.'
+      - in: query
+        name: certificate
+        schema:
+          type: string
+        description: Narrow to a laboratory certificate, by its id or its exact name
+          (case does not matter; a name shared by several certificates you can read
+          matches all of them — send `certificate_id` to pick one). A value that names
+          no certificate you can read is refused with `invalid_parameter` — never
+          an empty list.
+      - in: query
+        name: certificate_id
+        schema:
+          type: string
+        description: Narrow to one laboratory certificate, by its id.
       tags:
       - Assays
       security:
@@ -1398,8 +1412,9 @@ paths:
         name: bhid
         schema:
           type: string
-        description: Narrow to one drill hole, by its id or its exact name (case does
-          not matter). A name that matches no readable hole is refused with `invalid_parameter`
+        description: Narrow to a drill hole, by its id or its exact name (case does
+          not matter; a name shared by holes in several projects you can read matches
+          each of them). A name that matches no readable hole is refused with `invalid_parameter`
           — never an empty list.
       tags:
       - Drill Intervals
@@ -2129,8 +2144,9 @@ paths:
         name: bhid
         schema:
           type: string
-        description: Narrow to one drill hole, by its id or its exact name (case does
-          not matter). A name that matches no readable hole is refused with `invalid_parameter`
+        description: Narrow to a drill hole, by its id or its exact name (case does
+          not matter; a name shared by holes in several projects you can read matches
+          each of them). A name that matches no readable hole is refused with `invalid_parameter`
           — never an empty list.
       tags:
       - Drill Intervals
@@ -2348,8 +2364,9 @@ paths:
         name: bhid
         schema:
           type: string
-        description: Narrow to one drill hole, by its id or its exact name (case does
-          not matter). A name that matches no readable hole is refused with `invalid_parameter`
+        description: Narrow to a drill hole, by its id or its exact name (case does
+          not matter; a name shared by holes in several projects you can read matches
+          each of them). A name that matches no readable hole is refused with `invalid_parameter`
           — never an empty list.
       tags:
       - Drill Intervals
@@ -2889,8 +2906,9 @@ paths:
         name: bhid
         schema:
           type: string
-        description: Narrow to one drill hole, by its id or its exact name (case does
-          not matter). A name that matches no readable hole is refused with `invalid_parameter`
+        description: Narrow to a drill hole, by its id or its exact name (case does
+          not matter; a name shared by holes in several projects you can read matches
+          each of them). A name that matches no readable hole is refused with `invalid_parameter`
           — never an empty list.
       tags:
       - Drill Intervals
@@ -3405,8 +3423,9 @@ paths:
         name: bhid
         schema:
           type: string
-        description: Narrow to one drill hole, by its id or its exact name (case does
-          not matter). A name that matches no readable hole is refused with `invalid_parameter`
+        description: Narrow to a drill hole, by its id or its exact name (case does
+          not matter; a name shared by holes in several projects you can read matches
+          each of them). A name that matches no readable hole is refused with `invalid_parameter`
           — never an empty list.
       tags:
       - Photos
@@ -3845,8 +3864,9 @@ paths:
         name: bhid
         schema:
           type: string
-        description: Narrow to one drill hole, by its id or its exact name (case does
-          not matter). A name that matches no readable hole is refused with `invalid_parameter`
+        description: Narrow to a drill hole, by its id or its exact name (case does
+          not matter; a name shared by holes in several projects you can read matches
+          each of them). A name that matches no readable hole is refused with `invalid_parameter`
           — never an empty list.
       tags:
       - Drill Intervals
@@ -4055,8 +4075,9 @@ paths:
         name: bhid
         schema:
           type: string
-        description: Narrow to one drill hole, by its id or its exact name (case does
-          not matter). A name that matches no readable hole is refused with `invalid_parameter`
+        description: Narrow to a drill hole, by its id or its exact name (case does
+          not matter; a name shared by holes in several projects you can read matches
+          each of them). A name that matches no readable hole is refused with `invalid_parameter`
           — never an empty list.
       tags:
       - Samples
@@ -4337,8 +4358,9 @@ paths:
         name: bhid
         schema:
           type: string
-        description: Narrow to one drill hole, by its id or its exact name (case does
-          not matter). A name that matches no readable hole is refused with `invalid_parameter`
+        description: Narrow to a drill hole, by its id or its exact name (case does
+          not matter; a name shared by holes in several projects you can read matches
+          each of them). A name that matches no readable hole is refused with `invalid_parameter`
           — never an empty list.
       tags:
       - Drill Intervals
@@ -4876,8 +4898,9 @@ paths:
         name: bhid
         schema:
           type: string
-        description: Narrow to one drill hole, by its id or its exact name (case does
-          not matter). A name that matches no readable hole is refused with `invalid_parameter`
+        description: Narrow to a drill hole, by its id or its exact name (case does
+          not matter; a name shared by holes in several projects you can read matches
+          each of them). A name that matches no readable hole is refused with `invalid_parameter`
           — never an empty list.
       tags:
       - Drill Intervals
@@ -5096,8 +5119,9 @@ paths:
         name: bhid
         schema:
           type: string
-        description: Narrow to one drill hole, by its id or its exact name (case does
-          not matter). A name that matches no readable hole is refused with `invalid_parameter`
+        description: Narrow to a drill hole, by its id or its exact name (case does
+          not matter; a name shared by holes in several projects you can read matches
+          each of them). A name that matches no readable hole is refused with `invalid_parameter`
           — never an empty list.
       tags:
       - Drill Holes
@@ -5716,8 +5740,9 @@ paths:
         name: bhid
         schema:
           type: string
-        description: Narrow to one drill hole, by its id or its exact name (case does
-          not matter). A name that matches no readable hole is refused with `invalid_parameter`
+        description: Narrow to a drill hole, by its id or its exact name (case does
+          not matter; a name shared by holes in several projects you can read matches
+          each of them). A name that matches no readable hole is refused with `invalid_parameter`
           — never an empty list.
       tags:
       - Drill Intervals
@@ -9081,8 +9106,9 @@ paths:
         name: bhid
         schema:
           type: string
-        description: Narrow to one drill hole, by its id or its exact name (case does
-          not matter). A name that matches no readable hole is refused with `invalid_parameter`
+        description: Narrow to a drill hole, by its id or its exact name (case does
+          not matter; a name shared by holes in several projects you can read matches
+          each of them). A name that matches no readable hole is refused with `invalid_parameter`
           — never an empty list.
       tags:
       - Quality Control
