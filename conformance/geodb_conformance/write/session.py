@@ -32,11 +32,21 @@ DESCRIBE = '/api/v2/records/describe/{}/'
 WRITES = '/api/v2/records/writes/'
 
 
+NOT_A_TWIN = ('this key\'s project is not a declared write twin (grant-context '
+              '`writes.write_twin` is not true): the write suite writes test rows, so it '
+              'refuses a real project. Point it at a write twin, or pass '
+              '--allow-non-twin for a staging project you may write test data into.')
+
+
 class WriteSession(Session):
     """A :class:`Session` for a key that may write records."""
 
-    def __init__(self, base_url, token, **kwargs):
+    def __init__(self, base_url, token, *, allow_non_twin=False, **kwargs):
         super().__init__(base_url, token, **kwargs)
+        #: Every assertion WRITES test rows. Unless told otherwise, write only
+        #: into a project the server declares a write twin (grant-context
+        #: ``writes.write_twin``: a demo project reset nightly).
+        self.allow_non_twin = allow_non_twin
         self.run_id = uuid.uuid4().hex[:8]
         self._serial = 0
         self._profile = None
@@ -93,6 +103,8 @@ class WriteSession(Session):
             if body.get('read_only', True):
                 raise Skipped('this key is read-only (grant-context read_only: true); '
                               'the write suite needs a records-level key')
+            if not self.allow_non_twin and not (body.get('writes') or {}).get('write_twin'):
+                raise Skipped(NOT_A_TWIN)
             self._context = body
         return self._context
 

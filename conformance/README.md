@@ -117,8 +117,10 @@ brings everything back · restore · a resource-path write names the one
 endpoint · a record read and written back is `unchanged` · every refusal is
 registered · the key's write log lists writes and undos.
 
-**Every assertion writes.** Point it at a project you may write test data
-into. Each row it writes is named `CONF-<run>-…`, and the run ends by undoing
+**Every assertion writes.** It refuses (exit 2, before writing anything) unless
+the key's project is a declared write twin (`grant-context` →
+`writes.write_twin: true`, a demo project reset nightly); pass
+`--allow-non-twin` for a staging project you may write test data into. Each row it writes is named `CONF-<run>-…`, and the run ends by undoing
 every write it made, newest first (`--keep` leaves them). The write break
 matrix runs with the read one in `selftest`: 20/20, each assertion red under
 its own breakage of the mock and green against a correct one.

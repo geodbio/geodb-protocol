@@ -82,13 +82,26 @@ WRITE_PROFILE_PATH = os.path.join(REPO, 'conformance', 'geodb_conformance',
                                   'contract', 'write-profile.json')
 
 
-def write_profile_is_stale(geodb_dir, python):
+def write_profile_status(publish):
+    """The status the write profile is generated with: forced 'dark' until the
+    write flag flips (then `--publish-write-profile`)."""
+    return 'published' if publish else 'dark'
+
+
+def write_profile_is_stale(geodb_dir, python, publish=False):
     """'' when the packaged write profile is what the server generates."""
     if not os.path.exists(WRITE_PROFILE_PATH):
         return 'conformance/geodb_conformance/contract/write-profile.json is not committed'
+    import json
+    with open(WRITE_PROFILE_PATH, encoding='utf-8') as fh:
+        status = json.load(fh).get('status')
+    if status != write_profile_status(publish):
+        return (f'its status is {status!r}; until the write flag flips it must be '
+                f'"dark" (pass --publish-write-profile at the flip)')
     result = subprocess.run(
         [python, 'manage.py', 'export_write_profile', '--output', WRITE_PROFILE_PATH,
-         '--check'], cwd=geodb_dir, capture_output=True, text=True)
+         '--status', write_profile_status(publish), '--check'],
+        cwd=geodb_dir, capture_output=True, text=True)
     if result.returncode == 0:
         return ''
     if 'Unknown command' in (result.stderr or ''):
@@ -190,6 +203,9 @@ def main():
     ap.add_argument('--emit-only', action='store_true',
                     help='Skip the geoDB generation step; re-emit schemas/ from '
                          'the committed spec/openapi.yaml, then publish docs/.')
+    ap.add_argument('--publish-write-profile', action='store_true',
+                    help='ONLY at the write flag flip: generate (or check) the write '
+                         'profile with status "published" instead of "dark".')
     ap.add_argument('--check', action='store_true',
                     help='Verify docs/ matches the source schemas; write nothing. '
                          'Exits non-zero on any difference.')
@@ -237,7 +253,8 @@ def main():
 
         # 3b. The packaged write profile IS what the server generates.
         if args.geodb:
-            stale_profile = write_profile_is_stale(args.geodb, args.python)
+            stale_profile = write_profile_is_stale(args.geodb, args.python,
+                                                   args.publish_write_profile)
             if stale_profile:
                 failed = True
                 print('the write profile is stale — ' + stale_profile)
@@ -299,7 +316,8 @@ def main():
         run([args.python, 'manage.py', 'export_reason_codes',
              '--output', ERRORS_PATH])
         run([args.python, 'manage.py', 'export_write_profile',
-             '--output', WRITE_PROFILE_PATH])
+             '--output', WRITE_PROFILE_PATH,
+             '--status', write_profile_status(args.publish_write_profile)])
         print(f'\nWrote:\n  {openapi}\n  {xpl}\n  {ERRORS_PATH}\n  {WRITE_PROFILE_PATH}')
 
     # schemas/ is generated FROM the spec, so it runs whether or not the geoDB

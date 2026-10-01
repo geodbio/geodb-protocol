@@ -109,7 +109,13 @@ def cmd_write(args):
               file=sys.stderr)
         return 2
     session = WriteSession(args.base_url, args.token, timeout=args.timeout,
-                           profile='full')
+                           profile='full', allow_non_twin=args.allow_non_twin)
+    from .harness import Skipped as _Skipped
+    try:
+        session.context()
+    except _Skipped as exc:                  # refuse up front, before any write
+        print(f'[geodb-conformance] not run: {exc}', file=sys.stderr)
+        return 2
     profile = session.write_profile
     if not args.quiet:
         print(f'[geodb-conformance] write profile {profile["profile_version"]} '
@@ -174,6 +180,9 @@ def main(argv=None):
         'write', help='run the WRITE profile against a server (the key must be '
                       'able to write; every write is undone at the end)')
     _add_read_arguments(write)
+    write.add_argument('--allow-non-twin', action='store_true',
+                       help='write test rows into a project that is NOT a declared '
+                            'write twin (your own staging server)')
     write.add_argument('--keep', action='store_true',
                        help='leave the rows the run wrote (no clean-up undo)')
     write.set_defaults(func=cmd_write)

@@ -593,7 +593,7 @@ class MockHandler(BaseHTTPRequestHandler):
                 'protocol_version': PROTOCOL_VERSION, 'label': 'Mock write key',
                 'token_prefix': mock_write.WRITE_TOKEN[:12], 'project': mock_write.PROJECT,
                 'company': {'id': 1, 'name': 'Mock Co'}, 'read_only': False,
-                'writes': {'endpoint': 'POST /api/v2/records/'}})
+                'writes': {'endpoint': 'POST /api/v2/records/', 'write_twin': True}})
         match = re.match(r'^/api/v2/records/describe/([A-Za-z]+)/$', path)
         if match:
             return self._send(*store.describe(match.group(1)))
