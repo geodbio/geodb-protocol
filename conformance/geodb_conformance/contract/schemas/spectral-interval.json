@@ -33,6 +33,33 @@
       ],
       "description": "Id of the related lookup row. Resolve its name from the corresponding lookup endpoint."
     },
+    "drill_spectral_set": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "description": "The logging set this interval belongs to, as an identity object, or null when the interval is not in a set. Sets let several loggers log the same hole independently.",
+      "properties": {
+        "id": {
+          "type": "integer"
+        },
+        "name": {
+          "type": "string"
+        },
+        "description": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "description"
+      ],
+      "additionalProperties": false
+    },
     "depth_from": {
       "type": "number",
       "format": "double",
@@ -187,6 +214,7 @@
     "depth_from",
     "depth_to",
     "display_units",
+    "drill_spectral_set",
     "id",
     "images",
     "last_edited",

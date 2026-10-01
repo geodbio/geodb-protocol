@@ -12111,6 +12111,26 @@ components:
           type: string
           readOnly: true
           nullable: true
+        drill_lithology_set:
+          type: object
+          nullable: true
+          description: The logging set this interval belongs to, as an identity object,
+            or null when the interval is not in a set. Sets let several loggers log
+            the same hole independently.
+          properties:
+            id:
+              type: integer
+            name:
+              type: string
+            description:
+              type: string
+              nullable: true
+          required:
+          - id
+          - name
+          - description
+          additionalProperties: false
+          readOnly: true
         images:
           type: array
           items:
@@ -12151,6 +12171,7 @@ components:
       - depth_from
       - depth_to
       - display_units
+      - drill_lithology_set
       - id
       - images
       - last_edited
@@ -12875,6 +12896,26 @@ components:
           type: string
           nullable: true
           description: Additional observations or remarks
+        drill_rqd_set:
+          type: object
+          nullable: true
+          description: The logging set this interval belongs to, as an identity object,
+            or null when the interval is not in a set. Sets let several loggers log
+            the same hole independently.
+          properties:
+            id:
+              type: integer
+            name:
+              type: string
+            description:
+              type: string
+              nullable: true
+          required:
+          - id
+          - name
+          - description
+          additionalProperties: false
+          readOnly: true
         length_units:
           allOf:
           - $ref: '#/components/schemas/LengthUnitsEnum'
@@ -12902,6 +12943,7 @@ components:
       - depth_from
       - depth_to
       - display_units
+      - drill_rqd_set
       - gsi
       - id
       - interval_length
@@ -13395,6 +13437,26 @@ components:
           description: Id of the related lookup row. Resolve its name from the corresponding
             lookup endpoint.
           readOnly: true
+        drill_spectral_set:
+          type: object
+          nullable: true
+          description: The logging set this interval belongs to, as an identity object,
+            or null when the interval is not in a set. Sets let several loggers log
+            the same hole independently.
+          properties:
+            id:
+              type: integer
+            name:
+              type: string
+            description:
+              type: string
+              nullable: true
+          required:
+          - id
+          - name
+          - description
+          additionalProperties: false
+          readOnly: true
         depth_from:
           type: number
           format: double
@@ -13477,6 +13539,7 @@ components:
       - depth_from
       - depth_to
       - display_units
+      - drill_spectral_set
       - id
       - images
       - last_edited

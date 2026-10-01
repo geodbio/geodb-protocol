@@ -411,6 +411,33 @@
       ],
       "description": "Additional observations or remarks"
     },
+    "drill_rqd_set": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "description": "The logging set this interval belongs to, as an identity object, or null when the interval is not in a set. Sets let several loggers log the same hole independently.",
+      "properties": {
+        "id": {
+          "type": "integer"
+        },
+        "name": {
+          "type": "string"
+        },
+        "description": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "description"
+      ],
+      "additionalProperties": false
+    },
     "length_units": {
       "enum": [
         "M",
@@ -448,6 +475,7 @@
     "depth_from",
     "depth_to",
     "display_units",
+    "drill_rqd_set",
     "gsi",
     "id",
     "interval_length",
