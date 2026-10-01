@@ -374,7 +374,7 @@ def _element(symbol, value, units, detection_limit):
         'units': units,
         'detection_limit': detection_limit,
         'upper_limit': None,
-        'above_det_limit': True,
+        'above_det_limit': False,            # over range only; a detected value is False (F9)
         'method': copy.deepcopy(METHOD),
         'certificate': {'id': CERTIFICATE['id'], 'name': CERTIFICATE['name'],
                         'laboratory': CERTIFICATE['laboratory']},
