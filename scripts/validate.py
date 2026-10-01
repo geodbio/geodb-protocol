@@ -107,6 +107,34 @@ def main():
     else:
         print('[OK] docs/ served copies match the source schemas')
 
+    # The write profile (B10): well formed, every code complete, and
+    # partitioned from errors.json (a code is a read code or a write code).
+    profile_path = os.path.join(REPO, 'conformance', 'geodb_conformance', 'contract',
+                                'write-profile.json')
+    try:
+        with open(profile_path, encoding='utf-8') as fh:
+            profile = json.load(fh)
+        with open(os.path.join(REPO, 'errors.json'), encoding='utf-8') as fh:
+            read_codes = set(json.load(fh)['reason_codes'])
+        problems = []
+        if profile.get('profile') != 'write' or profile.get('status') not in ('dark', 'published'):
+            problems.append('profile/status')
+        for code, entry in (profile.get('reason_codes') or {}).items():
+            missing = [k for k in ('http', 'meaning', 'remedy', 'retry') if not entry.get(k)]
+            if missing:
+                problems.append(f'{code}: no {missing}')
+        both = sorted(read_codes & set(profile.get('reason_codes') or {}))
+        if both:
+            problems.append(f'in errors.json AND the write profile: {both}')
+        for p in problems:
+            failures.append(f'write-profile.json: {p}')
+        if not problems:
+            print(f'[OK] write profile {profile.get("profile_version")} '
+                  f'({profile.get("status")}): {len(profile.get("reason_codes") or {})} '
+                  f'write codes, partitioned from errors.json')
+    except (OSError, ValueError, KeyError) as exc:
+        failures.append(f'write-profile.json: {exc}')
+
     if failures:
         print('\nFAILURES:')
         for msg in failures:

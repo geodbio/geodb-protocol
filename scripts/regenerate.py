@@ -11,6 +11,13 @@ never drift from the running API:
   errors.json            <- manage.py export_reason_codes  (api/errors.py REASON_CODES)
   schemas/*.json         <- spec/openapi.yaml              (the core-profile Read components)
   PROFILE.md             <- spec/openapi.yaml              (the x-protocol-core flags)
+  conformance/geodb_conformance/contract/write-profile.json
+                         <- manage.py export_write_profile (the WRITE profile, B10)
+
+The write profile is the write half's contract as its own versioned document.
+While geoDB's write half is dark (PROTOCOL_WRITES_ENABLED off) it says
+"status": "dark" and lives ONLY inside the conformance package: never in
+spec/, docs/, PROFILE.md or AGENTS.md, which describe what servers answer.
 
 ``schemas/*.json`` used to be hand-authored, and by 2026-09-19 six of the seven
 disagreed with the wire on almost every field name (audit A1). Ruling R4: the
@@ -69,6 +76,24 @@ REPO = os.path.dirname(HERE)
 #: server, and the whole point of it is that an agent can enumerate what it
 #: will be refused with.
 ERRORS_PATH = os.path.join(REPO, 'errors.json')
+
+#: The write profile (task B10): packaged inside geodb-conformance only.
+WRITE_PROFILE_PATH = os.path.join(REPO, 'conformance', 'geodb_conformance',
+                                  'contract', 'write-profile.json')
+
+
+def write_profile_is_stale(geodb_dir, python):
+    """'' when the packaged write profile is what the server generates."""
+    if not os.path.exists(WRITE_PROFILE_PATH):
+        return 'conformance/geodb_conformance/contract/write-profile.json is not committed'
+    result = subprocess.run(
+        [python, 'manage.py', 'export_write_profile', '--output', WRITE_PROFILE_PATH,
+         '--check'], cwd=geodb_dir, capture_output=True, text=True)
+    if result.returncode == 0:
+        return ''
+    if 'Unknown command' in (result.stderr or ''):
+        return 'the geoDB checkout has no export_write_profile command'
+    return 'it differs from what manage.py export_write_profile generates'
 
 
 def errors_are_stale(geodb_dir, python):
@@ -210,6 +235,14 @@ def main():
             print('errors.json is missing, and no --geodb checkout was given '
                   'to regenerate it.')
 
+        # 3b. The packaged write profile IS what the server generates.
+        if args.geodb:
+            stale_profile = write_profile_is_stale(args.geodb, args.python)
+            if stale_profile:
+                failed = True
+                print('the write profile is stale — ' + stale_profile)
+                print('\nRun: python scripts/regenerate.py --geodb <dir>')
+
         # 4. The served docs/ copies are byte-identical to the source schemas.
         stale = publish(check_only=True)
         if stale:
@@ -234,7 +267,7 @@ def main():
         print(f'[OK] schemas/ matches spec/openapi.yaml '
               f'({len(emit_schemas.SCHEMA_FOR_COMPONENT)} core schemas), '
               f'PROFILE.md matches its core flags, '
-              f'{"errors.json matches the server registry, " if args.geodb else ""}'
+              f'{"errors.json matches the server registry, the write profile matches the server, " if args.geodb else ""}'
               f'and docs/ matches all {len(published_pairs())} source schemas.')
         return
 
@@ -265,7 +298,9 @@ def main():
         run([args.python, 'manage.py', 'export_xpl_schema', '--output', xpl])
         run([args.python, 'manage.py', 'export_reason_codes',
              '--output', ERRORS_PATH])
-        print(f'\nWrote:\n  {openapi}\n  {xpl}\n  {ERRORS_PATH}')
+        run([args.python, 'manage.py', 'export_write_profile',
+             '--output', WRITE_PROFILE_PATH])
+        print(f'\nWrote:\n  {openapi}\n  {xpl}\n  {ERRORS_PATH}\n  {WRITE_PROFILE_PATH}')
 
     # schemas/ is generated FROM the spec, so it runs whether or not the geoDB
     # generation step did — --publish-only still re-derives them from whatever

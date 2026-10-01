@@ -1,0 +1,432 @@
+{
+  "$comment": "GENERATED from the reference implementation (protocol/writes/profile.py) by manage.py export_write_profile. Do not edit by hand: scripts/regenerate.py --check fails when this file differs from what the server generates.",
+  "profile": "write",
+  "profile_version": "0.1.0",
+  "status": "dark",
+  "status_note": "dark: no production server answers these operations yet (they 404); this document is the contract the write conformance suite checks a server against. published: the write half is live.",
+  "endpoints": {
+    "write": {
+      "method": "POST",
+      "path": "/api/v2/records/"
+    },
+    "describe": {
+      "method": "GET",
+      "path": "/api/v2/records/describe/{model}/"
+    },
+    "writes": {
+      "method": "GET",
+      "path": "/api/v2/records/writes/"
+    },
+    "write_detail": {
+      "method": "GET",
+      "path": "/api/v2/records/writes/{write_id}/"
+    }
+  },
+  "auth": "Authorization: Grant <token> — a key whose grant-context says read_only: false",
+  "headers": {
+    "Idempotency-Key": "optional on POST /api/v2/records/: the same key + the same body within 24 h answers the stored response verbatim (Idempotent-Replayed: true); the same key + a different body is refused idempotency_key_reused"
+  },
+  "body_keys": [
+    "acknowledge",
+    "audit_batch_id",
+    "confirm",
+    "dry_run",
+    "intent",
+    "logging_set",
+    "model",
+    "project",
+    "records",
+    "sample_set",
+    "set",
+    "write_id"
+  ],
+  "undo_body_keys": [
+    "dry_run",
+    "intent",
+    "write_id"
+  ],
+  "intents": {
+    "create": {
+      "does": "adds new records; an existing record is never overwritten",
+      "confirm_with_user_first": false,
+      "row_statuses": [
+        "created",
+        "updated",
+        "unchanged",
+        "skipped",
+        "refused",
+        "accepted"
+      ]
+    },
+    "upsert": {
+      "does": "adds new records and overwrites exactly the fields sent on existing ones",
+      "confirm_with_user_first": true,
+      "row_statuses": [
+        "created",
+        "updated",
+        "unchanged",
+        "skipped",
+        "refused",
+        "accepted"
+      ]
+    },
+    "update": {
+      "does": "changes fields on the user's EXISTING records (never creates)",
+      "confirm_with_user_first": true,
+      "row_statuses": [
+        "created",
+        "updated",
+        "unchanged",
+        "skipped",
+        "refused",
+        "accepted"
+      ]
+    },
+    "retract": {
+      "does": "moves records, and everything that belongs to them, to the Trash; needs \"confirm\": \"retract\"; a dry run first shows exactly what goes",
+      "confirm_with_user_first": true,
+      "row_statuses": [
+        "retracted",
+        "unchanged",
+        "skipped",
+        "refused"
+      ]
+    },
+    "restore": {
+      "does": "brings a removed batch back from the Trash",
+      "confirm_with_user_first": true,
+      "row_statuses": [
+        "restored",
+        "refused"
+      ]
+    },
+    "make_default_set": {
+      "does": "makes a set the project default for its family — what everyone on the project sees; run it as a dry run first: that returns the \"confirm\" value the real request needs; only through the person's own key",
+      "confirm_with_user_first": true,
+      "row_statuses": [
+        "updated",
+        "unchanged"
+      ]
+    },
+    "undo": {
+      "does": "reverses one earlier write by its write_id (rows changed since are left as they are and named)",
+      "confirm_with_user_first": false,
+      "row_statuses": [
+        "undone",
+        "refused",
+        "unchanged"
+      ]
+    }
+  },
+  "confirm_note": "Before an update, upsert, retract or restore, tell the user exactly which records will change (a dry run shows them) and wait for their go-ahead — even when their request was explicit; they have not yet seen what it will change.",
+  "retract_confirm": "retract",
+  "batch_limit": 1000,
+  "rules": [
+    "dry_run: true IS validate — the same per-row outcomes, nothing written, no write_id",
+    "a row with coordinates and no epsg is refused missing_crs (never assumed 4326)",
+    "a create never overwrites: an existing record with different values is skipped, record_exists, with each conflicting field named (existing, sent)",
+    "an external_id re-sent in the same namespace is a no-op (unchanged)",
+    "an interval or sample write that names no set is refused set_required",
+    "an org (vendor) key writes only into sets it created or was given: set_not_owned",
+    "update / upsert overwrite exactly the fields sent; undo restores them",
+    "a retract needs \"confirm\": \"retract\" (else confirm_required) and cascades",
+    "undo refuses, per row, a row changed by a later write: undo_stale",
+    "a write to a v2 resource path is refused use_records_endpoint, naming the call",
+    "a record read from the API writes back unchanged as a no-op (round trip)"
+  ],
+  "reason_codes": {
+    "already_undone": {
+      "http": 409,
+      "meaning": "This write has already been undone.",
+      "remedy": "Nothing to do; read the records to see their current state.",
+      "retry": "no"
+    },
+    "approved_certificate": {
+      "http": 409,
+      "meaning": "(per row) The values belong to a certificate whose QAQC review is approved; they change only with an explicit acknowledgement.",
+      "remedy": "Confirm with the user, then resend with \"acknowledge\": [\"approved_certificate\"]. The certificate is named in `offending`.",
+      "retry": "no"
+    },
+    "batch_too_large": {
+      "http": 413,
+      "meaning": "More records than one request may carry (the limit is in `offending.limit`).",
+      "remedy": "Split the records into batches of at most the limit and send each batch as its own request.",
+      "retry": "no"
+    },
+    "certificate_unreject_conflict": {
+      "http": 409,
+      "meaning": "Un-rejecting this certificate would collide with sample names another certificate now holds (named in `offending`).",
+      "remedy": "Ask the user which certificate is right; resolve the colliding names first, then retry the verdict change.",
+      "retry": "no"
+    },
+    "choice_not_in_list": {
+      "http": 400,
+      "meaning": "(per row) A value is not in its field's list (a custom field's choices, or the project's list of lithologies, alterations, … for a reference). Lists never grow silently.",
+      "remedy": "GET /api/v2/records/describe/<Model>/ lists the choices; map the value onto one of them, or — after asking the user — resend with \"acknowledge\": [\"create_catalog_entries\"] to add a new lithology/alteration/… name to the project's list.",
+      "retry": "no"
+    },
+    "confirm_required": {
+      "http": 400,
+      "meaning": "A destructive intent (retract) needs an explicit confirmation in the body.",
+      "remedy": "Confirm with the user, then resend with \"confirm\": \"retract\".",
+      "retry": "no"
+    },
+    "duplicate_external_id": {
+      "http": 409,
+      "meaning": "(per row) This external_id already names a DIFFERENT record for this key, or appears twice in one request.",
+      "remedy": "Send each external_id once per request, and keep one external_id per record: to change a record send it with the same external_id and the same identifying fields.",
+      "retry": "no"
+    },
+    "duplicate_in_batch": {
+      "http": 400,
+      "meaning": "(per row) An earlier row of the same request has the same identifying fields; the first one is kept.",
+      "remedy": "Merge the duplicate rows into one, or correct the identifying fields of the second, and resend it.",
+      "retry": "no"
+    },
+    "feedback_rate_limited": {
+      "http": 429,
+      "meaning": "This key, or the person it acts for, has filed 20 reports in the last 24 hours.",
+      "remedy": "Wait for Retry-After seconds; meanwhile collect further requests into one report, and tell the user what was filed.",
+      "retry": "after"
+    },
+    "idempotency_in_progress": {
+      "http": 409,
+      "meaning": "The first request with this Idempotency-Key is still running.",
+      "remedy": "Wait a few seconds and retry the identical request with the same key: it returns the first response.",
+      "retry": "after"
+    },
+    "idempotency_key_invalid": {
+      "http": 400,
+      "meaning": "The Idempotency-Key header is longer than 255 characters or contains control characters.",
+      "remedy": "Send a printable key of at most 255 characters (a UUID is ideal).",
+      "retry": "no"
+    },
+    "idempotency_key_reused": {
+      "http": 409,
+      "meaning": "This Idempotency-Key was already used by this key for a DIFFERENT request in the last 24 hours.",
+      "remedy": "Use a new Idempotency-Key for a new request; reuse a key only to retry the identical request.",
+      "retry": "no"
+    },
+    "interval_overlap": {
+      "http": 409,
+      "meaning": "(per row) The interval overlaps another interval of the SAME set in the same hole; within one set intervals may not overlap.",
+      "remedy": "Ask the user: correct the depths, or put these intervals in a different (or new) set — across sets anything goes.",
+      "retry": "no"
+    },
+    "invalid_crs": {
+      "http": 400,
+      "meaning": "(per row) \"epsg\" is not a known coordinate system, or it disagrees with the SRID inside the geometry.",
+      "remedy": "Send the EPSG code (an integer, e.g. 26911) of the system the coordinates are in, matching the geometry's SRID if it has one.",
+      "retry": "no"
+    },
+    "invalid_geometry": {
+      "http": 400,
+      "meaning": "(per row) The coordinates or geometry cannot be a place: not numbers, half a pair, off the globe for a degree system, or a geometry that does not parse. The row is never counted as a clean create.",
+      "remedy": "Correct the coordinates named in `offending` (or the epsg they are in) and resend the row; validate first with \"dry_run\": true.",
+      "retry": "no"
+    },
+    "landing_failed": {
+      "http": 400,
+      "meaning": "(per row) The server failed while writing this batch; nothing from it was kept. This is our fault, not the data's.",
+      "remedy": "Retry the same request once (with the same Idempotency-Key); if it fails again, report it through POST /api/v2/feedback/ and tell the user.",
+      "retry": "maybe"
+    },
+    "missing_crs": {
+      "http": 400,
+      "meaning": "(per row) The record has coordinates but no \"epsg\". The coordinate system is never assumed (never WGS84 by default).",
+      "remedy": "Add \"epsg\": <the EPSG code the coordinates are in> to the row (4326 for GPS latitude/longitude; the survey grid's code for eastings/northings) and resend it. Never pre-convert.",
+      "retry": "no"
+    },
+    "name_taken": {
+      "http": 409,
+      "meaning": "(per row) The name (or another value that must be unique in the project) already belongs to another record of this model with different identifying fields (e.g. the same sample name on another hole). The row was not written.",
+      "remedy": "Ask the user which record the name belongs to; correct the name or the identifying fields and resend the row.",
+      "retry": "no"
+    },
+    "not_undoable": {
+      "http": 409,
+      "meaning": "This write cannot be undone: it is itself an undo, or it recorded no row Undo can reach.",
+      "remedy": "To bring back rows an undo removed, restore them: send {\"intent\": \"restore\", \"audit_batch_id\": <the undo's audit_batch_id>}. Otherwise read the records and correct them with an update.",
+      "retry": "no"
+    },
+    "out_of_scope": {
+      "http": 403,
+      "meaning": "(per row) The record is shared by every project of the company (a laboratory, a lab method, a reference standard, a water method) and this key does not reach all of those projects.",
+      "remedy": "This record is shared by every project in the company; ask a person with access to all of them, or make the change in the web app.",
+      "retry": "no"
+    },
+    "parent_not_found": {
+      "http": 400,
+      "meaning": "(per row) The record refers to a parent that does not exist in this project (e.g. a sample's hole, an assay's certificate or method). Nothing is invented.",
+      "remedy": "Write the parent first (its own model through this endpoint), or correct the reference to an existing one, then resend the row.",
+      "retry": "no"
+    },
+    "parent_trashed": {
+      "http": 409,
+      "meaning": "(per row) The parent this record belongs to is in the Trash.",
+      "remedy": "Restore the parent first (ask the user), then resend or restore this record.",
+      "retry": "no"
+    },
+    "project_not_in_scope": {
+      "http": 403,
+      "meaning": "(per row) This credential cannot write to the project the record names — it is outside the projects the key may write to, or does not exist.",
+      "remedy": "GET /api/v2/grant-context/ lists the projects this key may use; name one of those (by id) in `project`, or drop the row.",
+      "retry": "no"
+    },
+    "project_required": {
+      "http": 400,
+      "meaning": "(per row) The key may write to several projects and neither the record nor the request names one.",
+      "remedy": "Add \"project\": <id> to the request (or to the record). GET /api/v2/grant-context/ lists the projects.",
+      "retry": "no"
+    },
+    "record_exists": {
+      "http": 409,
+      "meaning": "(per row) A create found an existing record with the same identifying fields but different values. A create never overwrites: the row was SKIPPED. `conflicts` names each field with the stored and the sent value.",
+      "remedy": "If the stored values are right, drop the row. If the sent values should replace them, ASK THE USER, then resend the row with \"intent\": \"upsert\" (only the fields you send change, and the old values are kept for undo).",
+      "retry": "no"
+    },
+    "rekey_refused": {
+      "http": 409,
+      "meaning": "(per row) The row would change an existing record's identifying fields. That is a different record, never an update.",
+      "remedy": "Keep the identifying fields as stored and change only the other fields; to move a record, ask the user to remove it and write the new one.",
+      "retry": "no"
+    },
+    "restore_conflict": {
+      "http": 409,
+      "meaning": "(per row) Restoring this record would collide with a live record that now holds its identifying fields.",
+      "remedy": "Ask the user which record is right; remove or rename the live one first, or leave this one in the Trash.",
+      "retry": "no"
+    },
+    "row_refused": {
+      "http": 400,
+      "meaning": "(per row) The landing checks refused this row; `detail` says which check and why.",
+      "remedy": "Correct the row as `detail` describes (GET /api/v2/records/describe/<Model>/ lists fields, keys and choices) and resend it; validate first with \"dry_run\": true.",
+      "retry": "no"
+    },
+    "sample_name_taken": {
+      "http": 409,
+      "meaning": "(per row) The sample name is already registered as a DIFFERENT kind of sample (a drill sample vs a QC or surface sample): two records would share one assay.",
+      "remedy": "Ask the user which record is right; correct the name (or the existing record) and resend the row. Nothing is guessed.",
+      "retry": "no"
+    },
+    "section_conflict": {
+      "http": 409,
+      "meaning": "The report section changed since the revision you edited.",
+      "remedy": "Re-read the section, merge your change into the current text, and resend with its current revision number.",
+      "retry": "no"
+    },
+    "set_not_owned": {
+      "http": 403,
+      "meaning": "(per row) A vendor key writes only into sets it created or sets the customer ticked for it; this set is neither.",
+      "remedy": "Write into a set this key created or was given, or create a new set (\"set\": {\"name\": \"<new name>\", \"create\": true}); to write into this one, the project owner must tick it for the key.",
+      "retry": "no"
+    },
+    "set_not_writable_by_key": {
+      "http": 403,
+      "meaning": "(per row) The set takes no new rows through this key (it is archived).",
+      "remedy": "Ask the user which active set to use, or create a new one.",
+      "retry": "no"
+    },
+    "set_required": {
+      "http": 400,
+      "meaning": "(per row) An interval or sample write must name its set, and the set named must exist (or be created). The server never picks a set for an outside caller.",
+      "remedy": "ASK THE USER which set: add to an existing one (\"set\": \"<name>\") or create a new one (\"set\": {\"name\": \"<new name>\", \"create\": true}). The response's `sets` key lists the sets with their rows, default flag and whether this key may write them. A derived interpretation always goes into a new set.",
+      "retry": "no"
+    },
+    "stale_fk": {
+      "http": 409,
+      "meaning": "(per row) The record refers to another record by id, and that record no longer exists (deleted since the caller read it).",
+      "remedy": "Re-read the referenced record (or refer to it by name), then resend the row.",
+      "retry": "no"
+    },
+    "undo_not_covered": {
+      "http": 409,
+      "meaning": "(per row) Undo cannot yet reverse this change: it would add values to, or replace values on, a record that already exists (a sample's assay results, a standard's or method's element rows). Every write through this endpoint must be undoable, so it is refused.",
+      "remedy": "Send only records that do not exist yet (a new sample's results, a new standard or method). To add or change values on an existing record, ask the user to do it on the web, where the change is reviewed.",
+      "retry": "no"
+    },
+    "undo_stale": {
+      "http": 409,
+      "meaning": "(per row) The record changed after the write being undone, so undoing it would overwrite the later change.",
+      "remedy": "Show the user the later change; undo that write first, or leave this row as it is.",
+      "retry": "no"
+    },
+    "unknown_field": {
+      "http": 400,
+      "meaning": "(per row) The record carries a field the model does not have (named in `offending.fields`). Nothing is guessed.",
+      "remedy": "GET /api/v2/records/describe/<Model>/ lists the fields; rename or drop the ones named and resend the row.",
+      "retry": "no"
+    },
+    "unsupported_intent": {
+      "http": 400,
+      "meaning": "The intent is not one the records endpoint serves.",
+      "remedy": "Use one of: \"create\" (new records only; an existing record is never overwritten), \"upsert\" (create, or overwrite exactly the fields you send), \"update\" (change existing records only), \"retract\" (move records to the Trash; needs \"confirm\": \"retract\"), \"restore\" (bring a removed batch back), \"make_default_set\" (make a set the project default; a dry run returns the \"confirm\" value it needs), or \"undo\" with a \"write_id\". There is no hard delete.",
+      "retry": "no"
+    },
+    "unsupported_model": {
+      "http": 400,
+      "meaning": "The records endpoint does not accept this model.",
+      "remedy": "Use one of the models listed in `offending.accepted_models`; GET /api/v2/records/describe/<Model>/ describes each.",
+      "retry": "no"
+    },
+    "use_records_endpoint": {
+      "http": 403,
+      "meaning": "A grant tried to write through a resource path. Records are written through ONE endpoint, POST /api/v2/records/.",
+      "remedy": "POST /api/v2/records/ with {\"model\": \"<Model>\", \"intent\": \"create\" or \"upsert\", \"records\": [...]} — the exact call is in this refusal's `use` key. Validate first with \"dry_run\": true.",
+      "retry": "no"
+    },
+    "write_access_insufficient": {
+      "http": 403,
+      "meaning": "This credential may read but not write records (its write access is below \"records\").",
+      "remedy": "Ask the project owner for a key with records write access (or reconnect the app and allow writing). Reads keep working.",
+      "retry": "no"
+    }
+  },
+  "warning_codes": {
+    "crs_implausible": {
+      "meaning": "(per-row warning) The coordinates look like degrees but the epsg is a projected system (or the reverse) — the web import's plausibility rule. Stored exactly as sent.",
+      "remedy": "Check the epsg with the user; if it was wrong, resend the row with the right one (intent \"upsert\").",
+      "retry": "no"
+    },
+    "depth_units_implausible": {
+      "meaning": "(batch warning) Depths run past the hole's total depth — the mislabeled-units signature (feet under a metres header). The rows landed.",
+      "remedy": "Check the depth units with the user; if they were wrong, correct the rows (intent \"upsert\").",
+      "retry": "no"
+    },
+    "external_id_conflict": {
+      "meaning": "(per-row warning) The row landed, but its external_id already names a different record for this key, so the binding was left unchanged.",
+      "remedy": "Use one external_id per record.",
+      "retry": "no"
+    },
+    "external_id_not_recorded": {
+      "meaning": "(per-row warning) The row landed, but its external_id could not be recorded.",
+      "remedy": "Re-send the same row with the same external_id; it is a no-op that records the identity.",
+      "retry": "maybe"
+    },
+    "external_id_shared": {
+      "meaning": "(per-row warning) Another key also uses this external_id in this project. Identities are per key, so this is a separate record.",
+      "remedy": "Nothing to do unless the two keys meant the same record; if so, write it through one key only.",
+      "retry": "no"
+    },
+    "file_notice": {
+      "meaning": "(batch warning) A note about the created records (for example a column the model fills on its own).",
+      "remedy": "Read the detail; tell the user if it matters to them.",
+      "retry": "no"
+    },
+    "geometry_ring_closed": {
+      "meaning": "(batch warning) A polygon's ring was not closed and was closed for it; the misclosure is reported.",
+      "remedy": "If the misclosure is large, check the geometry with the user.",
+      "retry": "no"
+    },
+    "set_exists_derived_from_ignored": {
+      "meaning": "(per-row warning) The request asked to create a set that already exists, so the rows went into that existing set and the \"derived_from\" sent with it was NOT recorded (an existing set's provenance is never rewritten).",
+      "remedy": "If this is a new derived interpretation, send it into a NEW set name with \"create\": true and its \"derived_from\"; otherwise leave \"derived_from\" out.",
+      "retry": "no"
+    },
+    "write_not_recorded": {
+      "meaning": "(batch warning) The rows landed but the write record failed; the audit batch id is in the detail.",
+      "remedy": "Keep the audit batch id from the detail and tell the user; report it through POST /api/v2/feedback/.",
+      "retry": "no"
+    }
+  }
+}
