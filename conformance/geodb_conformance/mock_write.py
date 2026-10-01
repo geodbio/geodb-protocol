@@ -248,7 +248,7 @@ class WriteStore:
             code = ('too_many_rows' if self.breakage == 'write.refusals_are_registered'
                     else 'batch_too_large')
             return _err(code, f'{len(records)} records; the limit is {BATCH_LIMIT}.',
-                        'Split the batch.', 413)
+                        'Split the batch.', 400)
         dry = bool(body.get('dry_run'))
         if intent == 'retract' and not dry and body.get('confirm') != 'retract' \
                 and self.breakage != 'write.retract_needs_confirm':

@@ -148,7 +148,7 @@
       "retry": "no"
     },
     "batch_too_large": {
-      "http": 413,
+      "http": 400,
       "meaning": "More records than one request may carry (the limit is in `offending.limit`).",
       "remedy": "Split the records into batches of at most the limit and send each batch as its own request.",
       "retry": "no"
