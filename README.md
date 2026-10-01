@@ -105,6 +105,12 @@ LICENSE-docs (CC-BY-4.0)   Spec + documentation
 
 ## Quickstart (20 lines to DataFrames)
 
+> **Calling the API without the client?** Every REST path is in
+> [AGENTS.md](AGENTS.md) (the core-profile table) and `spec/openapi.yaml`.
+> The client's method names are not the paths: `collars()` is
+> `GET /api/v2/drill-collars/`, not `/api/v2/collars`. Read AGENTS.md first —
+> this page is the overview, that file is the instructions.
+
 Every call below is in the [core profile](PROFILE.md), so this runs against any
 conforming server, not only ours. (A test in the client repo runs exactly this
 against a mock that implements the core profile and nothing else.)
@@ -114,9 +120,9 @@ import geodb
 
 gx = geodb.Client(token="gdbg_...", base_url="https://api.geodb.io")
 
-collars = gx.collars().to_dataframe()        # every drill collar → pandas
-assays  = gx.assays().to_dataframe()         # merged assay values → pandas
-stations = gx.drill_surveys().to_dataframe() # downhole azimuth/dip stations
+collars = gx.collars().to_dataframe()        # GET /api/v2/drill-collars/   → pandas
+assays  = gx.assays().to_dataframe()         # GET /api/v2/assays/          → pandas
+stations = gx.drill_surveys().to_dataframe() # GET /api/v2/drill-surveys/   → pandas
 
 # ⚠️ collars carry the ORIGINAL imported coordinate: for a projected project,
 # `longitude` is the EASTING and `latitude` the NORTHING, in the CRS named by
