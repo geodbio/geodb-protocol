@@ -42,6 +42,9 @@ WRITE_BREAKAGES = {
         'from an update'),
     'write.dry_run_is_validate': (
         'write.dry_run_is_validate', 'a dry run writes the rows it validates'),
+    'write.dry_run_is_validate:new_set': (
+        'write.dry_run_is_validate',
+        'a dry run into a set the request creates refuses every row the write would land'),
     'write.missing_crs_refused_per_row': (
         'write.missing_crs_refused_per_row',
         'a coordinate with no epsg is silently assumed to be WGS84'),
@@ -242,7 +245,7 @@ class WriteStore:
             code = ('too_many_rows' if self.breakage == 'write.refusals_are_registered'
                     else 'batch_too_large')
             return _err(code, f'{len(records)} records; the limit is {BATCH_LIMIT}.',
-                        'Split the batch.', 400)
+                        'Split the batch.', 413)
         dry = bool(body.get('dry_run'))
         if intent == 'retract' and not dry and body.get('confirm') != 'retract' \
                 and self.breakage != 'write.retract_needs_confirm':
@@ -358,6 +361,10 @@ class WriteStore:
                 ref = 'default'
             if isinstance(ref, dict):
                 name = ref.get('name')
+                if self.breakage == 'write.dry_run_is_validate:new_set' \
+                        and body.get('dry_run'):
+                    return refuse('interval_overlap', f'"{name}" is not an existing set.',
+                                  'Name the kind of pass.')
                 if name not in self.sets:
                     self.sets[name] = {'id': len(self.sets) + 1, 'owned': True, 'default': False}
                 ref = name
@@ -403,6 +410,7 @@ class WriteStore:
                                   for k, v in diffs.items()])
             return out
         old = {k: target.get(k) for k in diffs}
+        old['seq'], old['by'] = target.get('seq'), target.get('by')   # undo puts the stamp back
         target.update(diffs)
         if intent == 'update' and self.breakage == 'write.update_changes_only_named_fields' \
                 and kind == 'sample':
@@ -428,8 +436,8 @@ class WriteStore:
         if target is None or target['deleted']:
             return refuse('not_found', 'No live record matches.', 'Read the id again.')
         target['deleted'] = True
+        write['retracted'].append((kind, target['id'], (target.get('seq'), target.get('by'))))
         self._touch(target, write)
-        write['retracted'].append((kind, target['id']))
         model = 'DrillCollar' if kind == 'collar' else 'DrillSample'
         cascade[model] = cascade.get(model, 0) + 1
         children = 0
@@ -437,8 +445,9 @@ class WriteStore:
             for child in self.live('sample'):
                 if child['collar_id'] == target['id']:
                     child['deleted'] = True
+                    write['retracted'].append(('sample', child['id'],
+                                               (child.get('seq'), child.get('by'))))
                     self._touch(child, write)
-                    write['retracted'].append(('sample', child['id']))
                     children += 1
             if children:
                 cascade['DrillSample'] = cascade.get('DrillSample', 0) + children
@@ -447,15 +456,16 @@ class WriteStore:
         return out
 
     def restore(self, body):
-        batch = body.get('audit_batch_id')
-        write = next((w for w in self.writes if w['batch'] == batch
-                      and w['intent'] == 'retract'), None)
+        batch, wid = body.get('audit_batch_id'), body.get('write_id')
+        write = next((w for w in self.writes if w['intent'] == 'retract'
+                      and ((wid and w['id'] == wid) or (batch and w['batch'] == batch))),
+                     None)
         if write is None:
             return _err('not_found', 'No retract with that audit_batch_id.',
                         'Use the audit_batch_id a retract returned.', 404)
         new = self._new_write(write['model'], 'restore')
         rows = []
-        for i, (kind, pk) in enumerate(write['retracted']):
+        for i, (kind, pk, _stamp) in enumerate(write['retracted']):
             row = self.rows[kind][pk]
             if self.breakage != 'write.restore_brings_a_batch_back':
                 row['deleted'] = False
@@ -504,14 +514,15 @@ class WriteStore:
                      offending={'later_write_id': row['by']})
                 continue
             if self.breakage != 'write.undo_restores_an_update':
-                row.update(old)
-            self._touch(row, undo)
+                row.update(old)            # the values AND the stamp: an undo is neutral
             done(kind, pk)
-        for kind, pk in write['retracted']:
+        for kind, pk, stamp in write['retracted']:
             if kind == 'sample' and self.breakage == 'write.retract_cascades_and_undo_restores':
                 done(kind, pk)
                 continue
-            self.rows[kind][pk]['deleted'] = False
+            row = self.rows[kind][pk]
+            row['deleted'] = False
+            row['seq'], row['by'] = stamp
             done(kind, pk)
         for kind, pk in write['restored']:
             self.rows[kind][pk]['deleted'] = True

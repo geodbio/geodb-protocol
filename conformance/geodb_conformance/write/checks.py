@@ -60,8 +60,9 @@ def describe_serves_the_contract(session):
 # ---------------------------------------------------------------------------
 
 @R.add('write.dry_run_is_validate',
-       '`"dry_run": true` answers exactly the per-row outcomes the write would, and '
-       'writes nothing — validate is the dry run, never a second code path.')
+       '`"dry_run": true` answers exactly the per-row outcomes the write would — into '
+       'a new set too — and writes nothing: validate is the dry run, never a second '
+       'code path.')
 def dry_run_is_validate(session):
     rows = [session.collar_row('DRY'),
             {k: v for k, v in session.collar_row('DRY').items() if k != 'epsg'}]
@@ -74,6 +75,18 @@ def dry_run_is_validate(session):
                   'the good row after its dry run (a dry run that wrote makes it "unchanged")')
     require(session.row(COLLAR_PATH, real['rows'][0]['id']) is not None,
             'the written row cannot be read back')
+    # ... and into a NEW set (validate-first is how an agent writes a set the
+    # user just named): the dry run answers as the write lands.
+    hole = rows[0]['name']
+    samples = {'model': CHILD, 'intent': 'create',
+               'set': {'name': session.new_set_name(), 'create': True},
+               'records': [{'bhid': hole, 'name': session.name('S'), 'depth_from': 2.0 * i,
+                            'depth_to': 2.0 * i + 2.0} for i in range(2)]}
+    dry = session.records(dict(samples, dry_run=True))
+    real = session.records(samples)
+    require_equal(_rows(dry), _rows(real),
+                  'per-row outcomes of a dry run into a new set vs the write')
+    require_equal(_rows(real), [('created', None)] * 2, 'the samples written into the new set')
 
 
 @R.add('write.missing_crs_refused_per_row',
