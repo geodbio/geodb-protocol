@@ -108,6 +108,24 @@
         "unchanged"
       ]
     },
+    "qaqc_verdict": {
+      "does": "changes a certificate's QAQC review decision (approve, conditionally approve, reject, back to pending) or links its re-assay certificate — ONLY when the user explicitly asks; through the person's own key; its dry run returns the \"confirm\" value the real request needs; never on your own initiative",
+      "confirm_with_user_first": true,
+      "row_statuses": [
+        "updated",
+        "unchanged",
+        "refused"
+      ]
+    },
+    "qc_reconnect": {
+      "does": "reconnects a QC sample to its withdrawn result (a result left in the Trash or unlinked by a certificate delete); never for a rejected certificate's results",
+      "confirm_with_user_first": true,
+      "row_statuses": [
+        "updated",
+        "unchanged",
+        "refused"
+      ]
+    },
     "undo": {
       "does": "reverses one earlier write by its write_id (rows changed since are left as they are and named)",
       "confirm_with_user_first": false,
@@ -132,13 +150,21 @@
     "a retract needs \"confirm\": \"retract\" (else confirm_required) and cascades",
     "undo refuses, per row, a row changed by a later write: undo_stale",
     "a write to a v2 resource path is refused use_records_endpoint, naming the call",
-    "a record read from the API writes back unchanged as a no-op (round trip)"
+    "a record read from the API writes back unchanged as a no-op (round trip)",
+    "A null clears a stored value only in an update: there \"field\": null means \"empty this field\" (Undo restores it) — allowed for a field that may be empty; a field that must always hold a value (a required number or date, a reference that cannot be blank, a field with a fixed list of choices that cannot be blank) is refused null_not_allowed, by name. In a create or an upsert a null means \"not given\" and the stored value is left alone. A field you leave out is never changed by any intent.",
+    "make_default_set and qaqc_verdict run only through a PERSON's own key, on their explicit request; a vendor (org) key is refused"
   ],
   "reason_codes": {
     "already_undone": {
       "http": 409,
       "meaning": "This write has already been undone.",
       "remedy": "Nothing to do; read the records to see their current state.",
+      "retry": "no"
+    },
+    "api_write_too_large": {
+      "http": 400,
+      "meaning": "An api_write body is larger than 256 KB, the most a connector call carries.",
+      "remedy": "Split the records into smaller batches, or write from your own sandbox with a session key, or upload the file in geoDB.",
       "retry": "no"
     },
     "approved_certificate": {
@@ -249,6 +275,12 @@
       "remedy": "To bring back rows an undo removed, restore them: send {\"intent\": \"restore\", \"audit_batch_id\": <the undo's audit_batch_id>}. Otherwise read the records and correct them with an update.",
       "retry": "no"
     },
+    "null_not_allowed": {
+      "http": 400,
+      "meaning": "(per row) An update sent null for a field that cannot be emptied (it must always hold a value, or one of its choices). Named in `offending.fields`. Nothing on the row was written.",
+      "remedy": "Send a value (GET /api/v2/records/describe/<Model>/ lists the choices), or leave the field out to keep it as it is.",
+      "retry": "no"
+    },
     "out_of_scope": {
       "http": 403,
       "meaning": "(per row) The record is shared by every project of the company (a laboratory, a lab method, a reference standard, a water method) and this key does not reach all of those projects.",
@@ -277,6 +309,12 @@
       "http": 400,
       "meaning": "(per row) The key may write to several projects and neither the record nor the request names one.",
       "remedy": "Add \"project\": <id> to the request (or to the record). GET /api/v2/grant-context/ lists the projects.",
+      "retry": "no"
+    },
+    "qaqc_verdict_field": {
+      "http": 409,
+      "meaning": "(per row) The row tries to set a field that records a QAQC review decision (whether a certificate's results are withheld). It changes only through the certificate's verdict, never on a row.",
+      "remedy": "Drop the field and resend. If the user explicitly asked for a certificate's verdict to change, use \"intent\": \"qaqc_verdict\" (dry run first; it returns the \"confirm\" value) — never on your own initiative.",
       "retry": "no"
     },
     "record_exists": {

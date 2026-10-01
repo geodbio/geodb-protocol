@@ -24,7 +24,8 @@ import uuid
 WRITE_TOKEN = 'gdbg_mock_conformance_WRITE_token'
 PROJECT = {'id': 2, 'name': 'Mock Write Twin', 'code': 'MOCKW2'}
 BATCH_LIMIT = 1000
-INTENTS = ('create', 'upsert', 'update', 'retract', 'restore', 'make_default_set', 'undo')
+INTENTS = ('create', 'upsert', 'update', 'retract', 'restore', 'make_default_set',
+           'qaqc_verdict', 'qc_reconnect', 'undo')
 BODY_KEYS = {'model', 'intent', 'records', 'project', 'set', 'logging_set', 'sample_set',
              'acknowledge', 'dry_run', 'confirm', 'audit_batch_id', 'write_id'}
 HOLE_TYPES = {'DD': 'Diamond Core', 'RC': 'Reverse Circulation'}
