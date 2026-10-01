@@ -4,6 +4,19 @@
 > run against a server that does (and, once it ships, against the public
 > write twin with the demo write key).
 
+**Read [AGENTS.md](../../AGENTS.md), "Managing data", first** — these examples
+show the calls; the rules they follow are stated there. Three you must not
+skip:
+
+- **Sets.** Every interval or sample row belongs to a set. When the user has
+  not said which, ASK — a write that names none is refused `set_required`, and
+  the answer lists the project's sets. Create a new set only when the user
+  asked for one (or for a derived interpretation).
+- **Ask before changing what exists.** `upsert`, `update`, `retract`,
+  `restore` and `make_default_set` change the user's data: dry-run, show the
+  user what will change, send it only after their yes.
+- **Coordinates carry their `epsg`.** Never pre-convert.
+
 ```bash
 export GEODB_BASE_URL=https://api.geodb.io
 export GEODB_WRITE_TOKEN=<a key that may write records>
