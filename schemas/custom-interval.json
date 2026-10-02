@@ -103,7 +103,7 @@
     },
     "value": {
       "type": "object",
-      "description": "The analyte value, as a DECIMAL STRING rather than a JSON number — precision is preserved exactly as the laboratory reported it, and parsing it as a float will silently round it. Parse it with a decimal type. Its units are the sibling `units` field: units are per VALUE, not per sample and not per element, because one sample can carry values from two laboratories at different units.",
+      "description": "Nested vocabulary entry for a categorical type (read/write).",
       "properties": {
         "id": {
           "type": "integer"
@@ -128,9 +128,30 @@
     },
     "custom_interval_set": {
       "type": [
-        "string",
+        "object",
         "null"
-      ]
+      ],
+      "description": "The logging set this interval belongs to, as an identity object, or null when the interval is not in a set. Sets let several loggers log the same hole independently.",
+      "properties": {
+        "id": {
+          "type": "integer"
+        },
+        "name": {
+          "type": "string"
+        },
+        "description": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "description"
+      ],
+      "additionalProperties": false
     },
     "images": {
       "type": "array",

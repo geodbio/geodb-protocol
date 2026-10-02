@@ -358,6 +358,8 @@ def _make_drill_samples(collars):
             'submittal': None,
             'submittal_name': None,
             'package_number': None,
+            # Specific-gravity inputs (grams); null when not measured.
+            'dry_weight': None, 'wet_weight': None,
             'drill_sample_set': {'id': 18, 'name': 'default',
                                  'kind': 'primary',
                                  'description': 'System default sampling pass'},

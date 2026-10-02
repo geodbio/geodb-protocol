@@ -189,9 +189,38 @@
     },
     "feature_type_fk": {
       "type": [
-        "string",
+        "object",
         "null"
-      ]
+      ],
+      "description": "The structure's feature type (joint, fault, vein, bedding …) from the project's drill-structure vocabulary, or null when none is set.",
+      "properties": {
+        "id": {
+          "type": "integer"
+        },
+        "code": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "color": {
+          "type": "string"
+        },
+        "display_order": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "code",
+        "name",
+        "color",
+        "display_order"
+      ],
+      "additionalProperties": false
     },
     "strike": {
       "type": [

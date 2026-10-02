@@ -1416,6 +1416,16 @@ paths:
           not matter; a name shared by holes in several projects you can read matches
           each of them). A name that matches no readable hole is refused with `invalid_parameter`
           — never an empty list.
+      - in: query
+        name: drill_alteration_set
+        schema:
+          type: string
+        description: Narrow to one logging set (a pass of logging over the same holes),
+          by its id or its exact name (case does not matter). Rows with no stored
+          set read as the project's default set. A value that names no set in a project
+          this credential can read is refused with `invalid_parameter` — never an
+          empty list. Without it, every set's rows are listed; each row names its
+          set.
       tags:
       - Drill Intervals
       security:
@@ -2148,6 +2158,16 @@ paths:
           not matter; a name shared by holes in several projects you can read matches
           each of them). A name that matches no readable hole is refused with `invalid_parameter`
           — never an empty list.
+      - in: query
+        name: custom_interval_set
+        schema:
+          type: string
+        description: Narrow to one logging set (a pass of logging over the same holes),
+          by its id or its exact name (case does not matter). Rows with no stored
+          set read as the project's default set. A value that names no set in a project
+          this credential can read is refused with `invalid_parameter` — never an
+          empty list. Without it, every set's rows are listed; each row names its
+          set.
       tags:
       - Drill Intervals
       security:
@@ -2368,6 +2388,16 @@ paths:
           not matter; a name shared by holes in several projects you can read matches
           each of them). A name that matches no readable hole is refused with `invalid_parameter`
           — never an empty list.
+      - in: query
+        name: drill_lithology_set
+        schema:
+          type: string
+        description: Narrow to one logging set (a pass of logging over the same holes),
+          by its id or its exact name (case does not matter). Rows with no stored
+          set read as the project's default set. A value that names no set in a project
+          this credential can read is refused with `invalid_parameter` — never an
+          empty list. Without it, every set's rows are listed; each row names its
+          set.
       tags:
       - Drill Intervals
       security:
@@ -2910,6 +2940,16 @@ paths:
           not matter; a name shared by holes in several projects you can read matches
           each of them). A name that matches no readable hole is refused with `invalid_parameter`
           — never an empty list.
+      - in: query
+        name: drill_mineralization_set
+        schema:
+          type: string
+        description: Narrow to one logging set (a pass of logging over the same holes),
+          by its id or its exact name (case does not matter). Rows with no stored
+          set read as the project's default set. A value that names no set in a project
+          this credential can read is refused with `invalid_parameter` — never an
+          empty list. Without it, every set's rows are listed; each row names its
+          set.
       tags:
       - Drill Intervals
       security:
@@ -3868,6 +3908,16 @@ paths:
           not matter; a name shared by holes in several projects you can read matches
           each of them). A name that matches no readable hole is refused with `invalid_parameter`
           — never an empty list.
+      - in: query
+        name: drill_rqd_set
+        schema:
+          type: string
+        description: Narrow to one logging set (a pass of logging over the same holes),
+          by its id or its exact name (case does not matter). Rows with no stored
+          set read as the project's default set. A value that names no set in a project
+          this credential can read is refused with `invalid_parameter` — never an
+          empty list. Without it, every set's rows are listed; each row names its
+          set.
       tags:
       - Drill Intervals
       security:
@@ -4079,6 +4129,31 @@ paths:
           not matter; a name shared by holes in several projects you can read matches
           each of them). A name that matches no readable hole is refused with `invalid_parameter`
           — never an empty list.
+      - in: query
+        name: drill_sample_set
+        schema:
+          type: string
+        description: Narrow to one logging set (a pass of logging over the same holes),
+          by its id or its exact name (case does not matter). Rows with no stored
+          set read as the project's default set. A value that names no set in a project
+          this credential can read is refused with `invalid_parameter` — never an
+          empty list. Without it, every set's rows are listed; each row names its
+          set.
+      - in: query
+        name: assay_config_id
+        schema:
+          type: string
+        description: 'Merge each sample''s assay values through one of the project''s
+          assay configurations (its id): the nested `assay` then carries one merged
+          value per element in the configuration''s units (`merged: true`), or composited
+          intervals where the configuration composites. An id naming no configuration
+          this credential can read is refused with `not_found`.'
+      - in: query
+        name: merge_assays
+        schema:
+          type: string
+        description: 'Legacy: `true` merges with the project''s default merge settings.
+          Prefer `assay_config_id`.'
       tags:
       - Samples
       security:
@@ -4362,6 +4437,16 @@ paths:
           not matter; a name shared by holes in several projects you can read matches
           each of them). A name that matches no readable hole is refused with `invalid_parameter`
           — never an empty list.
+      - in: query
+        name: drill_spectral_set
+        schema:
+          type: string
+        description: Narrow to one logging set (a pass of logging over the same holes),
+          by its id or its exact name (case does not matter). Rows with no stored
+          set read as the project's default set. A value that names no set in a project
+          this credential can read is refused with `invalid_parameter` — never an
+          empty list. Without it, every set's rows are listed; each row names its
+          set.
       tags:
       - Drill Intervals
       security:
@@ -5744,6 +5829,16 @@ paths:
           not matter; a name shared by holes in several projects you can read matches
           each of them). A name that matches no readable hole is refused with `invalid_parameter`
           — never an empty list.
+      - in: query
+        name: drill_vein_set
+        schema:
+          type: string
+        description: Narrow to one logging set (a pass of logging over the same holes),
+          by its id or its exact name (case does not matter). Rows with no stored
+          set read as the project's default set. A value that names no set in a project
+          this credential can read is refused with `invalid_parameter` — never an
+          empty list. Without it, every set's rows are listed; each row names its
+          set.
       tags:
       - Drill Intervals
       security:
@@ -6134,6 +6229,44 @@ paths:
           requester (or a project-pinned grant) is refused / degrades to its one project.
           Rows carry flat project_id / project_name so results can be grouped by project.
           Any other scope value is left to endpoint-specific meaning.'
+      - in: query
+        name: modified_since
+        schema:
+          type: string
+        description: 'Incremental sync: only rows with last_edited >= the DATE part
+          of this ISO 8601 date/datetime. DAY-granular — rows already modified on
+          the same day are re-included; treat pulls as idempotent upserts keyed on
+          id. The same-day over-inclusion is deliberate: under-including would silently
+          lose an edit made after your previous pull on that day. Deletions are not
+          reflected here; keep using deleted_since / deleted_ids. A value that cannot
+          be parsed is REFUSED with 400 reason_code=invalid_parameter. When sent,
+          the response echoes modified_since_applied.'
+      - in: query
+        name: deleted_since
+        schema:
+          type: string
+        description: 'Deletion sync: restrict deleted_ids to records soft-deleted
+          on or after the DATE part of this ISO 8601 date/datetime. DAY-granular and
+          inclusive, for the same reason as modified_since — removal is idempotent,
+          so over-including a deletion is harmless and under-including leaves a ghost
+          record. Omit it on a first sync to receive every deleted id. The response
+          echoes deleted_since_applied, and sync_timestamp is the value to send next
+          time.'
+      - in: query
+        name: compact
+        schema:
+          type: string
+        description: 'compact=1: lean sync serialization — flat scalars with FK ids
+          (project_id, bhid_id, ...), raw extra_data dict, no nested natural keys
+          / derived fields / geometry columns. Same pagination envelope and deleted_ids
+          metadata. Assays inline their element values as flat dicts. Any other value
+          = default rich shape.'
+      - in: query
+        name: skip_count
+        schema:
+          type: string
+        description: 'skip_count=1: suppress the per-page COUNT(*). count is null;
+          next is present exactly while a full page was returned.'
       - in: query
         name: project_id
         schema:
@@ -6940,6 +7073,44 @@ paths:
           requester (or a project-pinned grant) is refused / degrades to its one project.
           Rows carry flat project_id / project_name so results can be grouped by project.
           Any other scope value is left to endpoint-specific meaning.'
+      - in: query
+        name: modified_since
+        schema:
+          type: string
+        description: 'Incremental sync: only rows with last_edited >= the DATE part
+          of this ISO 8601 date/datetime. DAY-granular — rows already modified on
+          the same day are re-included; treat pulls as idempotent upserts keyed on
+          id. The same-day over-inclusion is deliberate: under-including would silently
+          lose an edit made after your previous pull on that day. Deletions are not
+          reflected here; keep using deleted_since / deleted_ids. A value that cannot
+          be parsed is REFUSED with 400 reason_code=invalid_parameter. When sent,
+          the response echoes modified_since_applied.'
+      - in: query
+        name: deleted_since
+        schema:
+          type: string
+        description: 'Deletion sync: restrict deleted_ids to records soft-deleted
+          on or after the DATE part of this ISO 8601 date/datetime. DAY-granular and
+          inclusive, for the same reason as modified_since — removal is idempotent,
+          so over-including a deletion is harmless and under-including leaves a ghost
+          record. Omit it on a first sync to receive every deleted id. The response
+          echoes deleted_since_applied, and sync_timestamp is the value to send next
+          time.'
+      - in: query
+        name: compact
+        schema:
+          type: string
+        description: 'compact=1: lean sync serialization — flat scalars with FK ids
+          (project_id, bhid_id, ...), raw extra_data dict, no nested natural keys
+          / derived fields / geometry columns. Same pagination envelope and deleted_ids
+          metadata. Assays inline their element values as flat dicts. Any other value
+          = default rich shape.'
+      - in: query
+        name: skip_count
+        schema:
+          type: string
+        description: 'skip_count=1: suppress the per-page COUNT(*). count is null;
+          next is present exactly while a full page was returned.'
       - in: query
         name: project_id
         schema:
@@ -8152,6 +8323,28 @@ paths:
           key some app endpoints take (`{"name": …, "company": …}`) is not a form
           this parameter accepts: it is refused with `invalid_parameter` too — send
           the id.'
+      - in: query
+        name: status
+        schema:
+          type: string
+        description: 'Narrow to field-workflow status: one or more of `PL` planned,
+          `AS` assigned, `CO` collected, `SK` skipped, comma-separated. Any other
+          code is refused with `invalid_parameter`.'
+      - in: query
+        name: assay_config_id
+        schema:
+          type: string
+        description: 'Merge each sample''s assay values through one of the project''s
+          assay configurations (its id): the nested `assay` then carries one merged
+          value per element in the configuration''s units (`merged: true`), or composited
+          intervals where the configuration composites. An id naming no configuration
+          this credential can read is refused with `not_found`.'
+      - in: query
+        name: merge_assays
+        schema:
+          type: string
+        description: 'Legacy: `true` merges with the project''s default merge settings.
+          Prefer `assay_config_id`.'
       tags:
       - Samples
       security:
@@ -9110,6 +9303,34 @@ paths:
           not matter; a name shared by holes in several projects you can read matches
           each of them). A name that matches no readable hole is refused with `invalid_parameter`
           — never an empty list.
+      - in: query
+        name: qc_type
+        schema:
+          type: string
+        description: Narrow to one QC type, by its id or its exact name in the company's
+          QC type library (case does not matter) — the same type each row names in
+          `qc_type_detail`. A name that matches no QC type is refused with `invalid_parameter`.
+      - in: query
+        name: category
+        schema:
+          type: string
+        description: 'Narrow to one QC category: `STD` (operator standard), `BLN`
+          (operator blank), `DUP` (operator duplicate), `SLB` / `BLB` / `DLB` (the
+          lab''s standard / blank / duplicate), or the category''s name. Any other
+          value is refused with `invalid_parameter`.'
+      - in: query
+        name: lab_status
+        schema:
+          type: string
+        description: 'Narrow to one lab status: `PL` planned, `CO` collected, `SU`
+          submitted, `AN` analyzed (or its name). Without it, planned rows are left
+          out. Any other value is refused with `invalid_parameter`.'
+      - in: query
+        name: sample_type
+        schema:
+          type: string
+        description: Legacy twin of `category` (the same six codes), kept for older
+          clients; prefer `category`.
       tags:
       - Quality Control
       security:
@@ -10305,6 +10526,44 @@ paths:
           Rows carry flat project_id / project_name so results can be grouped by project.
           Any other scope value is left to endpoint-specific meaning.'
       - in: query
+        name: modified_since
+        schema:
+          type: string
+        description: 'Incremental sync: only rows with last_edited >= the DATE part
+          of this ISO 8601 date/datetime. DAY-granular — rows already modified on
+          the same day are re-included; treat pulls as idempotent upserts keyed on
+          id. The same-day over-inclusion is deliberate: under-including would silently
+          lose an edit made after your previous pull on that day. Deletions are not
+          reflected here; keep using deleted_since / deleted_ids. A value that cannot
+          be parsed is REFUSED with 400 reason_code=invalid_parameter. When sent,
+          the response echoes modified_since_applied.'
+      - in: query
+        name: deleted_since
+        schema:
+          type: string
+        description: 'Deletion sync: restrict deleted_ids to records soft-deleted
+          on or after the DATE part of this ISO 8601 date/datetime. DAY-granular and
+          inclusive, for the same reason as modified_since — removal is idempotent,
+          so over-including a deletion is harmless and under-including leaves a ghost
+          record. Omit it on a first sync to receive every deleted id. The response
+          echoes deleted_since_applied, and sync_timestamp is the value to send next
+          time.'
+      - in: query
+        name: compact
+        schema:
+          type: string
+        description: 'compact=1: lean sync serialization — flat scalars with FK ids
+          (project_id, bhid_id, ...), raw extra_data dict, no nested natural keys
+          / derived fields / geometry columns. Same pagination envelope and deleted_ids
+          metadata. Assays inline their element values as flat dicts. Any other value
+          = default rich shape.'
+      - in: query
+        name: skip_count
+        schema:
+          type: string
+        description: 'skip_count=1: suppress the per-page COUNT(*). count is null;
+          next is present exactly while a full page was returned.'
+      - in: query
         name: project_id
         schema:
           type: string
@@ -11305,6 +11564,29 @@ paths:
           key some app endpoints take (`{"name": …, "company": …}`) is not a form
           this parameter accepts: it is refused with `invalid_parameter` too — send
           the id.'
+      - in: query
+        name: site_id
+        schema:
+          type: string
+        description: Narrow to one water site, by its id or by its name (the value
+          a row carries as `site.site_id`; case does not matter). A name that matches
+          no site this credential can read is refused with `invalid_parameter`.
+      - in: query
+        name: start_date
+        schema:
+          type: string
+        description: Earliest collection date (YYYY-MM-DD), inclusive.
+      - in: query
+        name: end_date
+        schema:
+          type: string
+        description: Latest collection date (YYYY-MM-DD), inclusive.
+      - in: query
+        name: sample_type
+        schema:
+          type: string
+        description: 'Narrow to one sample type: `REG` regular, `DUP` field duplicate,
+          `BLK` field blank, `QC` QC sample (or its name).'
       tags:
       - Water
       security:
@@ -11517,6 +11799,18 @@ paths:
           key some app endpoints take (`{"name": …, "company": …}`) is not a form
           this parameter accepts: it is refused with `invalid_parameter` too — send
           the id.'
+      - in: query
+        name: site_type
+        schema:
+          type: string
+        description: 'Narrow to one site type: `SW` surface water, `GW` groundwater
+          well, `SP` spring, `PD` pond/reservoir, `OT` other (or its name).'
+      - in: query
+        name: status
+        schema:
+          type: string
+        description: 'Narrow to one site status: `AC` active, `IN` inactive, `AB`
+          abandoned (or its name).'
       tags:
       - Water
       security:
@@ -11653,6 +11947,20 @@ components:
         * `ground` - Ground
         * `airborne` - Airborne
         * `downhole` - Downhole
+    AlterationGradeEnum:
+      enum:
+      - A1
+      - A2
+      - A3
+      - A4
+      - A5
+      type: string
+      description: |-
+        * `A1` - A1 - Fresh
+        * `A2` - A2 - Slightly Altered
+        * `A3` - A3 - Moderately Altered
+        * `A4` - A4 - Highly Altered
+        * `A5` - A5 - Completely Altered
     AlterationNested:
       type: object
       properties:
@@ -11960,6 +12268,10 @@ components:
           readOnly: true
         above_det_limit:
           type: boolean
+          description: 'True when the laboratory reported this value OVER its upper
+            reporting limit (e.g. `>10000`): `value` is then the limit and the true
+            value is AT LEAST that much. It does NOT mean "above the detection limit"
+            — a below-detection result is the `-1.0000` sentinel, flagged by `below_detection`.'
         method:
           type: object
           nullable: true
@@ -12579,9 +12891,25 @@ components:
           readOnly: true
           nullable: true
         drill_alteration_set:
-          type: string
-          readOnly: true
+          type: object
           nullable: true
+          description: The logging set this interval belongs to, as an identity object,
+            or null when the interval is not in a set. Sets let several loggers log
+            the same hole independently.
+          properties:
+            id:
+              type: integer
+            name:
+              type: string
+            description:
+              type: string
+              nullable: true
+          required:
+          - id
+          - name
+          - description
+          additionalProperties: false
+          readOnly: true
         images:
           type: array
           items:
@@ -12698,9 +13026,29 @@ components:
           description: 'Natural key of the project: `{"name", "company"}`.'
           readOnly: true
         pad:
-          type: string
-          readOnly: true
+          type: object
           nullable: true
+          description: The drill pad the hole was collared from, by its natural key,
+            or null when the hole is not on a pad.
+          properties:
+            name:
+              type: string
+            project:
+              type: object
+              properties:
+                name:
+                  type: string
+                company:
+                  type: string
+              required:
+              - name
+              - company
+              additionalProperties: false
+          required:
+          - name
+          - project
+          additionalProperties: false
+          readOnly: true
         hole_type:
           type: string
           readOnly: true
@@ -12782,8 +13130,9 @@ components:
           type: number
           format: double
           nullable: true
-          description: Elevation of the collar, in `elevation_units`. See `elevation_source`
-            for whether it was surveyed, taken from a DEM, or entered by hand.
+          description: Elevation, in the record's `elevation_units` where it carries
+            one, else in its `length_units`. On a collar, see `elevation_source` for
+            whether it was surveyed, taken from a DEM, or entered by hand.
         elevation_source:
           allOf:
           - $ref: '#/components/schemas/DrillCollarReadElevationSourceEnum'
@@ -12796,11 +13145,11 @@ components:
             * `unknown` - Unknown
         length_units:
           type: string
-          readOnly: true
-          description: 'Units the record''s DEPTH and LENGTH values are stored in:
-            `M` (metres) or `FT` (feet). Stored units, not a display preference —
-            read every depth against this.'
           nullable: true
+          description: 'Units the collar''s depths (`total_depth`) and `elevation`
+            are stored in, sent as a LABEL: `Meters` or `Feet`. ⚠️ Collars send the
+            label; every other record sends the code (`M` / `FT`) — compare accordingly.'
+          readOnly: true
         xy_units:
           type: string
           nullable: true
@@ -12811,24 +13160,35 @@ components:
           type: number
           format: double
           nullable: true
-          description: Get project CRS easting (X coordinate).
+          description: |-
+            A DERIVED copy of the coordinate, reprojected into the PROJECT's
+            CRS (`crs_epsg`, units `crs_xy_units`) — not the original. The original
+            is `source_coordinate` (or `longitude`/`latitude` with `epsg`). On a
+            project with no CRS set this falls back to WGS84 degrees
+            (`crs_xy_units: degrees`).
           readOnly: true
         crs_northing:
           type: number
           format: double
           nullable: true
-          description: Get project CRS northing (Y coordinate).
+          description: |-
+            The northing (Y) of the DERIVED copy in the PROJECT's CRS — see
+            `crs_easting`. Never the original coordinate.
           readOnly: true
         crs_elevation:
           type: number
           format: double
           nullable: true
-          description: Get project CRS elevation (Z coordinate).
+          description: |-
+            Elevation of the DERIVED copy in the PROJECT's CRS, in
+            `crs_elevation_units` — see `crs_easting`.
           readOnly: true
         crs_epsg:
           type: integer
           nullable: true
-          description: Get project EPSG code.
+          description: |-
+            EPSG code of the PROJECT's CRS the `crs_*` copy is reprojected into
+            (4326 when the project has none) — not the record's own `epsg`.
           readOnly: true
         crs_xy_units:
           type: string
@@ -13040,20 +13400,30 @@ components:
           allOf:
           - $ref: '#/components/schemas/CustomIntervalValue'
           readOnly: true
-          description: 'The analyte value, as a DECIMAL STRING rather than a JSON
-            number — precision is preserved exactly as the laboratory reported it,
-            and parsing it as a float will silently round it. Parse it with a decimal
-            type. Its units are the sibling `units` field: units are per VALUE, not
-            per sample and not per element, because one sample can carry values from
-            two laboratories at different units.'
         measure:
           type: number
           format: double
           nullable: true
         custom_interval_set:
-          type: string
-          readOnly: true
+          type: object
           nullable: true
+          description: The logging set this interval belongs to, as an identity object,
+            or null when the interval is not in a set. Sets let several loggers log
+            the same hole independently.
+          properties:
+            id:
+              type: integer
+            name:
+              type: string
+            description:
+              type: string
+              nullable: true
+          required:
+          - id
+          - name
+          - description
+          additionalProperties: false
+          readOnly: true
         images:
           type: array
           items:
@@ -13221,6 +13591,11 @@ components:
           - $ref: '#/components/schemas/LithologyNested'
           readOnly: true
           nullable: true
+        formation:
+          allOf:
+          - $ref: '#/components/schemas/FormationNested'
+          readOnly: true
+          nullable: true
         texture:
           type: string
           readOnly: true
@@ -13286,6 +13661,7 @@ components:
       - depth_to
       - display_units
       - drill_lithology_set
+      - formation
       - id
       - images
       - last_edited
@@ -13401,6 +13777,7 @@ components:
           allOf:
           - $ref: '#/components/schemas/MineralAssemblageNested'
           readOnly: true
+          nullable: true
         mineral_concentrations:
           type: array
           items:
@@ -13416,9 +13793,25 @@ components:
           readOnly: true
           nullable: true
         drill_mineralization_set:
-          type: string
-          readOnly: true
+          type: object
           nullable: true
+          description: The logging set this interval belongs to, as an identity object,
+            or null when the interval is not in a set. Sets let several loggers log
+            the same hole independently.
+          properties:
+            id:
+              type: integer
+            name:
+              type: string
+            description:
+              type: string
+              nullable: true
+          required:
+          - id
+          - name
+          - description
+          additionalProperties: false
+          readOnly: true
         images:
           type: array
           items:
@@ -13561,8 +13954,9 @@ components:
         elevation:
           type: string
           readOnly: true
-          description: Elevation of the collar, in `elevation_units`. See `elevation_source`
-            for whether it was surveyed, taken from a DEM, or entered by hand.
+          description: Elevation, in the record's `elevation_units` where it carries
+            one, else in its `length_units`. On a collar, see `elevation_source` for
+            whether it was surveyed, taken from a DEM, or entered by hand.
           nullable: true
         permit_number:
           type: string
@@ -13785,6 +14179,12 @@ components:
           description: Desurveyed position at `depth_to`, as `[x, y, z]` on the project
             local grid in metres. Null when the hole has no survey.
           readOnly: true
+        run_length:
+          type: number
+          format: double
+          nullable: true
+          description: Actual drilled length of this run (if different from depth
+            interval)
         recovery_length:
           type: number
           format: double
@@ -13818,6 +14218,35 @@ components:
           type: number
           format: double
           readOnly: true
+        fracture_count:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+          nullable: true
+          description: Total count of natural fractures in this interval
+        lithology:
+          allOf:
+          - $ref: '#/components/schemas/LithologyNested'
+          readOnly: true
+          nullable: true
+        alteration:
+          allOf:
+          - $ref: '#/components/schemas/AlterationNested'
+          readOnly: true
+          nullable: true
+        alteration_grade:
+          nullable: true
+          description: |-
+            ISRM Alteration Grade (A1-A5)
+
+            * `A1` - A1 - Fresh
+            * `A2` - A2 - Slightly Altered
+            * `A3` - A3 - Moderately Altered
+            * `A4` - A4 - Highly Altered
+            * `A5` - A5 - Completely Altered
+          oneOf:
+          - $ref: '#/components/schemas/AlterationGradeEnum'
+          - $ref: '#/components/schemas/BlankEnum'
         magnetic_susceptibility:
           type: number
           format: double
@@ -14049,6 +14478,7 @@ components:
           readOnly: true
           nullable: true
       required:
+      - alteration
       - average_spacing_mm
       - bhid
       - block_diameter
@@ -14063,6 +14493,7 @@ components:
       - interval_length
       - irs_rating
       - last_edited
+      - lithology
       - logged_by
       - logged_date
       - project
@@ -14356,6 +14787,37 @@ components:
               lab_status_code:
                 type: string
                 nullable: true
+              excluded:
+                type: boolean
+                description: 'True when a QAQC review WITHHOLDS this row from results
+                  by default: it is returned only so you can explain why it is missing.
+                  Never average, plot or report a flagged row as a result.'
+              excluded_reason:
+                type: string
+                nullable: true
+                enum:
+                - certificate_rejected
+                - certificate_superseded
+                - certificate_pending_approval
+                - null
+                description: 'Why the row is withheld, or null when it is not. `certificate_rejected`:
+                  its certificate failed QAQC review. `certificate_superseded`: its
+                  certificate was replaced by a re-assay — read `superseded_by` on
+                  the certificate for the job that carries the live values. `certificate_pending_approval`:
+                  the project requires QAQC approval before results are used and this
+                  certificate''s review is still pending.'
+              excluded_by_certificate:
+                type: object
+                nullable: true
+                description: The certificate whose review withholds this row — name
+                  it when you explain the gap. Usually the row's own certificate;
+                  on a merged row it can be the rejected job that produced the values.
+                  Null when the row is not withheld.
+                properties:
+                  id:
+                    type: integer
+                  name:
+                    type: string
               extra_data:
                 type: object
                 additionalProperties: true
@@ -14412,6 +14874,21 @@ components:
           type: string
           readOnly: true
           nullable: true
+        dry_weight:
+          type: number
+          format: double
+          readOnly: true
+          nullable: true
+          description: Dry weight of the sample, in grams. With `wet_weight` it is
+            the input of the submerged (Archimedes) specific gravity, dry / (dry -
+            wet). Null when not measured.
+        wet_weight:
+          type: number
+          format: double
+          readOnly: true
+          nullable: true
+          description: Weight of the sample weighed SUBMERGED in water, in grams (the
+            second Archimedes input; see `dry_weight`). Null when not measured.
         drill_sample_set:
           type: object
           nullable: true
@@ -14463,6 +14940,7 @@ components:
       - depth_to
       - display_units
       - drill_sample_set
+      - dry_weight
       - id
       - images
       - last_edited
@@ -14471,6 +14949,7 @@ components:
       - project
       - submittal
       - submittal_name
+      - wet_weight
       - xyz_from
       - xyz_from_wgs84
       - xyz_to
@@ -14900,9 +15379,30 @@ components:
             is the source of truth.
           maxLength: 2
         feature_type_fk:
-          type: string
-          readOnly: true
+          type: object
           nullable: true
+          description: The structure's feature type (joint, fault, vein, bedding …)
+            from the project's drill-structure vocabulary, or null when none is set.
+          properties:
+            id:
+              type: integer
+            code:
+              type: string
+            name:
+              type: string
+            color:
+              type: string
+            display_order:
+              type: integer
+              nullable: true
+          required:
+          - id
+          - code
+          - name
+          - color
+          - display_order
+          additionalProperties: false
+          readOnly: true
         strike:
           type: number
           format: double
@@ -15286,6 +15786,7 @@ components:
           allOf:
           - $ref: '#/components/schemas/VeinTypeNested'
           readOnly: true
+          nullable: true
         vein_count:
           type: integer
           maximum: 2147483647
@@ -15331,6 +15832,7 @@ components:
           allOf:
           - $ref: '#/components/schemas/MineralAssemblageNested'
           readOnly: true
+          nullable: true
         mineral_contents:
           type: array
           items:
@@ -15358,9 +15860,25 @@ components:
           title: Angle to Core Axis
           description: Dominant vein orientation relative to core axis (degrees)
         drill_vein_set:
-          type: string
-          readOnly: true
+          type: object
           nullable: true
+          description: The logging set this interval belongs to, as an identity object,
+            or null when the interval is not in a set. Sets let several loggers log
+            the same hole independently.
+          properties:
+            id:
+              type: integer
+            name:
+              type: string
+            description:
+              type: string
+              nullable: true
+          required:
+          - id
+          - name
+          - description
+          additionalProperties: false
+          readOnly: true
         images:
           type: array
           items:
@@ -15712,8 +16230,9 @@ components:
           type: number
           format: double
           nullable: true
-          description: Elevation of the collar, in `elevation_units`. See `elevation_source`
-            for whether it was surveyed, taken from a DEM, or entered by hand.
+          description: Elevation, in the record's `elevation_units` where it carries
+            one, else in its `length_units`. On a collar, see `elevation_source` for
+            whether it was surveyed, taken from a DEM, or entered by hand.
         length_units:
           $ref: '#/components/schemas/LengthUnitsEnum'
           description: 'Units the record''s DEPTH and LENGTH values are stored in:
@@ -15729,24 +16248,35 @@ components:
           type: number
           format: double
           nullable: true
-          description: Get project CRS easting (X coordinate).
+          description: |-
+            A DERIVED copy of the coordinate, reprojected into the PROJECT's
+            CRS (`crs_epsg`, units `crs_xy_units`) — not the original. The original
+            is `source_coordinate` (or `longitude`/`latitude` with `epsg`). On a
+            project with no CRS set this falls back to WGS84 degrees
+            (`crs_xy_units: degrees`).
           readOnly: true
         crs_northing:
           type: number
           format: double
           nullable: true
-          description: Get project CRS northing (Y coordinate).
+          description: |-
+            The northing (Y) of the DERIVED copy in the PROJECT's CRS — see
+            `crs_easting`. Never the original coordinate.
           readOnly: true
         crs_elevation:
           type: number
           format: double
           nullable: true
-          description: Get project CRS elevation (Z coordinate).
+          description: |-
+            Elevation of the DERIVED copy in the PROJECT's CRS, in
+            `crs_elevation_units` — see `crs_easting`.
           readOnly: true
         crs_epsg:
           type: integer
           nullable: true
-          description: Get project EPSG code.
+          description: |-
+            EPSG code of the PROJECT's CRS the `crs_*` copy is reprojected into
+            (4326 when the project has none) — not the record's own `epsg`.
           readOnly: true
         crs_xy_units:
           type: string
@@ -15914,6 +16444,22 @@ components:
         * `geoparquet` - geoparquet
         * `parquet` - parquet
         * `csv` - csv
+    FormationNested:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 150
+        description:
+          type: string
+          nullable: true
+      required:
+      - id
+      - name
+      additionalProperties: false
     FormationRead:
       type: object
       properties:
@@ -16013,6 +16559,10 @@ components:
             * `seismic` - Seismic
             * `gpr` - Ground Penetrating Radar (GPR)
             * `other` - Other
+        method_display:
+          type: string
+          readOnly: true
+          nullable: true
         acquisition_type:
           description: |-
             ground / airborne / downhole.
@@ -16103,6 +16653,7 @@ components:
       - last_edited
       - line_count
       - method
+      - method_display
       - name
       - project
       patternProperties:
@@ -16389,16 +16940,70 @@ components:
           readOnly: true
           nullable: true
           description: Method type (ICP, XRF, FA, etc.) - legacy field
+        type_display:
+          type: object
+          nullable: true
+          description: A catalog entry by id, code and name, or null when unset.
+          properties:
+            id:
+              type: integer
+            code:
+              type: string
+              nullable: true
+            name:
+              type: string
+          required:
+          - id
+          - code
+          - name
+          additionalProperties: false
+          readOnly: true
         digestion:
           type: integer
           readOnly: true
           nullable: true
           description: Digestion/dissolution method (e.g., Fire Assay, Aqua Regia)
+        digestion_display:
+          type: object
+          nullable: true
+          description: A catalog entry by id, code and name, or null when unset.
+          properties:
+            id:
+              type: integer
+            code:
+              type: string
+              nullable: true
+            name:
+              type: string
+          required:
+          - id
+          - code
+          - name
+          additionalProperties: false
+          readOnly: true
         finish:
           type: integer
           readOnly: true
           nullable: true
           description: Analytical finish/measurement method (e.g., ICP-MS, AA)
+        finish_display:
+          type: object
+          nullable: true
+          description: A catalog entry by id, code and name, or null when unset.
+          properties:
+            id:
+              type: integer
+            code:
+              type: string
+              nullable: true
+            name:
+              type: string
+          required:
+          - id
+          - code
+          - name
+          additionalProperties: false
+          readOnly: true
         notes:
           type: string
           readOnly: true
@@ -16421,14 +17026,17 @@ components:
       required:
       - date_created
       - digestion
+      - digestion_display
       - elements
       - finish
+      - finish_display
       - id
       - laboratory
       - last_edited
       - name
       - notes
       - type
+      - type_display
       additionalProperties: false
     MethodUnitNested:
       type: object
@@ -16440,9 +17048,9 @@ components:
           type: string
           format: decimal
           pattern: ^-?\d{0,6}(?:\.\d{0,4})?$
-          description: 'Lower detection limit for the method that produced this value,
-            in the same units. A value at or below it is reported with `above_det_limit:
-            false`.'
+          description: Lower detection limit for the method that produced this value,
+            in the same units. A result below it is stored and sent as the sentinel
+            `-1.0000` (never a grade), not as a number at or below this limit.
         upper_limit:
           type: string
           format: decimal
@@ -18083,11 +18691,50 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/FieldNoteRead'
+        deleted_ids:
+          type: array
+          items:
+            type: integer
+          description: Ids of records soft-deleted on the server, so a client can
+            remove them locally. Returned on the FIRST page (no `offset`, or `offset=0`)
+            and on any request that sends `deleted_since`; later pages carry an empty
+            array. Union them across pages — removal is idempotent.
+        deleted_since_applied:
+          type: string
+          nullable: true
+          description: Echo of the `deleted_since` value actually applied, or null
+            when none was applied.
+        sync_timestamp:
+          type: string
+          format: date-time
+          description: Server time this page was built. Pass it as the next pull's
+            `deleted_since` / `modified_since`.
         modified_since_applied:
           type: string
           nullable: true
           description: Echo of the `modified_since` value applied. Present only when
             the request sent `modified_since`.
+        withheld:
+          type: object
+          nullable: true
+          additionalProperties:
+            type: integer
+          description: 'What this list''s DEFAULT filters left out, as counts, so
+            a gap is never silent. The counts cover the whole list, not one page:
+            they are sent on the FIRST page (no `offset`, or `offset=0`) and later
+            pages carry null. `soft_deleted`: rows deleted on the server (their ids
+            are in `deleted_ids`). `planned` (QC samples): planned bags not yet collected,
+            held back unless you filter by `lab_status`. Mention these when you summarise:
+            a count or a pass rate over this list is a count over what is here.'
+          properties:
+            soft_deleted:
+              type: integer
+            qaqc_excluded:
+              type: integer
+            planned:
+              type: integer
+          required:
+          - soft_deleted
       additionalProperties: false
     PaginatedFormationReadList:
       type: object
@@ -18277,11 +18924,50 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/LandHoldingOutline'
+        deleted_ids:
+          type: array
+          items:
+            type: integer
+          description: Ids of records soft-deleted on the server, so a client can
+            remove them locally. Returned on the FIRST page (no `offset`, or `offset=0`)
+            and on any request that sends `deleted_since`; later pages carry an empty
+            array. Union them across pages — removal is idempotent.
+        deleted_since_applied:
+          type: string
+          nullable: true
+          description: Echo of the `deleted_since` value actually applied, or null
+            when none was applied.
+        sync_timestamp:
+          type: string
+          format: date-time
+          description: Server time this page was built. Pass it as the next pull's
+            `deleted_since` / `modified_since`.
         modified_since_applied:
           type: string
           nullable: true
           description: Echo of the `modified_since` value applied. Present only when
             the request sent `modified_since`.
+        withheld:
+          type: object
+          nullable: true
+          additionalProperties:
+            type: integer
+          description: 'What this list''s DEFAULT filters left out, as counts, so
+            a gap is never silent. The counts cover the whole list, not one page:
+            they are sent on the FIRST page (no `offset`, or `offset=0`) and later
+            pages carry null. `soft_deleted`: rows deleted on the server (their ids
+            are in `deleted_ids`). `planned` (QC samples): planned bags not yet collected,
+            held back unless you filter by `lab_status`. Mention these when you summarise:
+            a count or a pass rate over this list is a count over what is here.'
+          properties:
+            soft_deleted:
+              type: integer
+            qaqc_excluded:
+              type: integer
+            planned:
+              type: integer
+          required:
+          - soft_deleted
       additionalProperties: false
     PaginatedLithologyReadList:
       type: object
@@ -18771,11 +19457,50 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/StructureRead'
+        deleted_ids:
+          type: array
+          items:
+            type: integer
+          description: Ids of records soft-deleted on the server, so a client can
+            remove them locally. Returned on the FIRST page (no `offset`, or `offset=0`)
+            and on any request that sends `deleted_since`; later pages carry an empty
+            array. Union them across pages — removal is idempotent.
+        deleted_since_applied:
+          type: string
+          nullable: true
+          description: Echo of the `deleted_since` value actually applied, or null
+            when none was applied.
+        sync_timestamp:
+          type: string
+          format: date-time
+          description: Server time this page was built. Pass it as the next pull's
+            `deleted_since` / `modified_since`.
         modified_since_applied:
           type: string
           nullable: true
           description: Echo of the `modified_since` value applied. Present only when
             the request sent `modified_since`.
+        withheld:
+          type: object
+          nullable: true
+          additionalProperties:
+            type: integer
+          description: 'What this list''s DEFAULT filters left out, as counts, so
+            a gap is never silent. The counts cover the whole list, not one page:
+            they are sent on the FIRST page (no `offset`, or `offset=0`) and later
+            pages carry null. `soft_deleted`: rows deleted on the server (their ids
+            are in `deleted_ids`). `planned` (QC samples): planned bags not yet collected,
+            held back unless you filter by `lab_status`. Mention these when you summarise:
+            a count or a pass rate over this list is a count over what is here.'
+          properties:
+            soft_deleted:
+              type: integer
+            qaqc_excluded:
+              type: integer
+            planned:
+              type: integer
+          required:
+          - soft_deleted
       additionalProperties: false
     PaginatedTextureReadList:
       type: object
@@ -19062,8 +19787,9 @@ components:
           type: number
           format: double
           nullable: true
-          description: Elevation of the collar, in `elevation_units`. See `elevation_source`
-            for whether it was surveyed, taken from a DEM, or entered by hand.
+          description: Elevation, in the record's `elevation_units` where it carries
+            one, else in its `length_units`. On a collar, see `elevation_source` for
+            whether it was surveyed, taken from a DEM, or entered by hand.
         direction:
           type: number
           format: double
@@ -19332,6 +20058,37 @@ components:
               lab_status_code:
                 type: string
                 nullable: true
+              excluded:
+                type: boolean
+                description: 'True when a QAQC review WITHHOLDS this row from results
+                  by default: it is returned only so you can explain why it is missing.
+                  Never average, plot or report a flagged row as a result.'
+              excluded_reason:
+                type: string
+                nullable: true
+                enum:
+                - certificate_rejected
+                - certificate_superseded
+                - certificate_pending_approval
+                - null
+                description: 'Why the row is withheld, or null when it is not. `certificate_rejected`:
+                  its certificate failed QAQC review. `certificate_superseded`: its
+                  certificate was replaced by a re-assay — read `superseded_by` on
+                  the certificate for the job that carries the live values. `certificate_pending_approval`:
+                  the project requires QAQC approval before results are used and this
+                  certificate''s review is still pending.'
+              excluded_by_certificate:
+                type: object
+                nullable: true
+                description: The certificate whose review withholds this row — name
+                  it when you explain the gap. Usually the row's own certificate;
+                  on a merged row it can be the rejected job that produced the values.
+                  Null when the row is not withheld.
+                properties:
+                  id:
+                    type: integer
+                  name:
+                    type: string
               extra_data:
                 type: object
                 additionalProperties: true
@@ -19427,8 +20184,9 @@ components:
           type: number
           format: double
           nullable: true
-          description: Elevation of the collar, in `elevation_units`. See `elevation_source`
-            for whether it was surveyed, taken from a DEM, or entered by hand.
+          description: Elevation, in the record's `elevation_units` where it carries
+            one, else in its `length_units`. On a collar, see `elevation_source` for
+            whether it was surveyed, taken from a DEM, or entered by hand.
         length_units:
           $ref: '#/components/schemas/LengthUnitsEnum'
           description: 'Units the record''s DEPTH and LENGTH values are stored in:
@@ -19444,24 +20202,35 @@ components:
           type: number
           format: double
           nullable: true
-          description: Get project CRS easting (X coordinate).
+          description: |-
+            A DERIVED copy of the coordinate, reprojected into the PROJECT's
+            CRS (`crs_epsg`, units `crs_xy_units`) — not the original. The original
+            is `source_coordinate` (or `longitude`/`latitude` with `epsg`). On a
+            project with no CRS set this falls back to WGS84 degrees
+            (`crs_xy_units: degrees`).
           readOnly: true
         crs_northing:
           type: number
           format: double
           nullable: true
-          description: Get project CRS northing (Y coordinate).
+          description: |-
+            The northing (Y) of the DERIVED copy in the PROJECT's CRS — see
+            `crs_easting`. Never the original coordinate.
           readOnly: true
         crs_elevation:
           type: number
           format: double
           nullable: true
-          description: Get project CRS elevation (Z coordinate).
+          description: |-
+            Elevation of the DERIVED copy in the PROJECT's CRS, in
+            `crs_elevation_units` — see `crs_easting`.
           readOnly: true
         crs_epsg:
           type: integer
           nullable: true
-          description: Get project EPSG code.
+          description: |-
+            EPSG code of the PROJECT's CRS the `crs_*` copy is reprojected into
+            (4326 when the project has none) — not the record's own `epsg`.
           readOnly: true
         crs_xy_units:
           type: string
@@ -20425,6 +21194,25 @@ components:
           type: string
           readOnly: true
           nullable: true
+        source_geometry:
+          type: object
+          nullable: true
+          description: 'The ORIGINAL geometry exactly as it was sent, never reprojected:
+            `wkt` in the coordinate system `epsg` names (the native frame — e.g. UTM
+            eastings/northings). `geometry` is a DERIVED WGS84 copy for display; a
+            multi-part original keeps every part here. Null when no original was stored
+            (the geometry was drawn in the app).'
+          properties:
+            wkt:
+              type: string
+            epsg:
+              type: integer
+              nullable: true
+          required:
+          - wkt
+          - epsg
+          additionalProperties: false
+          readOnly: true
         coordinates:
           type: string
           readOnly: true
@@ -20487,6 +21275,7 @@ components:
       - route_id
       - route_status
       - seasonal
+      - source_geometry
       - style
       - surface_type
       - truck
@@ -20622,9 +21411,9 @@ components:
           format: decimal
           pattern: ^-?\d{0,8}(?:\.\d{0,6})?$
           nullable: true
-          description: 'Lower detection limit for the method that produced this value,
-            in the same units. A value at or below it is reported with `above_det_limit:
-            false`.'
+          description: Lower detection limit for the method that produced this value,
+            in the same units. A result below it is stored and sent as the sentinel
+            `-1.0000` (never a grade), not as a number at or below this limit.
         units:
           type: string
           maxLength: 16
@@ -20697,12 +21486,70 @@ components:
         method:
           type: integer
           nullable: true
+          description: The catalog analytical method this value is certified for,
+            by id. ⚠️ An AnalyticalMethod id — NOT a /api/v2/methods/ id (an assay
+            value's `method` is a laboratory Method, a different table). Its code
+            and name are in `method_display`.
+        method_display:
+          type: object
+          nullable: true
+          description: A catalog entry by id, code and name, or null when unset.
+          properties:
+            id:
+              type: integer
+            code:
+              type: string
+              nullable: true
+            name:
+              type: string
+          required:
+          - id
+          - code
+          - name
+          additionalProperties: false
+          readOnly: true
         digestion:
           type: integer
           nullable: true
+        digestion_display:
+          type: object
+          nullable: true
+          description: A catalog entry by id, code and name, or null when unset.
+          properties:
+            id:
+              type: integer
+            code:
+              type: string
+              nullable: true
+            name:
+              type: string
+          required:
+          - id
+          - code
+          - name
+          additionalProperties: false
+          readOnly: true
         finish:
           type: integer
           nullable: true
+        finish_display:
+          type: object
+          nullable: true
+          description: A catalog entry by id, code and name, or null when unset.
+          properties:
+            id:
+              type: integer
+            code:
+              type: string
+              nullable: true
+            name:
+              type: string
+          required:
+          - id
+          - code
+          - name
+          additionalProperties: false
+          readOnly: true
         is_indicative:
           type: boolean
           default: false
@@ -20711,8 +21558,11 @@ components:
           readOnly: true
           nullable: true
       required:
+      - digestion_display
       - display_name
       - element
+      - finish_display
+      - method_display
       - units
       additionalProperties: false
     StateEnum:
@@ -20904,8 +21754,9 @@ components:
           type: number
           format: double
           nullable: true
-          description: Elevation of the collar, in `elevation_units`. See `elevation_source`
-            for whether it was surveyed, taken from a DEM, or entered by hand.
+          description: Elevation, in the record's `elevation_units` where it carries
+            one, else in its `length_units`. On a collar, see `elevation_source` for
+            whether it was surveyed, taken from a DEM, or entered by hand.
         length_units:
           $ref: '#/components/schemas/LengthUnitsEnum'
           description: 'Units the record''s DEPTH and LENGTH values are stored in:
@@ -20921,24 +21772,35 @@ components:
           type: number
           format: double
           nullable: true
-          description: Get project CRS easting (X coordinate).
+          description: |-
+            A DERIVED copy of the coordinate, reprojected into the PROJECT's
+            CRS (`crs_epsg`, units `crs_xy_units`) — not the original. The original
+            is `source_coordinate` (or `longitude`/`latitude` with `epsg`). On a
+            project with no CRS set this falls back to WGS84 degrees
+            (`crs_xy_units: degrees`).
           readOnly: true
         crs_northing:
           type: number
           format: double
           nullable: true
-          description: Get project CRS northing (Y coordinate).
+          description: |-
+            The northing (Y) of the DERIVED copy in the PROJECT's CRS — see
+            `crs_easting`. Never the original coordinate.
           readOnly: true
         crs_elevation:
           type: number
           format: double
           nullable: true
-          description: Get project CRS elevation (Z coordinate).
+          description: |-
+            Elevation of the DERIVED copy in the PROJECT's CRS, in
+            `crs_elevation_units` — see `crs_easting`.
           readOnly: true
         crs_epsg:
           type: integer
           nullable: true
-          description: Get project EPSG code.
+          description: |-
+            EPSG code of the PROJECT's CRS the `crs_*` copy is reprojected into
+            (4326 when the project has none) — not the record's own `epsg`.
           readOnly: true
         crs_xy_units:
           type: string
@@ -21109,6 +21971,10 @@ components:
           allOf:
           - $ref: '#/components/schemas/TypeEnum'
           title: Type of Texture
+        type_display:
+          type: string
+          readOnly: true
+          nullable: true
         description:
           type: string
           nullable: true
@@ -21134,6 +22000,7 @@ components:
       - name
       - project
       - type
+      - type_display
       patternProperties:
         ^cf_[a-z0-9_]+$:
           description: 'Custom field. Any number of `cf_*` keys may be present: they
@@ -21482,9 +22349,23 @@ components:
           description: 'Natural key of the project: `{"name", "company"}`.'
           readOnly: true
         site:
-          type: string
-          readOnly: true
+          type: object
           nullable: true
+          description: The water site this sample was taken at, by its natural key.
+            `site_id` is the site's NAME (e.g. `CR-1`), not its database id.
+          properties:
+            site_id:
+              type: string
+            project:
+              type: string
+            company:
+              type: string
+          required:
+          - site_id
+          - project
+          - company
+          additionalProperties: false
+          readOnly: true
         date_collected:
           type: string
           format: date
@@ -21522,7 +22403,8 @@ components:
           type: number
           format: double
           nullable: true
-          description: Temperature (°C)
+          description: Field temperature, in the PROJECT's temperature unit (°C or
+            °F — the project's `temperature_units`), not always °C.
         field_ph:
           type: number
           format: double
@@ -21582,22 +22464,23 @@ components:
           type: number
           format: double
           nullable: true
-          description: Stream velocity (m/s or ft/s, depending on length_units)
+          description: Stream velocity, in metres per second.
         stream_depth:
           type: number
           format: double
           nullable: true
-          description: Average stream depth (meters or feet)
+          description: Average stream depth, in METRES (stored metric whatever unit
+            was sent).
         stream_width:
           type: number
           format: double
           nullable: true
-          description: Stream width (meters or feet)
+          description: Stream width, in METRES.
         cross_sectional_area:
           type: number
           format: double
           nullable: true
-          description: Cross-sectional area (depth × width, m² or ft²)
+          description: Cross-sectional area (depth × width), in square metres.
         flow_correction_factor:
           type: number
           format: double
@@ -21607,7 +22490,7 @@ components:
           type: number
           format: double
           nullable: true
-          description: Calculated flow rate/discharge (m³/s, ft³/s, or L/s)
+          description: Flow rate / discharge, in cubic metres per second.
         flow_calculation_method:
           nullable: true
           description: |-
@@ -21624,8 +22507,7 @@ components:
           type: number
           format: double
           nullable: true
-          description: Depth to water level from measuring point (wells only, meters
-            or feet)
+          description: Depth to water from the measuring point (wells), in METRES.
         purge_volume:
           type: number
           format: double
@@ -21645,9 +22527,20 @@ components:
           type: string
           nullable: true
         analysis:
-          type: string
-          readOnly: true
+          type: object
           nullable: true
+          description: The laboratory analysis linked to this sample, or null (none
+            linked, or the analysis is in the Trash).
+          properties:
+            id:
+              type: integer
+            name:
+              type: string
+          required:
+          - id
+          - name
+          additionalProperties: false
+          readOnly: true
         images:
           type: array
           items:
@@ -21791,24 +22684,35 @@ components:
           type: number
           format: double
           nullable: true
-          description: Get project CRS easting (X coordinate).
+          description: |-
+            A DERIVED copy of the coordinate, reprojected into the PROJECT's
+            CRS (`crs_epsg`, units `crs_xy_units`) — not the original. The original
+            is `source_coordinate` (or `longitude`/`latitude` with `epsg`). On a
+            project with no CRS set this falls back to WGS84 degrees
+            (`crs_xy_units: degrees`).
           readOnly: true
         crs_northing:
           type: number
           format: double
           nullable: true
-          description: Get project CRS northing (Y coordinate).
+          description: |-
+            The northing (Y) of the DERIVED copy in the PROJECT's CRS — see
+            `crs_easting`. Never the original coordinate.
           readOnly: true
         crs_elevation:
           type: number
           format: double
           nullable: true
-          description: Get project CRS elevation (Z coordinate).
+          description: |-
+            Elevation of the DERIVED copy in the PROJECT's CRS, in
+            `crs_elevation_units` — see `crs_easting`.
           readOnly: true
         crs_epsg:
           type: integer
           nullable: true
-          description: Get project EPSG code.
+          description: |-
+            EPSG code of the PROJECT's CRS the `crs_*` copy is reprojected into
+            (4326 when the project has none) — not the record's own `epsg`.
           readOnly: true
         crs_xy_units:
           type: string

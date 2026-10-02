@@ -288,6 +288,38 @@
                 "null"
               ]
             },
+            "excluded": {
+              "type": "boolean",
+              "description": "True when a QAQC review WITHHOLDS this row from results by default: it is returned only so you can explain why it is missing. Never average, plot or report a flagged row as a result."
+            },
+            "excluded_reason": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "enum": [
+                "certificate_rejected",
+                "certificate_superseded",
+                "certificate_pending_approval",
+                null
+              ],
+              "description": "Why the row is withheld, or null when it is not. `certificate_rejected`: its certificate failed QAQC review. `certificate_superseded`: its certificate was replaced by a re-assay — read `superseded_by` on the certificate for the job that carries the live values. `certificate_pending_approval`: the project requires QAQC approval before results are used and this certificate's review is still pending."
+            },
+            "excluded_by_certificate": {
+              "type": [
+                "object",
+                "null"
+              ],
+              "description": "The certificate whose review withholds this row — name it when you explain the gap. Usually the row's own certificate; on a merged row it can be the rejected job that produced the values. Null when the row is not withheld.",
+              "properties": {
+                "id": {
+                  "type": "integer"
+                },
+                "name": {
+                  "type": "string"
+                }
+              }
+            },
             "extra_data": {
               "type": [
                 "object",
@@ -420,7 +452,7 @@
         "null"
       ],
       "format": "double",
-      "description": "Elevation of the collar, in `elevation_units`. See `elevation_source` for whether it was surveyed, taken from a DEM, or entered by hand."
+      "description": "Elevation, in the record's `elevation_units` where it carries one, else in its `length_units`. On a collar, see `elevation_source` for whether it was surveyed, taken from a DEM, or entered by hand."
     },
     "length_units": {
       "enum": [
@@ -443,7 +475,7 @@
         "null"
       ],
       "format": "double",
-      "description": "Get project CRS easting (X coordinate)."
+      "description": "A DERIVED copy of the coordinate, reprojected into the PROJECT's\nCRS (`crs_epsg`, units `crs_xy_units`) — not the original. The original\nis `source_coordinate` (or `longitude`/`latitude` with `epsg`). On a\nproject with no CRS set this falls back to WGS84 degrees\n(`crs_xy_units: degrees`)."
     },
     "crs_northing": {
       "type": [
@@ -451,7 +483,7 @@
         "null"
       ],
       "format": "double",
-      "description": "Get project CRS northing (Y coordinate)."
+      "description": "The northing (Y) of the DERIVED copy in the PROJECT's CRS — see\n`crs_easting`. Never the original coordinate."
     },
     "crs_elevation": {
       "type": [
@@ -459,14 +491,14 @@
         "null"
       ],
       "format": "double",
-      "description": "Get project CRS elevation (Z coordinate)."
+      "description": "Elevation of the DERIVED copy in the PROJECT's CRS, in\n`crs_elevation_units` — see `crs_easting`."
     },
     "crs_epsg": {
       "type": [
         "integer",
         "null"
       ],
-      "description": "Get project EPSG code."
+      "description": "EPSG code of the PROJECT's CRS the `crs_*` copy is reprojected into\n(4326 when the project has none) — not the record's own `epsg`."
     },
     "crs_xy_units": {
       "type": [

@@ -97,6 +97,12 @@
       "remedy": "Correct the parameter named in `offending` and resend. Dates are ISO 8601 (YYYY-MM-DD or a full timestamp).",
       "retry": "no"
     },
+    "land_holdings_not_shared": {
+      "http": 403,
+      "meaning": "The project owner has not shared land holdings with API keys on this project.",
+      "remedy": "Ask the project owner to share land holdings (outline or detailed) in Project Settings \u2192 Protocol / API Access, then retry. Nothing else about this key is wrong.",
+      "retry": "no"
+    },
     "method_not_allowed": {
       "http": 405,
       "meaning": "The HTTP method is not supported on this endpoint.",

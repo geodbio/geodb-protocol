@@ -311,6 +311,38 @@
                 "null"
               ]
             },
+            "excluded": {
+              "type": "boolean",
+              "description": "True when a QAQC review WITHHOLDS this row from results by default: it is returned only so you can explain why it is missing. Never average, plot or report a flagged row as a result."
+            },
+            "excluded_reason": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "enum": [
+                "certificate_rejected",
+                "certificate_superseded",
+                "certificate_pending_approval",
+                null
+              ],
+              "description": "Why the row is withheld, or null when it is not. `certificate_rejected`: its certificate failed QAQC review. `certificate_superseded`: its certificate was replaced by a re-assay — read `superseded_by` on the certificate for the job that carries the live values. `certificate_pending_approval`: the project requires QAQC approval before results are used and this certificate's review is still pending."
+            },
+            "excluded_by_certificate": {
+              "type": [
+                "object",
+                "null"
+              ],
+              "description": "The certificate whose review withholds this row — name it when you explain the gap. Usually the row's own certificate; on a merged row it can be the rejected job that produced the values. Null when the row is not withheld.",
+              "properties": {
+                "id": {
+                  "type": "integer"
+                },
+                "name": {
+                  "type": "string"
+                }
+              }
+            },
             "extra_data": {
               "type": [
                 "object",
@@ -397,6 +429,22 @@
         "null"
       ]
     },
+    "dry_weight": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "format": "double",
+      "description": "Dry weight of the sample, in grams. With `wet_weight` it is the input of the submerged (Archimedes) specific gravity, dry / (dry - wet). Null when not measured."
+    },
+    "wet_weight": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "format": "double",
+      "description": "Weight of the sample weighed SUBMERGED in water, in grams (the second Archimedes input; see `dry_weight`). Null when not measured."
+    },
     "drill_sample_set": {
       "type": [
         "object",
@@ -476,6 +524,7 @@
     "depth_to",
     "display_units",
     "drill_sample_set",
+    "dry_weight",
     "id",
     "images",
     "last_edited",
@@ -484,6 +533,7 @@
     "project",
     "submittal",
     "submittal_name",
+    "wet_weight",
     "xyz_from",
     "xyz_from_wgs84",
     "xyz_to",

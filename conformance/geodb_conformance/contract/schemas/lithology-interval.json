@@ -97,6 +97,32 @@
       ],
       "additionalProperties": false
     },
+    "formation": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "properties": {
+        "id": {
+          "type": "integer"
+        },
+        "name": {
+          "type": "string",
+          "maxLength": 150
+        },
+        "description": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "name"
+      ],
+      "additionalProperties": false
+    },
     "texture": {
       "type": [
         "string",
@@ -193,6 +219,7 @@
     "depth_to",
     "display_units",
     "drill_lithology_set",
+    "formation",
     "id",
     "images",
     "last_edited",

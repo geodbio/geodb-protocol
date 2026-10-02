@@ -95,3 +95,4 @@ Read the topic before answering a question in its area; each is `references/<id>
 - `qaqc` · QAQC: reading geoDB's QC verdicts honestly
 - `reports` · Reports: informal reports, sections, figures, and faithful numbers
 - `sets` · Sets: several versions of the same downhole data, side by side
+- `water` · Water results: non-detects, units, and a flag that means the opposite of the assay flag

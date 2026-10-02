@@ -174,7 +174,8 @@
             "description": "A method limit in the value's own units, or null when the method declares none. A float, unlike `value`, which is a decimal string because it is what the laboratory reported."
           },
           "above_det_limit": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "True when the laboratory reported this value OVER its upper reporting limit (e.g. `>10000`): `value` is then the limit and the true value is AT LEAST that much. It does NOT mean \"above the detection limit\" — a below-detection result is the `-1.0000` sentinel, flagged by `below_detection`."
           },
           "method": {
             "type": [

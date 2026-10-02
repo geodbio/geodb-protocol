@@ -64,7 +64,10 @@
       "description": "Desurveyed position at `depth_to`, as `[x, y, z]` on the project local grid in metres. Null when the hole has no survey."
     },
     "assemblage": {
-      "type": "object",
+      "type": [
+        "object",
+        "null"
+      ],
       "properties": {
         "id": {
           "type": "integer"
@@ -183,9 +186,30 @@
     },
     "drill_mineralization_set": {
       "type": [
-        "string",
+        "object",
         "null"
-      ]
+      ],
+      "description": "The logging set this interval belongs to, as an identity object, or null when the interval is not in a set. Sets let several loggers log the same hole independently.",
+      "properties": {
+        "id": {
+          "type": "integer"
+        },
+        "name": {
+          "type": "string"
+        },
+        "description": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "description"
+      ],
+      "additionalProperties": false
     },
     "images": {
       "type": "array",
