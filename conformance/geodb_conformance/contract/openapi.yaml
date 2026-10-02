@@ -7139,8 +7139,10 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PaginatedLandHoldingByShareList'
-          description: ''
+                $ref: '#/components/schemas/PaginatedLandHoldingOutlineList'
+          description: Land holdings in the OUTLINE shape documented here. A project
+            shared at `detailed` adds the claim-maintenance fields named in this operation's
+            description to each record; a project shared `off` answers 403.
         '403':
           description: The project owner has not enabled land holdings for API grants
             on this project.
@@ -7207,8 +7209,10 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/LandHoldingByShare'
-          description: ''
+                $ref: '#/components/schemas/LandHoldingOutline'
+          description: Land holdings in the OUTLINE shape documented here. A project
+            shared at `detailed` adds the claim-maintenance fields named in this operation's
+            description to each record; a project shared `off` answers 403.
         '403':
           description: The project owner has not enabled land holdings for API grants
             on this project.
@@ -16756,10 +16760,6 @@ components:
       - last_edited
       - name
       additionalProperties: false
-    LandHoldingByShare:
-      oneOf:
-      - $ref: '#/components/schemas/LandHoldingOutline'
-      - $ref: '#/components/schemas/LandHoldingRead'
     LandHoldingOutline:
       type: object
       properties:
@@ -16823,231 +16823,6 @@ components:
       - project
       - state
       additionalProperties: false
-    LandHoldingRead:
-      type: object
-      properties:
-        id:
-          type: integer
-          readOnly: true
-        name:
-          type: string
-          maxLength: 150
-        project:
-          type: string
-          readOnly: true
-          nullable: true
-        land_status:
-          type: string
-          readOnly: true
-          nullable: true
-        county:
-          type: string
-          nullable: true
-          maxLength: 150
-        state:
-          nullable: true
-          oneOf:
-          - $ref: '#/components/schemas/StateEnum'
-          - $ref: '#/components/schemas/BlankEnum'
-        serial_number:
-          type: string
-          nullable: true
-          description: BLM MLRS case serial (CSE_NR) for this claim, joined to the
-            BLM mirror by value. Indexed (claims-research-tie Phase T).
-          maxLength: 150
-        serial_link:
-          type: string
-          readOnly: true
-          nullable: true
-        lead_file_name:
-          type: string
-          nullable: true
-          description: The customer's own label for the lead file / block this claim
-            belongs to (free text). NOT BLM's serial — see lead_file_number.
-          maxLength: 150
-        date_staked:
-          type: string
-          format: date
-          nullable: true
-        staked_by:
-          type: string
-          nullable: true
-          maxLength: 100
-        notes:
-          type: string
-          nullable: true
-        geometry:
-          type: string
-          readOnly: true
-          nullable: true
-        epsg:
-          type: integer
-          maximum: 2147483647
-          minimum: -2147483648
-          nullable: true
-        source_geometry:
-          type: object
-          nullable: true
-          description: 'The ORIGINAL geometry exactly as it was sent, never reprojected:
-            `wkt` in the coordinate system `epsg` names (the native frame — e.g. UTM
-            eastings/northings). `geometry` is a DERIVED WGS84 copy for display; a
-            multi-part original keeps every part here. Null when no original was stored
-            (the geometry was drawn in the app).'
-          properties:
-            wkt:
-              type: string
-            epsg:
-              type: integer
-              nullable: true
-          required:
-          - wkt
-          - epsg
-          additionalProperties: false
-          readOnly: true
-        dropped:
-          type: boolean
-        claim_status:
-          $ref: '#/components/schemas/ClaimStatusEnum'
-        claim_status_display:
-          type: string
-          readOnly: true
-          nullable: true
-        target_geometry:
-          type: string
-          readOnly: true
-          nullable: true
-          description: Planned claim boundary (before staking)
-        target_geometry_geojson:
-          type: string
-          readOnly: true
-          nullable: true
-        retain_records:
-          type: array
-          items:
-            $ref: '#/components/schemas/LandHoldingRetain'
-          readOnly: true
-        current_retain_status:
-          type: string
-          readOnly: true
-          nullable: true
-        source:
-          allOf:
-          - $ref: '#/components/schemas/LandHoldingSourceEnum'
-        qclaims_data:
-          nullable: true
-          description: 'Processing data from QClaims: PLSS, corners, monuments, deadlines'
-        county_filed:
-          type: boolean
-        county_filed_date:
-          type: string
-          format: date
-          nullable: true
-        county_recording_number:
-          type: string
-          maxLength: 100
-        blm_filed:
-          type: boolean
-        blm_filed_date:
-          type: string
-          format: date
-          nullable: true
-        documents:
-          type: array
-          items:
-            type: object
-            additionalProperties: true
-          description: Attached records, each as an object carrying its id, its natural
-            key and display metadata. Soft-deleted attachments are omitted.
-          readOnly: true
-        images:
-          type: array
-          items:
-            type: object
-            additionalProperties: true
-          description: Attached records, each as an object carrying its id, its natural
-            key and display metadata. Soft-deleted attachments are omitted.
-          readOnly: true
-        date_created:
-          type: string
-          format: date
-          readOnly: true
-          nullable: true
-        last_edited:
-          type: string
-          format: date
-          readOnly: true
-          nullable: true
-        coordinate_system_metadata:
-          type: object
-          additionalProperties: true
-          nullable: true
-          description: The project's coordinate-system settings (declared EPSG, optional
-            local-grid proj4 string, units). Present on every record whose model carries
-            a location. Advisory metadata for clients that reproject; the per-record
-            CRS is always the record's own `epsg`.
-      required:
-      - claim_status_display
-      - current_retain_status
-      - date_created
-      - documents
-      - geometry
-      - id
-      - images
-      - land_status
-      - last_edited
-      - name
-      - project
-      - retain_records
-      - serial_link
-      - source_geometry
-      - target_geometry
-      - target_geometry_geojson
-      patternProperties:
-        ^cf_[a-z0-9_]+$:
-          description: 'Custom field. Any number of `cf_*` keys may be present: they
-            are the project''s user-defined fields, flattened to top level. The set
-            of keys and their types vary BY PROJECT and BY MODEL — discover them at
-            `/api/v2/model-schemas/?project_id=<id>`, never by assuming a fixed set.
-            Values are whatever the customer stored (string, number, boolean or null).
-            Calculated custom fields appear under the same prefix and are read-only.'
-      additionalProperties: false
-    LandHoldingRetain:
-      type: object
-      properties:
-        fiscal_year:
-          type: string
-          readOnly: true
-          nullable: true
-        retain:
-          type: boolean
-        decision_notes:
-          type: string
-          nullable: true
-          description: Rationale for retain/drop decision
-        decision_date:
-          type: string
-          format: date-time
-          readOnly: true
-          description: When decision was last updated
-        decided_by_name:
-          type: string
-          readOnly: true
-          nullable: true
-      required:
-      - decided_by_name
-      - decision_date
-      - fiscal_year
-      additionalProperties: false
-    LandHoldingSourceEnum:
-      enum:
-      - qclaims
-      - blm_purchase
-      - admin
-      - import
-      - staking_request
-      - manual
-      - plot
-      type: string
     LengthUnitsEnum:
       enum:
       - M
@@ -19117,7 +18892,7 @@ components:
           required:
           - soft_deleted
       additionalProperties: false
-    PaginatedLandHoldingByShareList:
+    PaginatedLandHoldingOutlineList:
       type: object
       required:
       - count
@@ -19139,7 +18914,7 @@ components:
         results:
           type: array
           items:
-            $ref: '#/components/schemas/LandHoldingByShare'
+            $ref: '#/components/schemas/LandHoldingOutline'
         deleted_ids:
           type: array
           items:
