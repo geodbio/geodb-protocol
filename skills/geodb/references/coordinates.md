@@ -30,7 +30,9 @@ never approximate a claim.
 
 **Say which CRS you read.** When you report or use a position, state its CRS
 without being asked: "easting and northing in the project's UTM zone (the
-records' `epsg`)", or "WGS84 longitude and latitude from `geometry`". Each
+records' `epsg`)", or "WGS84 longitude and latitude from `geometry`". That
+holds for every answer that carries a position (one hole, a table of collars,
+an extent), even when the question was about something else. Each
 project keeps its own CRS, so compare positions between projects through
 `geometry`, never through the native `latitude`/`longitude`. A coordinate
 quoted without its CRS is the commonest way a correct number turns into a
