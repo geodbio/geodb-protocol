@@ -177,6 +177,44 @@
         "null"
       ],
       "format": "date"
+    },
+    "data_warnings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "description": "What is wrong with a stored row. geoDB returns stored data as it is; this marks it so it can be found and corrected.",
+        "properties": {
+          "code": {
+            "type": "string",
+            "enum": [
+              "azimuth_out_of_range",
+              "coordinate_outside_crs",
+              "depth_past_hole",
+              "dip_out_of_range",
+              "interval_upside_down",
+              "invalid_geometry",
+              "missing_epsg",
+              "negative_value"
+            ],
+            "description": "`azimuth_out_of_range`: azimuth (or dip direction) is outside 0..360 degrees.; `coordinate_outside_crs`: the coordinate cannot be in its epsg (degrees beyond ±90 latitude or ±180 longitude under EPSG:4326).; `depth_past_hole`: the depth lies beyond the hole's total depth.; `dip_out_of_range`: dip is outside -90..90 degrees.; `interval_upside_down`: depth_from is greater than depth_to (an upside-down interval).; `invalid_geometry`: the stored geometry is not valid (for example a self-intersecting outline).; `missing_epsg`: the record has coordinates but no epsg, so their CRS is unknown.; `negative_value`: a depth, length or total depth is negative."
+          },
+          "field": {
+            "type": "string",
+            "description": "The field the warning is about."
+          },
+          "detail": {
+            "type": "string",
+            "description": "The stored values, in words."
+          }
+        },
+        "required": [
+          "code",
+          "field",
+          "detail"
+        ],
+        "additionalProperties": false
+      },
+      "description": "Present only when this stored row has a problem geoDB can recognise (an upside-down interval, a dip past 90°, coordinates with no CRS…). The row is returned exactly as stored — never fixed or hidden; correct it with an update."
     }
   },
   "patternProperties": {

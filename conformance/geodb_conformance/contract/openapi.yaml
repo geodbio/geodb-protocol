@@ -12935,6 +12935,15 @@ components:
           format: date
           readOnly: true
           nullable: true
+        data_warnings:
+          type: array
+          readOnly: true
+          items:
+            $ref: '#/components/schemas/DataWarning'
+          description: Present only when this stored row has a problem geoDB can recognise
+            (an upside-down interval, a dip past 90°, coordinates with no CRS…). The
+            row is returned exactly as stored — never fixed or hidden; correct it
+            with an update.
       required:
       - alteration
       - bhid
@@ -13271,6 +13280,15 @@ components:
           - $ref: '#/components/schemas/GeoJSONPoint'
           nullable: true
           readOnly: true
+        data_warnings:
+          type: array
+          readOnly: true
+          items:
+            $ref: '#/components/schemas/DataWarning'
+          description: Present only when this stored row has a problem geoDB can recognise
+            (an upside-down interval, a dip past 90°, coordinates with no CRS…). The
+            row is returned exactly as stored — never fixed or hidden; correct it
+            with an update.
         coordinate_system_metadata:
           type: object
           additionalProperties: true
@@ -13449,6 +13467,15 @@ components:
           format: date
           readOnly: true
           nullable: true
+        data_warnings:
+          type: array
+          readOnly: true
+          items:
+            $ref: '#/components/schemas/DataWarning'
+          description: Present only when this stored row has a problem geoDB can recognise
+            (an upside-down interval, a dip past 90°, coordinates with no CRS…). The
+            row is returned exactly as stored — never fixed or hidden; correct it
+            with an update.
       required:
       - bhid
       - custom_interval_set
@@ -13645,6 +13672,15 @@ components:
           format: date
           readOnly: true
           nullable: true
+        data_warnings:
+          type: array
+          readOnly: true
+          items:
+            $ref: '#/components/schemas/DataWarning'
+          description: Present only when this stored row has a problem geoDB can recognise
+            (an upside-down interval, a dip past 90°, coordinates with no CRS…). The
+            row is returned exactly as stored — never fixed or hidden; correct it
+            with an update.
       required:
       - bhid
       - date_created
@@ -13837,6 +13873,15 @@ components:
           format: date
           readOnly: true
           nullable: true
+        data_warnings:
+          type: array
+          readOnly: true
+          items:
+            $ref: '#/components/schemas/DataWarning'
+          description: Present only when this stored row has a problem geoDB can recognise
+            (an upside-down interval, a dip past 90°, coordinates with no CRS…). The
+            row is returned exactly as stored — never fixed or hidden; correct it
+            with an update.
       required:
       - assemblage
       - bhid
@@ -14000,6 +14045,15 @@ components:
           format: date
           readOnly: true
           nullable: true
+        data_warnings:
+          type: array
+          readOnly: true
+          items:
+            $ref: '#/components/schemas/DataWarning'
+          description: Present only when this stored row has a problem geoDB can recognise
+            (an upside-down interval, a dip past 90°, coordinates with no CRS…). The
+            row is returned exactly as stored — never fixed or hidden; correct it
+            with an update.
       required:
       - date_created
       - elevation
@@ -14100,6 +14154,15 @@ components:
           format: date
           readOnly: true
           nullable: true
+        data_warnings:
+          type: array
+          readOnly: true
+          items:
+            $ref: '#/components/schemas/DataWarning'
+          description: Present only when this stored row has a problem geoDB can recognise
+            (an upside-down interval, a dip past 90°, coordinates with no CRS…). The
+            row is returned exactly as stored — never fixed or hidden; correct it
+            with an update.
       required:
       - bhid
       - box_no
@@ -14468,6 +14531,15 @@ components:
           format: date
           readOnly: true
           nullable: true
+        data_warnings:
+          type: array
+          readOnly: true
+          items:
+            $ref: '#/components/schemas/DataWarning'
+          description: Present only when this stored row has a problem geoDB can recognise
+            (an upside-down interval, a dip past 90°, coordinates with no CRS…). The
+            row is returned exactly as stored — never fixed or hidden; correct it
+            with an update.
       required:
       - alteration
       - average_spacing_mm
@@ -14909,6 +14981,15 @@ components:
           format: date
           readOnly: true
           nullable: true
+        data_warnings:
+          type: array
+          readOnly: true
+          items:
+            $ref: '#/components/schemas/DataWarning'
+          description: Present only when this stored row has a problem geoDB can recognise
+            (an upside-down interval, a dip past 90°, coordinates with no CRS…). The
+            row is returned exactly as stored — never fixed or hidden; correct it
+            with an update.
         metal_equivalent_config:
           type: string
           nullable: true
@@ -15116,6 +15197,15 @@ components:
           format: date
           readOnly: true
           nullable: true
+        data_warnings:
+          type: array
+          readOnly: true
+          items:
+            $ref: '#/components/schemas/DataWarning'
+          description: Present only when this stored row has a problem geoDB can recognise
+            (an upside-down interval, a dip past 90°, coordinates with no CRS…). The
+            row is returned exactly as stored — never fixed or hidden; correct it
+            with an update.
       required:
       - abundances
       - bhid
@@ -15460,6 +15550,15 @@ components:
           format: date
           readOnly: true
           nullable: true
+        data_warnings:
+          type: array
+          readOnly: true
+          items:
+            $ref: '#/components/schemas/DataWarning'
+          description: Present only when this stored row has a problem geoDB can recognise
+            (an upside-down interval, a dip past 90°, coordinates with no CRS…). The
+            row is returned exactly as stored — never fixed or hidden; correct it
+            with an update.
       required:
       - bhid
       - date_created
@@ -15552,6 +15651,15 @@ components:
           format: date
           readOnly: true
           nullable: true
+        data_warnings:
+          type: array
+          readOnly: true
+          items:
+            $ref: '#/components/schemas/DataWarning'
+          description: Present only when this stored row has a problem geoDB can recognise
+            (an upside-down interval, a dip past 90°, coordinates with no CRS…). The
+            row is returned exactly as stored — never fixed or hidden; correct it
+            with an update.
       required:
       - azimuth
       - bhid
@@ -15909,6 +16017,15 @@ components:
           format: date
           readOnly: true
           nullable: true
+        data_warnings:
+          type: array
+          readOnly: true
+          items:
+            $ref: '#/components/schemas/DataWarning'
+          description: Present only when this stored row has a problem geoDB can recognise
+            (an upside-down interval, a dip past 90°, coordinates with no CRS…). The
+            row is returned exactly as stored — never fixed or hidden; correct it
+            with an update.
       required:
       - assemblage
       - bhid
@@ -16359,6 +16476,15 @@ components:
           - $ref: '#/components/schemas/GeoJSONPoint'
           nullable: true
           readOnly: true
+        data_warnings:
+          type: array
+          readOnly: true
+          items:
+            $ref: '#/components/schemas/DataWarning'
+          description: Present only when this stored row has a problem geoDB can recognise
+            (an upside-down interval, a dip past 90°, coordinates with no CRS…). The
+            row is returned exactly as stored — never fixed or hidden; correct it
+            with an update.
         coordinate_system_metadata:
           type: object
           additionalProperties: true
@@ -16628,6 +16754,15 @@ components:
           format: date
           readOnly: true
           nullable: true
+        data_warnings:
+          type: array
+          readOnly: true
+          items:
+            $ref: '#/components/schemas/DataWarning'
+          description: Present only when this stored row has a problem geoDB can recognise
+            (an upside-down interval, a dip past 90°, coordinates with no CRS…). The
+            row is returned exactly as stored — never fixed or hidden; correct it
+            with an update.
         coordinate_system_metadata:
           type: object
           additionalProperties: true
@@ -16803,6 +16938,15 @@ components:
           type: string
           readOnly: true
           nullable: true
+        data_warnings:
+          type: array
+          readOnly: true
+          items:
+            $ref: '#/components/schemas/DataWarning'
+          description: Present only when this stored row has a problem geoDB can recognise
+            (an upside-down interval, a dip past 90°, coordinates with no CRS…). The
+            row is returned exactly as stored — never fixed or hidden; correct it
+            with an update.
         coordinate_system_metadata:
           type: object
           additionalProperties: true
@@ -19818,6 +19962,15 @@ components:
           format: date
           readOnly: true
           nullable: true
+        data_warnings:
+          type: array
+          readOnly: true
+          items:
+            $ref: '#/components/schemas/DataWarning'
+          description: Present only when this stored row has a problem geoDB can recognise
+            (an upside-down interval, a dip past 90°, coordinates with no CRS…). The
+            row is returned exactly as stored — never fixed or hidden; correct it
+            with an update.
       required:
       - category
       - date_created
@@ -20357,6 +20510,15 @@ components:
           - $ref: '#/components/schemas/GeoJSONPoint'
           nullable: true
           readOnly: true
+        data_warnings:
+          type: array
+          readOnly: true
+          items:
+            $ref: '#/components/schemas/DataWarning'
+          description: Present only when this stored row has a problem geoDB can recognise
+            (an upside-down interval, a dip past 90°, coordinates with no CRS…). The
+            row is returned exactly as stored — never fixed or hidden; correct it
+            with an update.
         coordinate_system_metadata:
           type: object
           additionalProperties: true
@@ -21078,6 +21240,15 @@ components:
           type: string
           readOnly: true
           nullable: true
+        data_warnings:
+          type: array
+          readOnly: true
+          items:
+            $ref: '#/components/schemas/DataWarning'
+          description: Present only when this stored row has a problem geoDB can recognise
+            (an upside-down interval, a dip past 90°, coordinates with no CRS…). The
+            row is returned exactly as stored — never fixed or hidden; correct it
+            with an update.
         coordinate_system_metadata:
           type: object
           additionalProperties: true
@@ -21234,6 +21405,15 @@ components:
           format: date
           readOnly: true
           nullable: true
+        data_warnings:
+          type: array
+          readOnly: true
+          items:
+            $ref: '#/components/schemas/DataWarning'
+          description: Present only when this stored row has a problem geoDB can recognise
+            (an upside-down interval, a dip past 90°, coordinates with no CRS…). The
+            row is returned exactly as stored — never fixed or hidden; correct it
+            with an update.
         coordinate_system_metadata:
           type: object
           additionalProperties: true
@@ -21905,6 +22085,15 @@ components:
           - $ref: '#/components/schemas/GeoJSONPoint'
           nullable: true
           readOnly: true
+        data_warnings:
+          type: array
+          readOnly: true
+          items:
+            $ref: '#/components/schemas/DataWarning'
+          description: Present only when this stored row has a problem geoDB can recognise
+            (an upside-down interval, a dip past 90°, coordinates with no CRS…). The
+            row is returned exactly as stored — never fixed or hidden; correct it
+            with an update.
         coordinate_system_metadata:
           type: object
           additionalProperties: true
@@ -22076,6 +22265,15 @@ components:
           type: string
           readOnly: true
           nullable: true
+        data_warnings:
+          type: array
+          readOnly: true
+          items:
+            $ref: '#/components/schemas/DataWarning'
+          description: Present only when this stored row has a problem geoDB can recognise
+            (an upside-down interval, a dip past 90°, coordinates with no CRS…). The
+            row is returned exactly as stored — never fixed or hidden; correct it
+            with an update.
         coordinate_system_metadata:
           type: object
           additionalProperties: true
@@ -22802,6 +23000,15 @@ components:
           - $ref: '#/components/schemas/SourceCoordinate'
           nullable: true
           readOnly: true
+        data_warnings:
+          type: array
+          readOnly: true
+          items:
+            $ref: '#/components/schemas/DataWarning'
+          description: Present only when this stored row has a problem geoDB can recognise
+            (an upside-down interval, a dip past 90°, coordinates with no CRS…). The
+            row is returned exactly as stored — never fixed or hidden; correct it
+            with an update.
         coordinate_system_metadata:
           type: object
           additionalProperties: true
@@ -22913,6 +23120,42 @@ components:
         * `DISK` - Disking
         * `LOST` - Lost Core
         * `SOIL` - Soil Like
+    DataWarning:
+      type: object
+      description: What is wrong with a stored row. geoDB returns stored data as it
+        is; this marks it so it can be found and corrected.
+      properties:
+        code:
+          type: string
+          enum:
+          - azimuth_out_of_range
+          - coordinate_outside_crs
+          - depth_past_hole
+          - dip_out_of_range
+          - interval_upside_down
+          - invalid_geometry
+          - missing_epsg
+          - negative_value
+          description: '`azimuth_out_of_range`: azimuth (or dip direction) is outside
+            0..360 degrees.; `coordinate_outside_crs`: the coordinate cannot be in
+            its epsg (degrees beyond ±90 latitude or ±180 longitude under EPSG:4326).;
+            `depth_past_hole`: the depth lies beyond the hole''s total depth.; `dip_out_of_range`:
+            dip is outside -90..90 degrees.; `interval_upside_down`: depth_from is
+            greater than depth_to (an upside-down interval).; `invalid_geometry`:
+            the stored geometry is not valid (for example a self-intersecting outline).;
+            `missing_epsg`: the record has coordinates but no epsg, so their CRS is
+            unknown.; `negative_value`: a depth, length or total depth is negative.'
+        field:
+          type: string
+          description: The field the warning is about.
+        detail:
+          type: string
+          description: The stored values, in words.
+      required:
+      - code
+      - field
+      - detail
+      additionalProperties: false
     Error:
       type: object
       description: |-
