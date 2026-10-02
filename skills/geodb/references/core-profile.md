@@ -62,13 +62,13 @@ Every operation a conforming geoDB protocol server answers (the spec flags them 
 
 ## STAC Catalog
 
-- `GET /api/v2/stac/` — Get STAC catalog
-- `GET /api/v2/stac/assets/{kind}/{id}/` — Get one of the STAC catalog
-- `GET /api/v2/stac/collections/` — Get STAC catalog
-- `GET /api/v2/stac/collections/{collection_id}/` — Get one of the STAC catalog
-- `GET /api/v2/stac/collections/{collection_id}/items/` — Get one of the STAC catalog
-- `GET /api/v2/stac/collections/{collection_id}/items/{item_id}/` — Get one of the STAC catalog
-- `GET /api/v2/stac/conformance/` — Get STAC catalog
+- `GET /api/v2/stac/` — Get the STAC catalog root
+- `GET /api/v2/stac/assets/{kind}/{id}/` — Download one STAC asset
+- `GET /api/v2/stac/collections/` — List STAC collections
+- `GET /api/v2/stac/collections/{collection_id}/` — Get one STAC collection
+- `GET /api/v2/stac/collections/{collection_id}/items/` — List the items of a STAC collection
+- `GET /api/v2/stac/collections/{collection_id}/items/{item_id}/` — Get one STAC item
+- `GET /api/v2/stac/conformance/` — STAC conformance classes
 
 ## Bulk Export
 

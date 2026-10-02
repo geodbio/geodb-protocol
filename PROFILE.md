@@ -139,13 +139,13 @@ The assets lane. Large binary data — imagery, grids, geophysical volumes — t
 
 | operationId | | Purpose |
 |---|---|---|
-| `stac_retrieve` | `GET /api/v2/stac/` | Get STAC catalog |
-| `stac_assets_retrieve` | `GET /api/v2/stac/assets/{kind}/{id}/` | Get one of the STAC catalog |
-| `stac_collections_retrieve` | `GET /api/v2/stac/collections/` | Get STAC catalog |
-| `stac_collections_retrieve_2` | `GET /api/v2/stac/collections/{collection_id}/` | Get one of the STAC catalog |
-| `stac_collections_items_retrieve` | `GET /api/v2/stac/collections/{collection_id}/items/` | Get one of the STAC catalog |
-| `stac_collections_items_retrieve_2` | `GET /api/v2/stac/collections/{collection_id}/items/{item_id}/` | Get one of the STAC catalog |
-| `stac_conformance_retrieve` | `GET /api/v2/stac/conformance/` | Get STAC catalog |
+| `stac_retrieve` | `GET /api/v2/stac/` | Get the STAC catalog root |
+| `stac_assets_retrieve` | `GET /api/v2/stac/assets/{kind}/{id}/` | Download one STAC asset |
+| `stac_collections_retrieve` | `GET /api/v2/stac/collections/` | List STAC collections |
+| `stac_collections_retrieve_2` | `GET /api/v2/stac/collections/{collection_id}/` | Get one STAC collection |
+| `stac_collections_items_retrieve` | `GET /api/v2/stac/collections/{collection_id}/items/` | List the items of a STAC collection |
+| `stac_collections_items_retrieve_2` | `GET /api/v2/stac/collections/{collection_id}/items/{item_id}/` | Get one STAC item |
+| `stac_conformance_retrieve` | `GET /api/v2/stac/conformance/` | STAC conformance classes |
 
 ### Bulk Export
 

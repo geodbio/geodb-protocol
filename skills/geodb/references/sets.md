@@ -68,7 +68,4 @@ interpretation or sampling pass each; eight families; structures have none).
 Within one set in one hole intervals may not overlap; across sets anything
 goes. Each project has a default set per family (what everyone sees); each
 person an active set. Never merge sets; say which set you read (default unless
-told). Before any interval or sample write, ask which set if the user hasn't
-said, offering: add to an existing set · create a new one · correct rows in
-one. Derived interpretations go in a new set. Making a set the default needs
-the user's explicit yes.
+told).

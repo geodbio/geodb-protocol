@@ -34,6 +34,10 @@ records' `epsg`)", or "WGS84 longitude and latitude from `geometry`". That
 holds for every answer that carries a position (one hole, a table of collars,
 an extent), even when the question was about something else. Each
 project keeps its own CRS, so compare positions between projects through
-`geometry`, never through the native `latitude`/`longitude`. A coordinate
+`geometry`, never through the native `latitude`/`longitude`. The
+`crs_easting`/`crs_northing` pair is a convenience copy reprojected into the
+PROJECT's CRS (`crs_epsg`): quote it as "derived, EPSG:<crs_epsg>", never as
+the record's native coordinate — that is `latitude`/`longitude` with the
+record's own `epsg` (also `source_coordinate`), which may differ. A coordinate
 quoted without its CRS is the commonest way a correct number turns into a
 point on the wrong continent.

@@ -13,6 +13,12 @@
       "remedy": "Send `Authorization: Grant <token>` with a current grant.",
       "retry": "no"
     },
+    "connector_staff_only": {
+      "http": 401,
+      "meaning": "Connecting an AI assistant is open to geoDB staff accounts only for now, and the person this connection acts as is not one (checked on every call).",
+      "remedy": "Tell the user that AI connections are not available on their account yet; nothing about their data changed. Do not retry.",
+      "retry": "no"
+    },
     "export_concurrency": {
       "http": 429,
       "meaning": "This grant already holds the maximum number of export jobs that have not finished.",
@@ -52,7 +58,7 @@
     "grant_no_read_capability": {
       "http": 403,
       "meaning": "The view declares no read capability, so no grant may reach it.",
-      "remedy": "Use an operation listed in the published OpenAPI spec \u2014 github.com/geodbio/geodb-protocol (spec/openapi.yaml; AGENTS.md lists the core operations) \u2014 and GET /api/v2/grant-context/ names this credential's scope.",
+      "remedy": "Use an operation from the operation map: GET /api/v2/ (on a connector, api_read path '') lists every operation a key may call, by task; GET /api/v2/grant-context/ lists the projects this credential can read (name one with project=<id>).",
       "retry": "no"
     },
     "grant_revoked": {
@@ -76,7 +82,7 @@
     "grant_surface_forbidden": {
       "http": 403,
       "meaning": "The endpoint is not part of the grant-readable surface.",
-      "remedy": "Use an operation listed in the published OpenAPI spec \u2014 github.com/geodbio/geodb-protocol (spec/openapi.yaml; AGENTS.md lists the core operations) \u2014 and GET /api/v2/grant-context/ names this credential's scope.",
+      "remedy": "Use an operation from the operation map: GET /api/v2/ (on a connector, api_read path '') lists every operation a key may call, by task; GET /api/v2/grant-context/ lists the projects this credential can read (name one with project=<id>).",
       "retry": "no"
     },
     "grant_unknown": {
@@ -115,6 +121,12 @@
       "remedy": "Check the id, and that it belongs to the project this grant is pinned to (GET /api/v2/grant-context/).",
       "retry": "no"
     },
+    "overlapping_samples": {
+      "http": 400,
+      "meaning": "Samples overlap inside the requested interval, so length-weighting would count the same ground twice \u2014 almost always two sampling passes read together.",
+      "remedy": "Name ONE sampling pass with drill_sample_set= and read again.",
+      "retry": "no"
+    },
     "parse_error": {
       "http": 400,
       "meaning": "The request body was not valid for its Content-Type.",
@@ -124,7 +136,7 @@
     "permission_denied": {
       "http": 403,
       "meaning": "The credential is valid but not permitted this operation.",
-      "remedy": "Use an operation listed in the published OpenAPI spec \u2014 github.com/geodbio/geodb-protocol (spec/openapi.yaml; AGENTS.md lists the core operations) \u2014 and GET /api/v2/grant-context/ names this credential's scope.",
+      "remedy": "Use an operation from the operation map: GET /api/v2/ (on a connector, api_read path '') lists every operation a key may call, by task; GET /api/v2/grant-context/ lists the projects this credential can read (name one with project=<id>).",
       "retry": "no"
     },
     "throttled": {
@@ -142,7 +154,7 @@
     "use_v2": {
       "http": 403,
       "meaning": "Access grants read the /api/v2/ surface only. The /api/v1/ tree is not part of the protocol.",
-      "remedy": "Request the same path under /api/v2/. Every operation a grant may call is listed in the published OpenAPI spec \u2014 github.com/geodbio/geodb-protocol (spec/openapi.yaml; AGENTS.md lists the core operations) \u2014 and GET /api/v2/grant-context/ names this credential's scope.",
+      "remedy": "Request the same path under /api/v2/. Use an operation from the operation map: GET /api/v2/ (on a connector, api_read path '') lists every operation a key may call, by task; GET /api/v2/grant-context/ lists the projects this credential can read (name one with project=<id>).",
       "retry": "no"
     },
     "validation_error": {

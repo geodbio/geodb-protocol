@@ -43,5 +43,6 @@ depth × width, and velocity × depth × width × the correction factor
 temperature unit (`temperature_units`: Celsius or Fahrenheit), and
 `purge_volume` as sent, in litres on a metres project and gallons on a
 feet project; read the project's units before reporting either.
-`time_collected` is stored as a 24-hour clock time and read back that way
-(`14:21`); "2:21 PM" is accepted too, but send the 24-hour form.
+`time_collected` is stored as a 24-hour clock time and read back as
+`HH:MM:SS` (`14:21:00`); send `14:21` or `14:21:00` — "2:21 PM" is accepted
+too, but send the 24-hour form.

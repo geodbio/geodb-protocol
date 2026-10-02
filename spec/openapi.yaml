@@ -14,10 +14,11 @@ info:
 
         Authorization: Grant <token>
 
-    The grant is pinned to ONE project and is read-only. It can be revoked at any
-    moment, and every request you make appears in a log the project owner can
-    read. `GET /api/v2/grant-context/` tells you which project you are in and what
-    the limits are — the cheapest first call to make.
+    A grant reads its default project — or, when it reaches several, the one you
+    name with `project=<id>` — and is read-only. It can be revoked at any moment,
+    and every request you make appears in a log the project owner can read.
+    `GET /api/v2/grant-context/` lists the projects it can read, names the default
+    one and states the limits — the cheapest first call to make.
 
     ## Eight things that will catch you out
 
@@ -6785,7 +6786,7 @@ paths:
     get:
       operationId: grant_context_retrieve
       description: |-
-        What the credential you are using is allowed to read: the project it is pinned to, its limits, and the protocol version this server speaks.
+        What the credential you are using is allowed to read: every project it can read (`projects`, each with its company), the default one a read answers when it names none (`default_project`), how to choose another (`choosing_a_project`), its limits, and the protocol version this server speaks.
 
         The cheapest first call an integration can make — it confirms the credential works and names its scope without fetching any data.
       tags:
@@ -7138,7 +7139,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PaginatedLandHoldingOutlineList'
+                $ref: '#/components/schemas/PaginatedLandHoldingByShareList'
           description: ''
         '403':
           description: The project owner has not enabled land holdings for API grants
@@ -7206,7 +7207,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/LandHoldingOutline'
+                $ref: '#/components/schemas/LandHoldingByShare'
           description: ''
         '403':
           description: The project owner has not enabled land holdings for API grants
@@ -9892,10 +9893,9 @@ paths:
   /api/v2/stac/:
     get:
       operationId: stac_retrieve
-      description: |-
-        A SpatioTemporal Asset Catalog over the project's large binary assets — imagery, grids, geophysical volumes.
-
-        Use this rather than the JSON endpoints when you want the FILES. Asset links redirect to short-lived signed URLs; follow the redirect, and do not cache the target.
+      description: The root of the SpatioTemporal Asset Catalog over the project's
+        large binary assets — imagery, grids, geophysical volumes — with links to
+        its collections. Use it rather than the JSON endpoints when you want the FILES.
       tags:
       - STAC Catalog
       security:
@@ -9945,15 +9945,13 @@ paths:
                 response.
               schema:
                 type: integer
-      summary: Get STAC catalog
+      summary: Get the STAC catalog root
       x-protocol-core: true
   /api/v2/stac/assets/{kind}/{id}/:
     get:
       operationId: stac_assets_retrieve
-      description: |-
-        A SpatioTemporal Asset Catalog over the project's large binary assets — imagery, grids, geophysical volumes.
-
-        Use this rather than the JSON endpoints when you want the FILES. Asset links redirect to short-lived signed URLs; follow the redirect, and do not cache the target.
+      description: Redirects to a short-lived signed URL for the asset file. Fetch
+        the target without the Authorization header, and do not cache it.
       parameters:
       - in: path
         name: id
@@ -10014,15 +10012,13 @@ paths:
                 response.
               schema:
                 type: integer
-      summary: Get one of the STAC catalog
+      summary: Download one STAC asset
       x-protocol-core: true
   /api/v2/stac/collections/:
     get:
       operationId: stac_collections_retrieve
-      description: |-
-        A SpatioTemporal Asset Catalog over the project's large binary assets — imagery, grids, geophysical volumes.
-
-        Use this rather than the JSON endpoints when you want the FILES. Asset links redirect to short-lived signed URLs; follow the redirect, and do not cache the target.
+      description: 'The catalog''s collections: one per kind of asset the project
+        holds.'
       tags:
       - STAC Catalog
       security:
@@ -10072,15 +10068,12 @@ paths:
                 response.
               schema:
                 type: integer
-      summary: Get STAC catalog
+      summary: List STAC collections
       x-protocol-core: true
   /api/v2/stac/collections/{collection_id}/:
     get:
       operationId: stac_collections_retrieve_2
-      description: |-
-        A SpatioTemporal Asset Catalog over the project's large binary assets — imagery, grids, geophysical volumes.
-
-        Use this rather than the JSON endpoints when you want the FILES. Asset links redirect to short-lived signed URLs; follow the redirect, and do not cache the target.
+      description: 'One collection: its extent and the links to its items.'
       parameters:
       - in: path
         name: collection_id
@@ -10136,15 +10129,13 @@ paths:
                 response.
               schema:
                 type: integer
-      summary: Get one of the STAC catalog
+      summary: Get one STAC collection
       x-protocol-core: true
   /api/v2/stac/collections/{collection_id}/items/:
     get:
       operationId: stac_collections_items_retrieve
-      description: |-
-        A SpatioTemporal Asset Catalog over the project's large binary assets — imagery, grids, geophysical volumes.
-
-        Use this rather than the JSON endpoints when you want the FILES. Asset links redirect to short-lived signed URLs; follow the redirect, and do not cache the target.
+      description: The items (one asset each, with its footprint and metadata) of
+        one collection.
       parameters:
       - in: path
         name: collection_id
@@ -10200,15 +10191,14 @@ paths:
                 response.
               schema:
                 type: integer
-      summary: Get one of the STAC catalog
+      summary: List the items of a STAC collection
       x-protocol-core: true
   /api/v2/stac/collections/{collection_id}/items/{item_id}/:
     get:
       operationId: stac_collections_items_retrieve_2
-      description: |-
-        A SpatioTemporal Asset Catalog over the project's large binary assets — imagery, grids, geophysical volumes.
-
-        Use this rather than the JSON endpoints when you want the FILES. Asset links redirect to short-lived signed URLs; follow the redirect, and do not cache the target.
+      description: 'One item: its footprint, metadata and asset links. Asset links
+        redirect to short-lived signed URLs; follow the redirect, and do not cache
+        the target.'
       parameters:
       - in: path
         name: collection_id
@@ -10269,15 +10259,12 @@ paths:
                 response.
               schema:
                 type: integer
-      summary: Get one of the STAC catalog
+      summary: Get one STAC item
       x-protocol-core: true
   /api/v2/stac/conformance/:
     get:
       operationId: stac_conformance_retrieve
-      description: |-
-        A SpatioTemporal Asset Catalog over the project's large binary assets — imagery, grids, geophysical volumes.
-
-        Use this rather than the JSON endpoints when you want the FILES. Asset links redirect to short-lived signed URLs; follow the redirect, and do not cache the target.
+      description: The STAC API conformance classes this catalog implements.
       tags:
       - STAC Catalog
       security:
@@ -10327,7 +10314,7 @@ paths:
                 response.
               schema:
                 type: integer
-      summary: Get STAC catalog
+      summary: STAC conformance classes
       x-protocol-core: true
   /api/v2/standards/:
     get:
@@ -13952,12 +13939,12 @@ components:
           readOnly: true
           nullable: true
         elevation:
-          type: string
-          readOnly: true
-          description: Elevation, in the record's `elevation_units` where it carries
-            one, else in its `length_units`. On a collar, see `elevation_source` for
-            whether it was surveyed, taken from a DEM, or entered by hand.
+          type: number
+          format: double
           nullable: true
+          description: 'Pad elevation in metres: the Z of `location` (WGS84 height),
+            else the stored elevation. A number, never a string.'
+          readOnly: true
         permit_number:
           type: string
           nullable: true
@@ -16769,6 +16756,10 @@ components:
       - last_edited
       - name
       additionalProperties: false
+    LandHoldingByShare:
+      oneOf:
+      - $ref: '#/components/schemas/LandHoldingOutline'
+      - $ref: '#/components/schemas/LandHoldingRead'
     LandHoldingOutline:
       type: object
       properties:
@@ -16832,6 +16823,231 @@ components:
       - project
       - state
       additionalProperties: false
+    LandHoldingRead:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 150
+        project:
+          type: string
+          readOnly: true
+          nullable: true
+        land_status:
+          type: string
+          readOnly: true
+          nullable: true
+        county:
+          type: string
+          nullable: true
+          maxLength: 150
+        state:
+          nullable: true
+          oneOf:
+          - $ref: '#/components/schemas/StateEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+        serial_number:
+          type: string
+          nullable: true
+          description: BLM MLRS case serial (CSE_NR) for this claim, joined to the
+            BLM mirror by value. Indexed (claims-research-tie Phase T).
+          maxLength: 150
+        serial_link:
+          type: string
+          readOnly: true
+          nullable: true
+        lead_file_name:
+          type: string
+          nullable: true
+          description: The customer's own label for the lead file / block this claim
+            belongs to (free text). NOT BLM's serial — see lead_file_number.
+          maxLength: 150
+        date_staked:
+          type: string
+          format: date
+          nullable: true
+        staked_by:
+          type: string
+          nullable: true
+          maxLength: 100
+        notes:
+          type: string
+          nullable: true
+        geometry:
+          type: string
+          readOnly: true
+          nullable: true
+        epsg:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
+          nullable: true
+        source_geometry:
+          type: object
+          nullable: true
+          description: 'The ORIGINAL geometry exactly as it was sent, never reprojected:
+            `wkt` in the coordinate system `epsg` names (the native frame — e.g. UTM
+            eastings/northings). `geometry` is a DERIVED WGS84 copy for display; a
+            multi-part original keeps every part here. Null when no original was stored
+            (the geometry was drawn in the app).'
+          properties:
+            wkt:
+              type: string
+            epsg:
+              type: integer
+              nullable: true
+          required:
+          - wkt
+          - epsg
+          additionalProperties: false
+          readOnly: true
+        dropped:
+          type: boolean
+        claim_status:
+          $ref: '#/components/schemas/ClaimStatusEnum'
+        claim_status_display:
+          type: string
+          readOnly: true
+          nullable: true
+        target_geometry:
+          type: string
+          readOnly: true
+          nullable: true
+          description: Planned claim boundary (before staking)
+        target_geometry_geojson:
+          type: string
+          readOnly: true
+          nullable: true
+        retain_records:
+          type: array
+          items:
+            $ref: '#/components/schemas/LandHoldingRetain'
+          readOnly: true
+        current_retain_status:
+          type: string
+          readOnly: true
+          nullable: true
+        source:
+          allOf:
+          - $ref: '#/components/schemas/LandHoldingSourceEnum'
+        qclaims_data:
+          nullable: true
+          description: 'Processing data from QClaims: PLSS, corners, monuments, deadlines'
+        county_filed:
+          type: boolean
+        county_filed_date:
+          type: string
+          format: date
+          nullable: true
+        county_recording_number:
+          type: string
+          maxLength: 100
+        blm_filed:
+          type: boolean
+        blm_filed_date:
+          type: string
+          format: date
+          nullable: true
+        documents:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+          description: Attached records, each as an object carrying its id, its natural
+            key and display metadata. Soft-deleted attachments are omitted.
+          readOnly: true
+        images:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+          description: Attached records, each as an object carrying its id, its natural
+            key and display metadata. Soft-deleted attachments are omitted.
+          readOnly: true
+        date_created:
+          type: string
+          format: date
+          readOnly: true
+          nullable: true
+        last_edited:
+          type: string
+          format: date
+          readOnly: true
+          nullable: true
+        coordinate_system_metadata:
+          type: object
+          additionalProperties: true
+          nullable: true
+          description: The project's coordinate-system settings (declared EPSG, optional
+            local-grid proj4 string, units). Present on every record whose model carries
+            a location. Advisory metadata for clients that reproject; the per-record
+            CRS is always the record's own `epsg`.
+      required:
+      - claim_status_display
+      - current_retain_status
+      - date_created
+      - documents
+      - geometry
+      - id
+      - images
+      - land_status
+      - last_edited
+      - name
+      - project
+      - retain_records
+      - serial_link
+      - source_geometry
+      - target_geometry
+      - target_geometry_geojson
+      patternProperties:
+        ^cf_[a-z0-9_]+$:
+          description: 'Custom field. Any number of `cf_*` keys may be present: they
+            are the project''s user-defined fields, flattened to top level. The set
+            of keys and their types vary BY PROJECT and BY MODEL — discover them at
+            `/api/v2/model-schemas/?project_id=<id>`, never by assuming a fixed set.
+            Values are whatever the customer stored (string, number, boolean or null).
+            Calculated custom fields appear under the same prefix and are read-only.'
+      additionalProperties: false
+    LandHoldingRetain:
+      type: object
+      properties:
+        fiscal_year:
+          type: string
+          readOnly: true
+          nullable: true
+        retain:
+          type: boolean
+        decision_notes:
+          type: string
+          nullable: true
+          description: Rationale for retain/drop decision
+        decision_date:
+          type: string
+          format: date-time
+          readOnly: true
+          description: When decision was last updated
+        decided_by_name:
+          type: string
+          readOnly: true
+          nullable: true
+      required:
+      - decided_by_name
+      - decision_date
+      - fiscal_year
+      additionalProperties: false
+    LandHoldingSourceEnum:
+      enum:
+      - qclaims
+      - blm_purchase
+      - admin
+      - import
+      - staking_request
+      - manual
+      - plot
+      type: string
     LengthUnitsEnum:
       enum:
       - M
@@ -18901,7 +19117,7 @@ components:
           required:
           - soft_deleted
       additionalProperties: false
-    PaginatedLandHoldingOutlineList:
+    PaginatedLandHoldingByShareList:
       type: object
       required:
       - count
@@ -18923,7 +19139,7 @@ components:
         results:
           type: array
           items:
-            $ref: '#/components/schemas/LandHoldingOutline'
+            $ref: '#/components/schemas/LandHoldingByShare'
         deleted_ids:
           type: array
           items:
@@ -22975,9 +23191,9 @@ components:
       description: Token-based authentication with required prefix "Token"
 tags:
 - name: Grant
-  description: 'What the credential you are holding can see: the project it is pinned
-    to, its limits, and the protocol version this server speaks. The cheapest first
-    call an integration can make.'
+  description: 'What the credential you are holding can see: the projects it can read
+    and the default one a read answers, its limits, and the protocol version this
+    server speaks. The cheapest first call an integration can make.'
 - name: Discovery
   description: 'What this project actually contains: which models carry data, which
     fields they have, and the project''s user-defined `cf_*` custom fields. Read this
