@@ -47,7 +47,7 @@ Documentation = "https://github.com/geodbio/geodb-protocol/blob/main/AGENTS.md"
 geodb-conformance = "geodb_conformance.__main__:main"
 
 [tool.setuptools]
-packages = ["geodb_conformance", "geodb_conformance.checks"]
+packages = ["geodb_conformance", "geodb_conformance.checks", "geodb_conformance.write"]
 
 # ⭐ The suite ships its own copy of the published contract. A conformance
 # runner that fetched the spec from the server under test would pass against

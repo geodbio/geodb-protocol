@@ -29,16 +29,31 @@ import sys
 from . import load_checks
 from .harness import run
 from .mock_server import BREAKAGES, TOKEN, UNBREAKABLE, serve
+from .mock_write import WRITE_BREAKAGES, WRITE_TOKEN
 from .session import Session
+from .write import load_write_checks
+from .write.session import WriteSession
+
+#: Write assertions a mock cannot meaningfully break (none today; kept so a
+#: new one is either in WRITE_BREAKAGES or declared here with a reason).
+WRITE_UNBREAKABLE = {}
+
+#: The two matrices: (title, breakages, unbreakable, registry loader, token,
+#: session class).
+MATRICES = (
+    ('read', BREAKAGES, UNBREAKABLE, load_checks, TOKEN, Session),
+    ('write', WRITE_BREAKAGES, WRITE_UNBREAKABLE, load_write_checks, WRITE_TOKEN,
+     WriteSession),
+)
 
 MARK = {True: '✅', False: '❌'}
 
 
-def _run_one(assertion_name, breakage, registry):
+def _run_one(assertion_name, breakage, registry, token=TOKEN, session_cls=Session):
     """Run one assertion against a mock. Returns the Result."""
     server, base_url = serve(0, breakage)
     try:
-        session = Session(base_url, TOKEN, timeout=20, profile='full')
+        session = session_cls(base_url, token, timeout=20, profile='full')
         assertions = registry.select(profile='full', only=[assertion_name])
         if not assertions:
             raise SystemExit(f'no assertion named {assertion_name!r}')
@@ -48,66 +63,74 @@ def _run_one(assertion_name, breakage, registry):
         server.server_close()
 
 
-def run_break_matrix(*, verbose=True, markdown=None, only=None):
-    registry = load_checks()
+def run_break_matrix(*, verbose=True, markdown=None, only=None, which=('read', 'write')):
     rows = []
     failures = []
+    for title, breakages, unbreakable, loader, token, session_cls in MATRICES:
+        if title not in which:
+            continue
+        registry = loader()
+        names = sorted(breakages)
+        if only:
+            names = [name for name in names if name in set(only)]
+        if verbose and names:
+            print(f'\n  {title} profile')
+        matrix_rows = []
+        for breakage in names:
+            assertion_name, description = breakages[breakage]
 
-    names = sorted(BREAKAGES)
-    if only:
-        names = [name for name in names if name in set(only)]
+            healthy = _run_one(assertion_name, None, registry, token, session_cls)
+            broken = _run_one(assertion_name, breakage, registry, token, session_cls)
 
-    for breakage in names:
-        assertion_name, description = BREAKAGES[breakage]
+            green_when_correct = healthy.status == 'pass'
+            red_when_broken = broken.status in ('fail', 'error')
+            ok = green_when_correct and red_when_broken
+            matrix_rows.append({
+                'profile': title,
+                'assertion': assertion_name,
+                'breakage': description,
+                'healthy': healthy.status,
+                'broken': broken.status,
+                'ok': ok,
+                'detail': broken.detail if red_when_broken else '',
+            })
+            if not ok:
+                if not green_when_correct:
+                    failures.append(
+                        f'{assertion_name}: does NOT pass against a correct '
+                        f'server ({healthy.status}: {healthy.detail[:300]}) — its '
+                        f'red under a breakage would prove nothing')
+                else:
+                    failures.append(
+                        f'{assertion_name}: stayed {broken.status.upper()} while '
+                        f'the server {description}')
+            if verbose:
+                print(f'  {MARK[ok]}  {assertion_name.ljust(48)} '
+                      f'correct={healthy.status:<5} broken={broken.status}')
 
-        healthy = _run_one(assertion_name, None, registry)
-        broken = _run_one(assertion_name, breakage, registry)
+        # Every assertion is either in the matrix or explicitly declared
+        # unbreakable-by-a-mock, with a reason. A new assertion with neither
+        # is a hole, and it fails here rather than shipping untested.
+        covered = {breakages[name][0] for name in breakages}
+        uncovered = [a.name for a in registry.select(profile='full')
+                     if a.name not in covered and a.name not in unbreakable]
+        if uncovered and not only:
+            failures.append(
+                f'{title} assertions with no breakage in the matrix and no '
+                f'unbreakable declaration (an untested assertion): '
+                + ', '.join(uncovered))
 
-        green_when_correct = healthy.status == 'pass'
-        red_when_broken = broken.status in ('fail', 'error')
-        ok = green_when_correct and red_when_broken
-        rows.append({
-            'assertion': assertion_name,
-            'breakage': description,
-            'healthy': healthy.status,
-            'broken': broken.status,
-            'ok': ok,
-            'detail': broken.detail if red_when_broken else '',
-        })
-        if not ok:
-            if not green_when_correct:
-                failures.append(
-                    f'{assertion_name}: does NOT pass against a correct '
-                    f'server ({healthy.status}: {healthy.detail[:200]}) — its '
-                    f'red under a breakage would prove nothing')
-            else:
-                failures.append(
-                    f'{assertion_name}: stayed {broken.status.upper()} while '
-                    f'the server {description}')
-        if verbose:
-            print(f'  {MARK[ok]}  {assertion_name.ljust(48)} '
-                  f'correct={healthy.status:<5} broken={broken.status}')
-
-    # Every assertion is either in the matrix or explicitly declared
-    # unbreakable-by-a-mock, with a reason. A new assertion with neither is a
-    # hole, and it fails here rather than shipping untested.
-    covered = {BREAKAGES[name][0] for name in BREAKAGES}
-    uncovered = [a.name for a in registry.select(profile='full')
-                 if a.name not in covered and a.name not in UNBREAKABLE]
-    if uncovered and not only:
-        failures.append(
-            'assertions with no breakage in the matrix and no entry in '
-            'UNBREAKABLE (an untested assertion): ' + ', '.join(uncovered))
+        if verbose and names:
+            print()
+            for name, reason in sorted(unbreakable.items()):
+                print(f'  ⏭️   {name.ljust(48)} not breakable by a mock: {reason}')
+            passed = sum(1 for row in matrix_rows if row['ok'])
+            print(f'  {title} break matrix: {passed}/{len(matrix_rows)} assertions go red '
+                  f'under their own breakage and green against a correct server '
+                  f'({len(unbreakable)} declared unbreakable)')
+        rows.extend(matrix_rows)
 
     if verbose:
-        print()
-        for name, reason in sorted(UNBREAKABLE.items()):
-            print(f'  ⏭️   {name.ljust(48)} not breakable by a mock: {reason}')
-        print()
-        passed = sum(1 for row in rows if row['ok'])
-        print(f'  break matrix: {passed}/{len(rows)} assertions go red under '
-              f'their own breakage and green against a correct server '
-              f'({len(UNBREAKABLE)} declared unbreakable)')
         for failure in failures:
             print(f'  ❌ {failure}', file=sys.stderr)
 
@@ -125,11 +148,11 @@ def matrix_markdown(rows):
              'the one way that assertion exists to catch. An assertion is '
              'only trustworthy if it is **green against a correct server** '
              'and **red against its own breakage**.', '',
-             '| | Assertion | The breakage | Correct server | Broken server |',
-             '|---|---|---|---|---|']
+             '| | Profile | Assertion | The breakage | Correct server | Broken server |',
+             '|---|---|---|---|---|---|']
     for row in rows:
         lines.append(
-            f'| {MARK[row["ok"]]} | `{row["assertion"]}` | '
+            f'| {MARK[row["ok"]]} | {row["profile"]} | `{row["assertion"]}` | '
             f'{row["breakage"]} | {row["healthy"]} | {row["broken"]} |')
     lines.append('')
     passed = sum(1 for row in rows if row['ok'])

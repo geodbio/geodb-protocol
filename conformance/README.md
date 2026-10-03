@@ -89,6 +89,42 @@ python -m geodb_conformance.mock_server --port 8765
 python -m geodb_conformance.mock_server --port 8765 --break envelope.paginated_list
 ```
 
+## The write profile
+
+> **Dark.** geoDB's write half is not yet served by its production servers;
+> the write profile's `status` says `dark` until it is. The suite is here so a
+> server that implements the write half can be checked against the contract
+> before it ships.
+
+```bash
+python -m geodb_conformance write \
+    --base-url https://your-server.example.com \
+    --token "$A_KEY_THAT_MAY_WRITE_RECORDS"
+```
+
+The write half's contract is its own versioned document,
+`contract/write-profile.json` (generated from the reference implementation,
+like `errors.json`): the endpoints, the body keys, the intents and whether an
+agent must confirm each with its user, the row statuses, the batch cap, and
+every reason code a write can answer. 20 named assertions check a server
+against it — validate is the dry run · the coordinate system is never assumed
+(`missing_crs`) · an `external_id` re-sent is a no-op · an `Idempotency-Key`
+replays · a create never overwrites · `set_required` / `set_not_owned` · an
+update changes only what it names · undo restores field for field, refuses a
+row changed since (`undo_stale`), never runs twice (`already_undone`) and
+removes what a create made · a retract needs its confirm, cascades, and undo
+brings everything back · restore · a resource-path write names the one
+endpoint · a record read and written back is `unchanged` · every refusal is
+registered · the key's write log lists writes and undos.
+
+**Every assertion writes.** It refuses (exit 2, before writing anything) unless
+the key's project is a declared write twin (`grant-context` →
+`writes.write_twin: true`, a demo project reset nightly); pass
+`--allow-non-twin` for a staging project you may write test data into. Each row it writes is named `CONF-<run>-…`, and the run ends by undoing
+every write it made, newest first (`--keep` leaves them). The write break
+matrix runs with the read one in `selftest`: 20/20, each assertion red under
+its own breakage of the mock and green against a correct one.
+
 ## If a check is wrong
 
 Tell us — that is the most useful kind of issue. The suite encodes our reading

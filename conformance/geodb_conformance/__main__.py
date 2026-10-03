@@ -5,7 +5,8 @@ The CLI.
     python -m geodb_conformance read --base-url URL --token TOKEN --profile full
     python -m geodb_conformance read --base-url URL --token TOKEN \
         --junit report.xml --markdown report.md
-    python -m geodb_conformance selftest          # the broken-mock matrix
+    python -m geodb_conformance write --base-url URL --token WRITE_TOKEN
+    python -m geodb_conformance selftest          # both broken-mock matrices
     python -m geodb_conformance list              # every assertion, no server
 
 Exit code is 0 when the server honoured the contract and 1 when it did not.
@@ -88,6 +89,51 @@ def cmd_read(args):
     return exit_code(results, strict=args.strict)
 
 
+def cmd_write(args):
+    """The write profile, against a server, with a key that may write.
+
+    Every assertion writes (uniquely named rows); the run then undoes every
+    write it made, newest first, unless ``--keep``."""
+    from .write import load_write_checks
+    from .write.session import WriteSession
+    registry = load_write_checks()
+    assertions = registry.select(profile='full', only=args.only)
+    if not assertions:
+        print('[geodb-conformance] no assertions selected', file=sys.stderr)
+        return 2
+    if not args.token:
+        print('[geodb-conformance] no token: pass --token or set GEODB_TOKEN.\n'
+              '  The write suite needs a key that may WRITE records, on a project you\n'
+              '  may write test data into (geoDB\'s public write twin, or your own\n'
+              '  staging server). Without a server: python -m geodb_conformance selftest',
+              file=sys.stderr)
+        return 2
+    session = WriteSession(args.base_url, args.token, timeout=args.timeout,
+                           profile='full', allow_non_twin=args.allow_non_twin)
+    from .harness import Skipped as _Skipped
+    try:
+        session.context()
+    except _Skipped as exc:                  # refuse up front, before any write
+        print(f'[geodb-conformance] not run: {exc}', file=sys.stderr)
+        return 2
+    profile = session.write_profile
+    if not args.quiet:
+        print(f'[geodb-conformance] write profile {profile["profile_version"]} '
+              f'(status: {profile["status"]}); run {session.run_id}')
+    results = run(assertions, session)
+    args.profile = f'write {profile["profile_version"]}'
+    _emit(results, args, args.base_url)
+    if not args.keep:
+        cleanup = session.cleanup()
+        if not args.quiet:
+            print(f'[geodb-conformance] {len(session.exchanges)} requests; '
+                  f'clean-up: undid {cleanup["undone"]} write(s)'
+                  + (f', {cleanup["already"]} already undone' if cleanup['already'] else '')
+                  + (f'; could not undo {len(cleanup["failed"])}: {cleanup["failed"][:3]}'
+                     if cleanup['failed'] else ''))
+    return exit_code(results, strict=args.strict)
+
+
 def cmd_selftest(args):
     """Every assertion, against a mock broken in exactly that one way.
 
@@ -95,9 +141,10 @@ def cmd_selftest(args):
     be made to fail is not testing anything.
     """
     from .selftest import run_break_matrix
+    which = tuple(args.matrix) if args.matrix else ('read', 'write')
     return run_break_matrix(verbose=not args.quiet,
                             markdown=args.markdown,
-                            only=args.only)
+                            only=args.only, which=which)
 
 
 def cmd_list(args):
@@ -108,6 +155,12 @@ def cmd_list(args):
     print(f'\n{len(registry.select("core"))} core · '
           f'{len(registry.select("full"))} total  '
           f'(+ = full profile only)')
+    from .write import load_write_checks
+    writes = load_write_checks().select(profile='full')
+    print(f'\nwrite profile (python -m geodb_conformance write):')
+    for assertion in writes:
+        print(f'  {assertion.name}\n    {assertion.proves}')
+    print(f'\n{len(writes)} write assertions')
     return 0
 
 
@@ -123,6 +176,17 @@ def main(argv=None):
     _add_read_arguments(read)
     read.set_defaults(func=cmd_read)
 
+    write = sub.add_parser(
+        'write', help='run the WRITE profile against a server (the key must be '
+                      'able to write; every write is undone at the end)')
+    _add_read_arguments(write)
+    write.add_argument('--allow-non-twin', action='store_true',
+                       help='write test rows into a project that is NOT a declared '
+                            'write twin (your own staging server)')
+    write.add_argument('--keep', action='store_true',
+                       help='leave the rows the run wrote (no clean-up undo)')
+    write.set_defaults(func=cmd_write)
+
     selftest = sub.add_parser(
         'selftest',
         help='prove every assertion goes red against a mock broken in exactly '
@@ -132,6 +196,8 @@ def main(argv=None):
     selftest.add_argument('--only', metavar='NAME', action='append',
                           help='check only this assertion (repeatable)')
     selftest.add_argument('--quiet', action='store_true')
+    selftest.add_argument('--matrix', choices=('read', 'write'), action='append',
+                          help='only this break matrix (repeatable; default both)')
     selftest.set_defaults(func=cmd_selftest)
 
     listing = sub.add_parser('list', help='print every assertion and what it '

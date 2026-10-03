@@ -37,6 +37,8 @@ import uuid
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, urlparse
 
+from . import mock_write
+
 PROTOCOL_VERSION = '0.1.0'
 TOKEN = 'gdbg_mock_conformance_token'
 
@@ -573,10 +575,48 @@ class MockHandler(BaseHTTPRequestHandler):
                 return True             # wrongly accepts Bearer
             self._error('grant_malformed')
             return False
+        if token == mock_write.WRITE_TOKEN:
+            self.kind = 'write'
+            return True
         if token != TOKEN:
             self._error('grant_unknown')
             return False
+        self.kind = 'read'
         return True
+
+    kind = 'read'
+
+    def _write_get(self, path, query):
+        """GETs the write key makes: its own grant-context, the write
+        contract, its write log, and the records it wrote."""
+        store = self.server.write_store
+        if path == '/api/v2/grant-context/':
+            return self._send(200, {
+                'protocol_version': PROTOCOL_VERSION, 'label': 'Mock write key',
+                'token_prefix': mock_write.WRITE_TOKEN[:12], 'project': mock_write.PROJECT,
+                'company': {'id': 1, 'name': 'Mock Co'}, 'read_only': False,
+                'writes': {'endpoint': 'POST /api/v2/records/', 'write_twin': True}})
+        match = re.match(r'^/api/v2/records/describe/([A-Za-z]+)/$', path)
+        if match:
+            return self._send(*store.describe(match.group(1)))
+        match = re.match(r'^/api/v2/records/writes/(?:([0-9a-f\-]+)/)?$', path)
+        if match:
+            return self._send(*store.writes_log(match.group(1)))
+        kinds = {'/api/v2/drill-collars/': 'collar', '/api/v2/drill-samples/': 'sample'}
+        if path in kinds:
+            rows = [store.view(kinds[path], r) for r in store.live(kinds[path])]
+            return self._send(200, {'count': len(rows), 'next': None, 'previous': None,
+                                    'results': rows, 'deleted_ids': [],
+                                    'deleted_since_applied': None,
+                                    'sync_timestamp': '2026-10-01T00:00:00Z'})
+        match = re.match(r'^(/api/v2/drill-(?:collars|samples)/)(\d+)/$', path)
+        if match:
+            kind = kinds[match.group(1)]
+            row = store.rows[kind].get(int(match.group(2)))
+            if row is None or row['deleted']:
+                return self._error('not_found')
+            return self._send(200, store.view(kind, row))
+        return self._error('not_found')
 
     def _guard(self, handler):
         """Turn an exception in the mock into a 500, not a dropped connection.
@@ -630,6 +670,9 @@ class MockHandler(BaseHTTPRequestHandler):
         if not self._authenticate():
             return
 
+        if self.kind == 'write':
+            return self._write_get(path, query)
+
         if path == '/api/v2/grant-context/':
             return self._grant_context()
         if path == '/api/v2/model-schemas/':
@@ -668,6 +711,17 @@ class MockHandler(BaseHTTPRequestHandler):
 
         if path == '/api/v2/exports/':
             return self._export_create(payload)
+        if path == '/api/v2/records/':
+            if self.kind != 'write':
+                return self._send(403, {
+                    'reason_code': 'write_access_insufficient',
+                    'detail': 'This key may read but not write records.',
+                    'remedy': 'Ask the project owner for a key that may write records.'})
+            status, body, headers = self.server.write_store.post(
+                payload, self.headers.get('Idempotency-Key'))
+            return self._send(status, body, headers)
+        if path in COLLECTIONS and self.kind == 'write':
+            return self._send(*self.server.write_store.resource_write())
         if path in COLLECTIONS:
             if self.breakage == 'auth.write_refused':
                 return self._send(201, {'id': 999, 'name': payload.get('name')})
@@ -1017,6 +1071,7 @@ class MockServer(ThreadingHTTPServer):
         super().__init__(address, MockHandler)
         self.breakage = breakage
         self.jobs = {}
+        self.write_store = mock_write.WriteStore(breakage)
 
 
 def serve(port=0, breakage=None):
@@ -1031,12 +1086,13 @@ def main(argv=None):
     import argparse
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--port', type=int, default=8765)
-    parser.add_argument('--break', dest='breakage', choices=sorted(BREAKAGES),
+    parser.add_argument('--break', dest='breakage',
+                        choices=sorted(BREAKAGES) + sorted(mock_write.WRITE_BREAKAGES),
                         help='serve the protocol broken in exactly this one '
                              'way')
     args = parser.parse_args(argv)
     server, base = serve(args.port, args.breakage)
-    print(f'mock server on {base}  token={TOKEN}'
+    print(f'mock server on {base}  token={TOKEN}  write token={mock_write.WRITE_TOKEN}'
           + (f'  BROKEN: {args.breakage}' if args.breakage else ''))
     try:
         server.serve_forever()
