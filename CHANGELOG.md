@@ -70,6 +70,13 @@ the `v0.1.0` copies stay served as they were.
   parameter it cannot honour. The connector's `export_link` takes the same
   `filters` (`project`, `company`, `scope`, `set`).
 
+### Changed — client/server version pairing
+- The install line geoDB serves (the connector's `session_key` result, the
+  teaching) is pinned to the protocol's minor: `pip install "geodb-client>=0.2,<0.3"`,
+  derived from the protocol version so it moves with it. `geodb-client` 0.2.0
+  sends `X-GeoDB-Protocol-Version` and raises `ProtocolVersionMismatch` (naming
+  the install line) when the server speaks another major.minor.
+
 ### Changed — help text and labels
 - `qaqc-verdicts/` accepts **`offset`** (and answers `next_offset`); its
   per-certificate pass rates honour `element`.

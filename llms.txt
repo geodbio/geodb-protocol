@@ -56,4 +56,4 @@
 - `cf_*` keys are per-project custom fields; discover them at
   `/api/v2/model-schemas/`.
 - Lists page with `limit` / `offset`; `page_size` is ignored.
-- Python client: `pip install geodb-client`.
+- Python client: `pip install "geodb-client>=0.2,<0.3"` (paired with protocol 0.2).
