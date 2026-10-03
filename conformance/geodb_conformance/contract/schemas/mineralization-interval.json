@@ -1,9 +1,9 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://spec.geodb.io/exploration/v0.1.0/mineralization-interval.json",
+  "$id": "https://spec.geodb.io/exploration/v0.2.0/mineralization-interval.json",
   "title": "Mineralization interval",
   "description": "Mineralization logged over a depth interval, with the minerals observed and their abundances.\n\nGENERATED from the normative OpenAPI document (`spec/openapi.yaml`) — do not edit by hand; run `python scripts/regenerate.py`. The OpenAPI document is normative for the wire; this file is the same contract for one record type, readable on its own.",
-  "x-generated-by": "scripts/regenerate.py from spec/openapi.yaml (geoDB Open Exploration Protocol v0.1.0)",
+  "x-generated-by": "scripts/regenerate.py from spec/openapi.yaml (geoDB Open Exploration Protocol v0.2.0)",
   "x-openapi-component": "DrillMineralizationRead",
   "type": "object",
   "properties": {
@@ -87,6 +87,10 @@
             "string",
             "null"
           ]
+        },
+        "project_id": {
+          "type": "integer",
+          "description": "The project this record is in (a credential may read several; GET /api/v2/grant-context/ names them)."
         }
       },
       "required": [
@@ -119,6 +123,10 @@
                   "string",
                   "null"
                 ]
+              },
+              "project_id": {
+                "type": "integer",
+                "description": "The project this record is in (a credential may read several; GET /api/v2/grant-context/ names them)."
               }
             },
             "required": [
@@ -169,6 +177,10 @@
               "string",
               "null"
             ]
+          },
+          "project_id": {
+            "type": "integer",
+            "description": "The project this record is in (a credential may read several; GET /api/v2/grant-context/ names them)."
           }
         },
         "required": [
@@ -260,6 +272,24 @@
         "null"
       ],
       "format": "date"
+    },
+    "set_id": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "The set this row is in (a NULL-set row: its project's default set). With set=all the rows of every set are listed; sets overlap and are never merged."
+    },
+    "set_name": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "The name of `set_id`."
+    },
+    "project_id": {
+      "type": "integer",
+      "description": "The project this record is in (a credential may read several; GET /api/v2/grant-context/ names them)."
     },
     "data_warnings": {
       "type": "array",

@@ -71,3 +71,17 @@ map — a Map pane in the workspace, an iframe on the published web link, a chip
 PDF/DOCX. **It takes a SAVED map's name**, never a figure title — an unknown name
 renders as a ⚠ TODO chip. "Interactive map in the report" = the live embed of the
 saved map AND a captured map figure for print — both, not either.
+
+**Writing into a report from outside geoDB.** A report is a person's work: you
+write as the person who connected you, with their report rights (an informal
+report is written by its author alone), and every text you write is recorded as
+your app's, for that person — the report, its history and its reviewers see
+which text a model wrote. Each section carries a revision number: read the
+section, write against the revision you read, and if someone changed it since,
+your write is refused rather than overwriting theirs — re-read, merge, and send
+again. Make the figures first, from data you actually queried; their data is
+stored with them, and the prose places them by their handle. Removing a section
+keeps its text and history and can be undone; ask the user first. On a
+compliance report you draft only sections no Qualified Person has accepted or
+attested, and what you write is flagged for the QP to review; attesting a
+section is always a person's act in the geoDB web app, never yours.

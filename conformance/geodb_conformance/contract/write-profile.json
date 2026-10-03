@@ -2,7 +2,7 @@
   "$comment": "GENERATED from the reference implementation (protocol/writes/profile.py) by manage.py export_write_profile. Do not edit by hand: scripts/regenerate.py --check fails when this file differs from what the server generates.",
   "profile": "write",
   "profile_version": "0.1.0",
-  "status": "dark",
+  "status": "published",
   "status_note": "dark: no production server answers these operations yet (they 404); this document is the contract the write conformance suite checks a server against. published: the write half is live.",
   "endpoints": {
     "write": {
@@ -307,12 +307,6 @@
       "remedy": "GET /api/v2/grant-context/ lists the projects this key may use; name one of those (by id) in `project`, or drop the row.",
       "retry": "no"
     },
-    "project_required": {
-      "http": 400,
-      "meaning": "(per row) The key may write to several projects and neither the record nor the request names one.",
-      "remedy": "Add \"project\": <id> to the request (or to the record). GET /api/v2/grant-context/ lists the projects.",
-      "retry": "no"
-    },
     "qaqc_verdict_field": {
       "http": 409,
       "meaning": "(per row) The row tries to set a field that records a QAQC review decision (whether a certificate's results are withheld). It changes only through the certificate's verdict, never on a row.",
@@ -420,6 +414,12 @@
       "meaning": "This credential may read but not write records (its write access is below \"records\").",
       "remedy": "Ask the project owner for a key with records write access (or reconnect the app and allow writing). Reads keep working.",
       "retry": "no"
+    },
+    "writes_staff_only": {
+      "http": 403,
+      "meaning": "Writing through the API is open to geoDB staff for now: a write is accepted only from a staff member's own AI connection. Every other key (an organisation or vendor key, a non-staff person's connection) reads but does not write, whatever write access it was given.",
+      "remedy": "Read with this key; make the change in the geoDB web app, or ask geoDB when API writing opens to your account.",
+      "retry": "no"
     }
   },
   "warning_codes": {
@@ -461,6 +461,11 @@
     "set_exists_derived_from_ignored": {
       "meaning": "(per-row warning) The request asked to create a set that already exists, so the rows went into that existing set and the \"derived_from\" sent with it was NOT recorded (an existing set's provenance is never rewritten).",
       "remedy": "If this is a new derived interpretation, send it into a NEW set name with \"create\": true and its \"derived_from\"; otherwise leave \"derived_from\" out.",
+      "retry": "no"
+    },
+    "stored_differently": {
+      "meaning": "(per-row warning) The row WAS written, but the stored values differ from what was sent (geoDB normalised them); `conflicts` lists each field with `stored` and `sent`. The row is not refused and Undo reaches it.",
+      "remedy": "Read the record back and tell the user how it was stored; if the sent value must win, correct it with an update.",
       "retry": "no"
     },
     "write_not_recorded": {

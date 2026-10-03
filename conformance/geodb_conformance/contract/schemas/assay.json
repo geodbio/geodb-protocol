@@ -1,9 +1,9 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://spec.geodb.io/exploration/v0.1.0/assay.json",
+  "$id": "https://spec.geodb.io/exploration/v0.2.0/assay.json",
   "title": "Assay result",
   "description": "One sample's laboratory results: a row per sample carrying its analyte values in `elements[]`, each traceable to the method and certificate that produced it.\n\nGENERATED from the normative OpenAPI document (`spec/openapi.yaml`) — do not edit by hand; run `python scripts/regenerate.py`. The OpenAPI document is normative for the wire; this file is the same contract for one record type, readable on its own.",
-  "x-generated-by": "scripts/regenerate.py from spec/openapi.yaml (geoDB Open Exploration Protocol v0.1.0)",
+  "x-generated-by": "scripts/regenerate.py from spec/openapi.yaml (geoDB Open Exploration Protocol v0.2.0)",
   "x-openapi-component": "AssayRead",
   "type": "object",
   "properties": {
@@ -36,7 +36,7 @@
         "object",
         "null"
       ],
-      "description": "The lab job that created this row, as an identity object. On a merged row (one sample, two labs) the values may come from a different job — read the per-value `elements[].certificate` for provenance.",
+      "description": "The lab job that created this row, as an identity object. On a merged row (one sample, two labs) the values may come from a different job — read the per-value `elements[].certificate` for provenance. Sent only with `expand=certificate`; otherwise `certificate_id` names it.",
       "properties": {
         "id": {
           "type": "integer"
@@ -150,7 +150,7 @@
             "type": "string",
             "format": "decimal",
             "pattern": "^-?\\d{0,6}(?:\\.\\d{0,4})?$",
-            "description": "The analyte value, as a DECIMAL STRING rather than a JSON number — precision is preserved exactly as the laboratory reported it, and parsing it as a float will silently round it. Parse it with a decimal type. Its units are the sibling `units` field: units are per VALUE, not per sample and not per element, because one sample can carry values from two laboratories at different units. ⚠️ A below-detection result is stored and sent as the sentinel `-1.0000`, not as a measurement; the lab's threshold for that sample is `detection_limit_per_sample` when the method reports one, else the method's `detection_limit`. An explicit below-detection flag is planned; until then treat a negative value as \"below detection\", never as a grade."
+            "description": "The analyte value, as a DECIMAL STRING rather than a JSON number — precision is preserved exactly as the laboratory reported it, and parsing it as a float will silently round it. Parse it with a decimal type. Its units are the sibling `units` field: units are per VALUE, not per sample and not per element, because one sample can carry values from two laboratories at different units. ⚠️ A below-detection result is stored and sent as the sentinel `-1.0000` (and flagged `below_detection: true` where the value carries that flag) — a marker, never a measurement or a grade. Compare it NUMERICALLY (a negative value is below detection), never as text: \"-1\", \"-1.0\" and \"-1.0000\" are the same value. The lab's threshold for that sample is `detection_limit_per_sample` when the method reports one, else the method's `detection_limit`."
           },
           "units": {
             "type": [
@@ -160,18 +160,18 @@
             "description": "Units for this value (e.g. `ppm`, `ppb`, `pct`, `g/t`, `oz/ton`). Per value — always read it beside the value rather than assuming a project-wide unit."
           },
           "detection_limit": {
+            "description": "A method limit in the value's own units, or null when the method declares none. A float, unlike `value`, which is a decimal string because it is what the laboratory reported.",
             "type": [
               "number",
               "null"
-            ],
-            "description": "A method limit in the value's own units, or null when the method declares none. A float, unlike `value`, which is a decimal string because it is what the laboratory reported."
+            ]
           },
           "upper_limit": {
+            "description": "A method limit in the value's own units, or null when the method declares none. A float, unlike `value`, which is a decimal string because it is what the laboratory reported.",
             "type": [
               "number",
               "null"
-            ],
-            "description": "A method limit in the value's own units, or null when the method declares none. A float, unlike `value`, which is a decimal string because it is what the laboratory reported."
+            ]
           },
           "above_det_limit": {
             "type": "boolean",
@@ -182,7 +182,7 @@
               "object",
               "null"
             ],
-            "description": "The analytical method that produced this value, as an identity object. `is_floating_dl` says whether the detection limit is reported per sample rather than fixed by the method.",
+            "description": "The analytical method that produced this value, as an identity object. `is_floating_dl` says whether the detection limit is reported per sample rather than fixed by the method. Sent only with `expand=method`; otherwise `method_id` names it.",
             "properties": {
               "id": {
                 "type": "integer"
@@ -226,7 +226,7 @@
               "object",
               "null"
             ],
-            "description": "The lab job that produced THIS value. Differs from the row's certificate on a merged row; null when the value carries no stamp of its own and the row's job could not be resolved.",
+            "description": "The lab job that produced THIS value. Differs from the row's certificate on a merged row; null when the value carries no stamp of its own and the row's job could not be resolved. Sent only with `expand=certificate`; otherwise `certificate_id` names it.",
             "properties": {
               "id": {
                 "type": "integer"
@@ -252,16 +252,20 @@
               "null"
             ],
             "description": "Id of the certificate (laboratory job) that produced THIS value — the same job as `certificate.id`, flat. Null when the value carries no provenance of its own and the row's job could not be resolved."
+          },
+          "method_id": {
+            "type": [
+              "integer",
+              "null"
+            ]
           }
         },
         "required": [
           "above_det_limit",
           "below_detection",
-          "certificate",
           "certificate_id",
           "detection_limit",
           "element",
-          "method",
           "units",
           "upper_limit",
           "value"
@@ -321,11 +325,41 @@
         "field_xrf"
       ],
       "description": "`lab` — laboratory results. `field_xrf` — a portable-XRF reading (field guidance, never a reportable grade; left out of lab analytics, QC and intercepts by default)."
+    },
+    "project_id": {
+      "type": "integer",
+      "description": "The project this record is in (a credential may read several; GET /api/v2/grant-context/ names them)."
+    },
+    "certificate_id": {
+      "type": [
+        "integer",
+        "null"
+      ]
+    },
+    "laboratory_id": {
+      "type": [
+        "integer",
+        "null"
+      ]
+    },
+    "laboratory": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "description": "Sent only with `expand=laboratory`.",
+      "properties": {
+        "id": {
+          "type": "integer"
+        },
+        "name": {
+          "type": "string"
+        }
+      }
     }
   },
   "required": [
     "analyte_mass_g",
-    "certificate",
     "date_created",
     "detection_limit_per_sample",
     "elements",

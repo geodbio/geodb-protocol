@@ -39,7 +39,17 @@ from urllib.parse import parse_qs, urlparse
 
 from . import mock_write
 
-PROTOCOL_VERSION = '0.1.0'
+def _packaged_protocol_version():
+    """The version the packaged contract describes (its spec's
+    ``info.version``): a correct server answers with it, so the mock does."""
+    import re
+    from .session import _package_file
+    match = re.search(r'^info:\n(?:[ \t].*\n)*?[ \t]+version:[ \t]*[\'"]?([^\s\'"]+)',
+                      _package_file('openapi.yaml'), re.M)
+    return match.group(1) if match else '0.0.0'
+
+
+PROTOCOL_VERSION = _packaged_protocol_version()
 TOKEN = 'gdbg_mock_conformance_token'
 
 #: EPSG:26915 (NAD83 / UTM 15N). The mock's collars are stored in it, exactly

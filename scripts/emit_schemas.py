@@ -53,7 +53,11 @@ import re
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.dirname(HERE)
 
-VERSION = '0.1.0'
+#: The exploration schemas' version: the protocol version they describe
+#: (geoDB ``api/protocol_version.py``, the spec's ``info.version``). A breaking
+#: protocol version publishes at a NEW versioned URL; the previous one stays
+#: served under docs/ untouched (ruling R1: the `$id` host is versioned).
+VERSION = '0.2.0'
 BASE_URI = f'https://spec.geodb.io/exploration/v{VERSION}'
 JSON_SCHEMA_DIALECT = 'https://json-schema.org/draft/2020-12/schema'
 

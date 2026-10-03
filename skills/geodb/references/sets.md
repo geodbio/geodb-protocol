@@ -39,10 +39,10 @@ they were made (hand-logged or software-derived); elsewhere the NAME must say it
 
 ### Reading sets
 
-Every interval and sample you read names its set. When a hole has several sets
-over the same depths, **never merge them**: report per set, or ask which one the
-user means. When you summarise, say which set you used, and use the project
-default unless told otherwise.
+Every interval and sample you read names its set. When a project holds
+several sets of a kind, ask which one the user means, or whether they want
+all; **never merge them**: report per set, and say which set every answer came
+from.
 
 ### Before any interval or sample write: establish the set, and ASK if the user hasn't said
 
@@ -67,5 +67,10 @@ interpretation into someone's logged set.
 interpretation or sampling pass each; eight families; structures have none).
 Within one set in one hole intervals may not overlap; across sets anything
 goes. Each project has a default set per family (what everyone sees); each
-person an active set. Never merge sets; say which set you read (default unless
-told).
+person an active set. When a project holds several sets of a kind, ask which
+one (or all); never merge sets; say which set every answer came from.
+
+Before any interval or sample write, ask which set if the user hasn't
+said, offering: add to an existing set · create a new one · correct rows in
+one. Derived interpretations go in a new set. Making a set the default needs
+the user's explicit yes.

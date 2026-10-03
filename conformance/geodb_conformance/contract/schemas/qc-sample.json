@@ -1,9 +1,9 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://spec.geodb.io/exploration/v0.1.0/qc-sample.json",
+  "$id": "https://spec.geodb.io/exploration/v0.2.0/qc-sample.json",
   "title": "QC sample",
   "description": "A quality-control sample inserted into a sample stream — a certified reference material, a blank, or a duplicate.\n\nGENERATED from the normative OpenAPI document (`spec/openapi.yaml`) — do not edit by hand; run `python scripts/regenerate.py`. The OpenAPI document is normative for the wire; this file is the same contract for one record type, readable on its own.",
-  "x-generated-by": "scripts/regenerate.py from spec/openapi.yaml (geoDB Open Exploration Protocol v0.1.0)",
+  "x-generated-by": "scripts/regenerate.py from spec/openapi.yaml (geoDB Open Exploration Protocol v0.2.0)",
   "x-openapi-component": "QCSampleRead",
   "type": "object",
   "properties": {
@@ -229,6 +229,10 @@
           "type": "string"
         }
       }
+    },
+    "project_id": {
+      "type": "integer",
+      "description": "The project this record is in (a credential may read several; GET /api/v2/grant-context/ names them)."
     },
     "metal_equivalent_config": {
       "type": [

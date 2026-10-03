@@ -1,9 +1,9 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://spec.geodb.io/exploration/v0.1.0/certificate.json",
+  "$id": "https://spec.geodb.io/exploration/v0.2.0/certificate.json",
   "title": "Assay certificate",
   "description": "A laboratory job: the batch of samples one lab analysed and reported together, under one certificate number, on one date. The chain-of-custody anchor a value traces back to.\n\nOne laboratory job: who analysed what, when, and in what state.\n\nGENERATED from the normative OpenAPI document (`spec/openapi.yaml`) — do not edit by hand; run `python scripts/regenerate.py`. The OpenAPI document is normative for the wire; this file is the same contract for one record type, readable on its own.",
-  "x-generated-by": "scripts/regenerate.py from spec/openapi.yaml (geoDB Open Exploration Protocol v0.1.0)",
+  "x-generated-by": "scripts/regenerate.py from spec/openapi.yaml (geoDB Open Exploration Protocol v0.2.0)",
   "x-openapi-component": "CertificateRead",
   "type": "object",
   "properties": {
@@ -120,7 +120,7 @@
         "rejected",
         "none"
       ],
-      "description": "The QAQC review verdict on this certificate. `pending`: review not finished — on a project that requires approval, its results are withheld until it is. `approved` / `conditional`: results are in use. `none`: no review recorded. This is geoDB's verdict; report it, do not recompute it."
+      "description": "The QAQC review verdict on this certificate. `rejected`: its results are withheld from analysis (each assay and QC sample is returned flagged `excluded` only when you ask with `include_excluded=true`). `pending`: review not finished — on a project that requires approval, its results are withheld until it is. `approved` / `conditional`: results are in use. `none`: no review recorded. This is geoDB's verdict; report it, do not recompute it."
     },
     "superseded_by": {
       "type": [
@@ -158,7 +158,7 @@
         "field_xrf"
       ],
       "type": "string",
-      "description": "`lab` — a laboratory job. `field_xrf` — a portable-XRF reading session: field guidance, never a reportable grade. Field-XRF results are left out of geoDB's lab analytics, QC verdicts, intercepts and merged reads by default.\n\n* `lab` - Laboratory\n* `field_xrf` - Field XRF"
+      "description": "`lab` — a laboratory job. `field_xrf` — a portable-XRF reading session: field guidance, never a reportable grade. Field-XRF results are left out of geoDB's lab analytics, QC verdicts, intercepts and merged reads by default. Read them with `/api/v2/field-xrf/`.\n\n* `lab` - Laboratory\n* `field_xrf` - Field XRF"
     },
     "date_created": {
       "type": [
@@ -173,6 +173,10 @@
         "null"
       ],
       "format": "date"
+    },
+    "project_id": {
+      "type": "integer",
+      "description": "The project this record is in (a credential may read several; GET /api/v2/grant-context/ names them)."
     }
   },
   "required": [

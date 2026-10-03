@@ -115,7 +115,8 @@ def main():
         with open(profile_path, encoding='utf-8') as fh:
             profile = json.load(fh)
         with open(os.path.join(REPO, 'errors.json'), encoding='utf-8') as fh:
-            read_codes = set(json.load(fh)['reason_codes'])
+            registry = json.load(fh)['reason_codes']
+        read_codes = set(registry)
         problems = []
         if profile.get('profile') != 'write' or profile.get('status') not in ('dark', 'published'):
             problems.append('profile/status')
@@ -123,15 +124,29 @@ def main():
             missing = [k for k in ('http', 'meaning', 'remedy', 'retry') if not entry.get(k)]
             if missing:
                 problems.append(f'{code}: no {missing}')
-        both = sorted(read_codes & set(profile.get('reason_codes') or {}))
-        if both:
-            problems.append(f'in errors.json AND the write profile: {both}')
+        write_codes = profile.get('reason_codes') or {}
+        if profile.get('status') == 'dark':
+            # Dark: the read registry and the write profile partition the codes.
+            both = sorted(read_codes & set(write_codes))
+            if both:
+                problems.append(f'in errors.json AND the dark write profile: {both}')
+        else:
+            # Published (protocol 0.2.0): the write half is folded into the one
+            # registry — errors.json carries every write code, word for word.
+            missing = sorted(set(write_codes) - read_codes)
+            if missing:
+                problems.append(f'published write codes missing from errors.json: {missing}')
+            differ = sorted(c for c in set(write_codes) & read_codes
+                            if registry[c] != write_codes[c])
+            if differ:
+                problems.append(f'entries differ between errors.json and the profile: {differ}')
         for p in problems:
             failures.append(f'write-profile.json: {p}')
         if not problems:
+            how = ('partitioned from errors.json' if profile.get('status') == 'dark'
+                   else 'each one in errors.json, identical')
             print(f'[OK] write profile {profile.get("profile_version")} '
-                  f'({profile.get("status")}): {len(profile.get("reason_codes") or {})} '
-                  f'write codes, partitioned from errors.json')
+                  f'({profile.get("status")}): {len(write_codes)} write codes, {how}')
     except (OSError, ValueError, KeyError) as exc:
         failures.append(f'write-profile.json: {exc}')
 

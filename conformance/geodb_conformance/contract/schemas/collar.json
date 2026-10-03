@@ -1,9 +1,9 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://spec.geodb.io/exploration/v0.1.0/collar.json",
+  "$id": "https://spec.geodb.io/exploration/v0.2.0/collar.json",
   "title": "Drill collar",
   "description": "The surface location and orientation of a drillhole — the anchor every downhole record references.\n\nGENERATED from the normative OpenAPI document (`spec/openapi.yaml`) — do not edit by hand; run `python scripts/regenerate.py`. The OpenAPI document is normative for the wire; this file is the same contract for one record type, readable on its own.",
-  "x-generated-by": "scripts/regenerate.py from spec/openapi.yaml (geoDB Open Exploration Protocol v0.1.0)",
+  "x-generated-by": "scripts/regenerate.py from spec/openapi.yaml (geoDB Open Exploration Protocol v0.2.0)",
   "x-openapi-component": "DrillCollarRead",
   "type": "object",
   "properties": {
@@ -284,7 +284,7 @@
         "type": "object",
         "additionalProperties": true
       },
-      "description": "Attached records, each as an object carrying its id, its natural key and display metadata. Soft-deleted attachments are omitted."
+      "description": "Attached records, each as an object carrying its id, its natural key and display metadata. Soft-deleted attachments are omitted. Omitted from list rows; read the record by id."
     },
     "images": {
       "type": "array",
@@ -292,7 +292,7 @@
         "type": "object",
         "additionalProperties": true
       },
-      "description": "Attached records, each as an object carrying its id, its natural key and display metadata. Soft-deleted attachments are omitted."
+      "description": "Attached records, each as an object carrying its id, its natural key and display metadata. Soft-deleted attachments are omitted. Omitted from list rows; read the record by id."
     },
     "date_created": {
       "type": [
@@ -372,6 +372,10 @@
       ],
       "additionalProperties": false
     },
+    "project_id": {
+      "type": "integer",
+      "description": "The project this record is in (a credential may read several; GET /api/v2/grant-context/ names them)."
+    },
     "data_warnings": {
       "type": "array",
       "items": {
@@ -433,14 +437,12 @@
     "crs_xy_units",
     "date_created",
     "display_units",
-    "documents",
     "geometry",
     "geometry_geojson",
     "hole_size",
     "hole_status",
     "hole_type",
     "id",
-    "images",
     "last_edited",
     "length_units",
     "name",

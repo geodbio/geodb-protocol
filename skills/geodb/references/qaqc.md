@@ -46,6 +46,109 @@ included.
 bug to report.** Then name *which certificate was rejected and when*, so the
 number they are staring at has a cause.
 
+**What a read withholds, and how it says so.** Four kinds of row are held
+back from results by default, and a good answer names them instead of
+treating the gap as missing data:
+
+1. **Results from a REJECTED certificate** — the lab job failed QAQC review.
+2. **Results from a SUPERSEDED certificate** — the job was replaced by a
+   re-assay; the newer certificate carries the live values, and each
+   certificate names the one it replaced or was replaced by.
+3. **Soft-deleted records** — deleted on the server, recoverable there; a list
+   reports them by id and by count, never as rows.
+4. **Below-detection values** are NOT withheld but are not grades either: the
+   laboratory's "<DL" is stored as the sentinel `-1` with an explicit
+   below-detection flag beside it, and the value's detection limit is the
+   threshold. A merged read has already substituted it once (half the
+   detection limit by default) — never substitute it again, and never average
+   the sentinel.
+
+Every list states what its default left out as counts. Ask for the
+QAQC-withheld rows to be included and each one comes back flagged as excluded,
+with the reason and the certificate behind it. So when a user asks *"why are
+these samples missing from the pass rate?"*, read the withheld rows and the
+certificates' review state, then answer with the cause: **which certificate
+was rejected or superseded**, and what replaced it. Never report a flagged
+row's value as a result — it is shown so you can explain its absence — and
+never treat a rejection as something to overturn: report the state, and leave
+the review decision to the geologist.
+
+**geoDB's verdicts are a read, row by row.** Each QC reading (standard,
+blank, duplicate) comes back judged exactly as its certificate's QAQC page
+judges it: `pass` / `warn` / `fail`, or `unknown` when no acceptance
+criterion resolved (neither a pass nor a fail — say how many), with the
+measured and expected values, the Z-score and bias for standards, and the
+threshold that judged it. Each certificate carries its pass rates, how many
+readings could be judged, and the stored review decision. A project-wide read
+leaves out certificates a review rejected or superseded and LISTS them, so a
+pass rate is over the certificates in use — name them when you report it. A
+per-CRM summary answers "how is this standard performing". Quote these
+numbers; never recompute a pass rate, and if you disagree, say why.
+
+**Working through a project's QAQC, from geoDB's reads.** Read in this order,
+and report what the reads say before anything of your own:
+
+1. **The QC rules in force** — the thresholds, the blank limits per element,
+   the duplicate criteria, the elements left out of pass rates. A blank with
+   no limit for an element is judged `unknown` there: missing configuration,
+   not a clean blank.
+2. **The verdicts per insertion**, per certificate. Each standards row says
+   the method's detection limit, whether the reading was below it, and
+   whether the CRM is certified at or below that limit — such a reading reads
+   `unknown`, correctly: the method cannot resolve that element on that
+   standard, so it never gets an accuracy verdict (a DETECTED value on such a
+   CRM is still judged). A standards reading with no CRM linked, or linked to
+   a CRM holding no certified value, gets NO verdict row; the read lists it as
+   withheld with the reason — name it, never count it as a pass or a fail.
+3. **The CRM library as the project uses it** — certified values per method
+   (value, units, SD) beside the detection limit each assay method has here,
+   with two named states: `no_certified_values` and
+   `certified_below_method_dl`. A state explains readings that are never
+   judged; it is not a laboratory failure. ⚠️ A CRM's certified method and
+   an assay's method are DIFFERENT records (the CRM certificate's chemistry vs
+   the laboratory's method): match them on digestion and finish, never on
+   their ids — differing ids are not a mismatch.
+4. **The planned sequence beside the field record** — each hole's cut-sheet
+   lists the planned slots in order and, beside each, what is recorded today
+   (the QC type, the CRM tag, the certificate its result came from, whether a
+   review withholds it). Where the plan, the record and the result's
+   chemistry disagree, suspect a swapped or mistyped bag before a lab problem.
+5. **Duplicate pairs** are verdict rows with their parent sample, both values
+   and the test that judged them; **name collisions** (one name held by two
+   kinds of sample) and **withheld rows** (rejected or superseded
+   certificates) each have their own read.
+
+Then tell the user what needs attention, each finding with the evidence (the
+rows, the chemistry, the state), and what they could do about it. Changing
+anything is their call.
+
+**Changing QAQC data: only when the user asks, and never a verdict on your
+own initiative.** What can change, each on the user's explicit request, each
+shown to them first as a dry run, each undoable:
+
+- **Retype a QC sample** — an update to its `qc_type` (the QC field; never
+  `sample_type`). **Retag a standard's CRM** — an update to its `standard`.
+  A field duplicate's parent is `ds_duplicate`.
+- **Reconnect a QC sample to its withdrawn result** — when a deleted
+  certificate left the QC sample standing with no visible result. A
+  rejected certificate's QC is not a reconnect: its result is withheld by
+  the review, which is a verdict question.
+- **A certificate's verdict** — approve, conditionally approve, reject, set
+  back to pending, or link the certificate that re-assayed it. This is the
+  geologist's decision, made through their own key: never propose one, never
+  infer one from your own analysis, never fold one into another change. When
+  the user explicitly asks, run it as a dry run, show them each certificate's
+  verdict now and after and how many results that withholds or brings back,
+  wait for their yes, then send it with the confirm value the dry run
+  returned. A field that records the review decision (a row's
+  withheld-by-review flag) is never written as a field. Un-rejecting a
+  certificate whose sample names another certificate now holds is refused,
+  naming the samples: ask the user which certificate is right.
+
+If you disagree with a verdict, say so and show why; the verdict stays
+geoDB's until the user changes it. Every change can be undone by its write
+id; say so when you report it.
+
 ⚠️ **Deleting a certificate DOES take its assays — and leaves its QC samples
 standing.** A certificate delete cascades to its assays, its QAQC approval and
 its saved QC charts (`qaqc_charts`). `QCSample` is deliberately NOT in it: the

@@ -91,10 +91,11 @@ python -m geodb_conformance.mock_server --port 8765 --break envelope.paginated_l
 
 ## The write profile
 
-> **Dark.** geoDB's write half is not yet served by its production servers;
-> the write profile's `status` says `dark` until it is. The suite is here so a
-> server that implements the write half can be checked against the contract
-> before it ships.
+> **Published with protocol 0.2.0.** The write profile's `status` is
+> `published`. geoDB's production servers accept writes from geoDB staff
+> connections only while API writing opens (other keys are refused
+> `writes_staff_only`), so point the suite at your own server or the public
+> write twin.
 
 ```bash
 python -m geodb_conformance write \

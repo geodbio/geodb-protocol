@@ -1,9 +1,9 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://spec.geodb.io/exploration/v0.1.0/drill-sample.json",
+  "$id": "https://spec.geodb.io/exploration/v0.2.0/drill-sample.json",
   "title": "Drill sample",
   "description": "A sample cut from an interval of core or cuttings, and sent to a laboratory.\n\nGENERATED from the normative OpenAPI document (`spec/openapi.yaml`) — do not edit by hand; run `python scripts/regenerate.py`. The OpenAPI document is normative for the wire; this file is the same contract for one record type, readable on its own.",
-  "x-generated-by": "scripts/regenerate.py from spec/openapi.yaml (geoDB Open Exploration Protocol v0.1.0)",
+  "x-generated-by": "scripts/regenerate.py from spec/openapi.yaml (geoDB Open Exploration Protocol v0.2.0)",
   "x-openapi-component": "DrillSampleRead",
   "type": "object",
   "properties": {
@@ -178,23 +178,19 @@
               ],
               "description": "The project, by name."
             },
-            "certificate": {
+            "certificate_id": {
               "type": [
-                "object",
+                "integer",
                 "null"
               ],
-              "additionalProperties": false,
-              "properties": {
-                "id": {
-                  "type": "integer"
-                },
-                "name": {
-                  "type": [
-                    "string",
-                    "null"
-                  ]
-                }
-              }
+              "description": "The certificate, by id."
+            },
+            "laboratory_id": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "description": "The certificate's laboratory, by id."
             },
             "certificate_name": {
               "type": [
@@ -221,12 +217,12 @@
                 "type": "object",
                 "additionalProperties": false,
                 "properties": {
-                  "method": {
+                  "method_id": {
                     "type": [
                       "integer",
                       "null"
                     ],
-                    "description": "The method id."
+                    "description": "The method, by id (methods/)."
                   },
                   "method_unit": {
                     "type": [
@@ -241,17 +237,15 @@
                       },
                       "detection_limit": {
                         "type": [
-                          "string",
+                          "number",
                           "null"
-                        ],
-                        "format": "decimal"
+                        ]
                       },
                       "upper_limit": {
                         "type": [
-                          "string",
+                          "number",
                           "null"
-                        ],
-                        "format": "decimal"
+                        ]
                       },
                       "units": {
                         "type": "string"
@@ -279,7 +273,7 @@
                       "null"
                     ],
                     "format": "decimal",
-                    "description": "The lab value as a decimal STRING (parse with a decimal type, never a float). ⚠️ A below-detection result is stored and sent as the sentinel `-1.0000`, not as a measurement; the lab's threshold for that sample is `detection_limit_per_sample` when the method reports one, else the method's `detection_limit`. An explicit below-detection flag is planned; until then treat a negative value as \"below detection\", never as a grade."
+                    "description": "The lab value as a decimal STRING (parse with a decimal type, never a float). ⚠️ A below-detection result is stored and sent as the sentinel `-1.0000` (and flagged `below_detection: true` where the value carries that flag) — a marker, never a measurement or a grade. Compare it NUMERICALLY (a negative value is below detection), never as text: \"-1\", \"-1.0\" and \"-1.0000\" are the same value. The lab's threshold for that sample is `detection_limit_per_sample` when the method reports one, else the method's `detection_limit`."
                   }
                 }
               }
@@ -485,6 +479,24 @@
         "null"
       ],
       "format": "date"
+    },
+    "set_id": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "The set this row is in (a NULL-set row: its project's default set). With set=all the rows of every set are listed; sets overlap and are never merged."
+    },
+    "set_name": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "The name of `set_id`."
+    },
+    "project_id": {
+      "type": "integer",
+      "description": "The project this record is in (a credential may read several; GET /api/v2/grant-context/ names them)."
     },
     "data_warnings": {
       "type": "array",

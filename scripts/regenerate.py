@@ -31,8 +31,11 @@ GitHub Pages serves them at the host named in every ``$id`` (``spec.geodb.io``,
 ruling R1). Pages can only serve what is committed under docs/, and it does not
 follow git symlinks, so docs/ holds byte-identical COPIES:
 
-  schemas/<name>.json    -> docs/exploration/v0.1.0/<name>.json
-  stac/xpl/schema.json   -> docs/xpl/v0.1.0/schema.json
+  schemas/<name>.json    -> docs/exploration/v<VERSION>/<name>.json  (0.2.0)
+  stac/xpl/schema.json   -> docs/xpl/v<XPL_VERSION>/schema.json      (0.1.0)
+
+An earlier version's served copies (docs/exploration/v0.1.0/) are left as they
+were published: a consumer pinned to that `$id` keeps reading what it read.
 
 A schema is therefore never edited by hand. A field's wording lives on the
 serializer in the geoDB checkout, the spec is regenerated from it, and the
@@ -147,7 +150,10 @@ def errors_are_stale(geodb_dir, python):
 
 # The served layout. Keys are repo-relative source files, values are the path
 # under docs/ that Pages serves — which must match the `$id` in the file.
-VERSION = '0.1.0'
+VERSION = emit_schemas.VERSION
+#: The STAC extension keeps its own version (geoDB ``api/stac/xpl.py``
+#: ``XPL_VERSION``), independent of the exploration schemas.
+XPL_VERSION = '0.1.0'
 DOCS = os.path.join(REPO, 'docs')
 
 
@@ -158,7 +164,7 @@ def published_pairs():
         pairs.append((src, os.path.join(
             DOCS, 'exploration', f'v{VERSION}', os.path.basename(src))))
     pairs.append((os.path.join(REPO, 'stac', 'xpl', 'schema.json'),
-                  os.path.join(DOCS, 'xpl', f'v{VERSION}', 'schema.json')))
+                  os.path.join(DOCS, 'xpl', f'v{XPL_VERSION}', 'schema.json')))
     return pairs
 
 

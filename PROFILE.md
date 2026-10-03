@@ -157,25 +157,28 @@ Whole tables, built in the background, as GeoParquet / Parquet / CSV. One POST i
 | `exports_retrieve` | `GET /api/v2/exports/{job_id}/` | Poll an export job |
 | `exports_download_retrieve` | `GET /api/v2/exports/{job_id}/download/` | Download a finished export |
 
-## geoDB extensions — 87 operations
+## geoDB extensions — 122 operations
 
 Supported, project-scoped, and outside the contract. Read them freely against geoDB; do not expect them from another implementation.
 
 | Family | Operations | What it is |
 |---|---|---|
-| Assays | 2 | Analytical method definitions and the per-project rules for merging several results for one sample and element. |
-| Discovery | 6 | Custom-field definitions in their own right, and client-shaped rearrangements of the schema response. |
+| Assays | 7 | Analytical method definitions and the per-project rules for merging several results for one sample and element. |
+| Discovery | 10 | Custom-field definitions in their own right, and client-shaped rearrangements of the schema response. |
 | Drill Holes | 7 | Pads, computed traces and their GeoJSON form. |
-| Drill Intervals | 18 | The `*-sets` logging-run groupings and the interval-type lookups — a geoDB organisational concept, not a measurement. |
-| Files | 6 | Project files, their raster map tiles, and elevation data. |
+| Drill Intervals | 20 | The `*-sets` logging-run groupings and the interval-type lookups — a geoDB organisational concept, not a measurement. |
+| Feedback | 1 |  |
+| Files | 10 | Project files, their raster map tiles, and elevation data. |
 | Geophysics | 2 | Geophysical survey acquisition metadata. The bulk data itself travels as STAC assets, which ARE core. |
+| Guide | 3 |  |
 | Land Holdings | 2 | Mineral claims and other land holdings. A project chooses how much of this a grant may read. |
 | Map Layers | 8 | Vector layers, their features, and roads. |
 | Photos | 5 | Core photography and general project photographs. |
-| Quality Control | 7 | Certified reference materials, QC type lookups, and a project's QA/QC protocol and its status. |
-| Samples | 2 | Fixed-length compositing of drill samples, and the assigned-to-a-user work queue. |
-| Surface Geology | 18 | Geology mapped at surface, plus the lookup vocabulary behind it (lithologies, alterations, minerals, formations, textures, vein types, field notes). |
+| Quality Control | 10 | Certified reference materials, QC type lookups, and a project's QA/QC protocol and its status. |
+| Samples | 7 | Fixed-length compositing of drill samples, and the assigned-to-a-user work queue. |
+| Surface Geology | 22 | Geology mapped at surface, plus the lookup vocabulary behind it (lithologies, alterations, minerals, formations, textures, vein types, field notes). |
 | Water | 4 | Water monitoring sites and the samples taken at them. |
+| Writing | 4 |  |
 
 ## Notes on membership
 

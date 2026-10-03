@@ -1,6 +1,99 @@
 # Changelog
 
-## [Unreleased]
+## [0.2.0] — prepared 2026-10-03 (published at the maintainer's go)
+
+Protocol **0.2.0** (`info.version`, the `X-GeoDB-Protocol-Version` header and
+`grant-context.protocol_version` all say `0.2.0`). ⚠️ **Breaking for grant
+callers** (ruling R-G); geoDB's first-party (Knox) clients are unchanged. The
+exploration schemas publish at a new `$id`, `https://spec.geodb.io/exploration/v0.2.0/…`;
+the `v0.1.0` copies stay served as they were.
+
+### ⚠️ Changed — scope: no current project, one company per read (R-A, R-B, R-F)
+- **A read names its project.** geoDB keeps no current project between calls. A
+  project-level read (everything carrying a project) that names none while the
+  credential reads several is refused **`400 project_required`** with `choices`
+  (the readable projects, grouped by company). A credential that reads one
+  project needs to name nothing. `company=<id>` alone narrows the question, or
+  answers when that company has one readable project.
+- **Company-level tables name their company:** laboratories, methods, standards,
+  QC types answer `company=<id>` (or a `project`'s company, or the credential's
+  only company); else **`400 company_required`** (new code).
+- **`scope=company` reads ONE company** (`company=<id>` when the credential reads
+  several companies, else `company_required`). No request returns rows of two
+  companies.
+- **Every grant row says where it is:** top-level rows carry `project_id`
+  (company-level rows `company_id`). A record by id is found anywhere in the
+  readable set.
+- **`grant-context/`** lists `companies` → `projects` (and the same projects flat
+  in `projects`, each with its company and its per-family set counts in `sets`);
+  `default_project`, `project` and `company` are set only when the credential
+  reads exactly one; `choosing_a_project` states the rule. The connector's
+  consent screen no longer offers a "default project".
+- `scope` (and `company`) are declared on every project-level list (the spec
+  used to declare `scope` only on some, with a description that said "the
+  active company").
+- This supersedes the "default project" rule described under *connector scope
+  fixes* below.
+
+### ⚠️ Changed — lean shapes (R-D)
+- **An assay names its relations by id:** `certificate_id`, `laboratory_id` on the
+  assay row; `method_id` (and `certificate_id`) on each value. The nested objects
+  come back only with **`expand=certificate,method,laboratory`**; an `expand` a
+  read does not offer is refused `invalid_parameter`. A sample's nested assay
+  record follows the same shape.
+- **`detection_limit` / `upper_limit` are JSON numbers** on every grant route.
+- **Point LIST rows drop the per-row `coordinate_system_metadata`** (collar lists
+  also `images` / `documents`); a record by id keeps them. The block's one home is
+  new **`GET /api/v2/projects/{id}/coordinate-system/`**.
+- New **`GET /api/v2/assay-results/`**: the flat, dataframe-ready table — one row
+  per sample × element × method (sample, hole + depths, value as a decimal
+  string, units, numeric limits, flags, method / certificate / laboratory ids) —
+  exactly the assays `assays/` answers for the same request.
+
+### ⚠️ Changed — sets first (R-E)
+- **`set=<id|name|all>`** on every interval and sample list (the per-model set
+  fields stay as aliases). An interval list over a project holding more than one
+  set of that kind, naming none, is refused **`400 set_choice_required`** (new
+  code) with `sets`: each set's id, name, description, rows, holes, depth range,
+  default flag, created + the creator's role (never an email), source,
+  `writable_by_this_key`. `set=all` reads every set; every grant interval row
+  carries **`set_id` / `set_name`** (a row with no stored set reads as its
+  project's default set). A record by id is never asked.
+- `writable_by_this_key` is false on a key that cannot write.
+
+### ⚠️ Changed — exports
+- `POST /api/v2/exports/` takes the list's parameters in the query or the body:
+  `project`, `company`, `scope=company` (only when it answers one project — an
+  export is one project's table; several are refused `invalid_parameter` with the
+  `choices`), and `set` (the list's set rule; a table whose export ships only the
+  project's export set refuses `set=all` / another set). Never an empty file for a
+  parameter it cannot honour. The connector's `export_link` takes the same
+  `filters` (`project`, `company`, `scope`, `set`).
+
+### Changed — help text and labels
+- `qaqc-verdicts/` accepts **`offset`** (and answers `next_offset`); its
+  per-certificate pass rates honour `element`.
+- The `-1.0000` below-detection sentinel is compared numerically; `xyz_*` are
+  described as project-local-grid metres (not a CRS, not WGS84; the `_wgs84`
+  twins are EPSG:4326). `POST exports/` is documented as the one read-POST.
+
+### Added — the write chapter (R-I, R22)
+- **The write half is published:** `POST /api/v2/records/` (create · upsert ·
+  update · retract · restore · make_default_set · qaqc_verdict · qc_reconnect ·
+  undo), its describe contract, the write log, and the feedback lane. The write
+  profile (`conformance/geodb_conformance/contract/write-profile.json`) is
+  `published`, and its codes are in `errors.json`. AGENTS.md "Managing data" and
+  the Skill's Writing section teach it, including: every write names its project
+  and set; dry run → write → report the Undo handle; corrections are updates;
+  moving an interval's depths is retract + create.
+- ⚠️ **While API writing opens, geoDB's servers accept writes only from geoDB
+  staff connections**: any other key is refused **`403 writes_staff_only`** (new
+  code), whatever write access it was given. A compliance report is started in
+  the web app (**`compliance_create_staff_only`**, new). A row the server wrote
+  but stored differently is reported written with the warning
+  **`stored_differently`** (new) and `conflicts` (`stored` vs `sent`).
+
+### Earlier unreleased changes, folded into 0.2.0
 
 ### Changed — protocol v0.2, phase 1: one seam per concern (geoDB `feature/protocol-v0-2`)
 - **No read answers differently.** Scope, exports, the response projection, the interval set filter and the teaching each moved to ONE seam in the reference implementation, pinned response-for-response against the previous server. The only wire change is additive and grant-only:

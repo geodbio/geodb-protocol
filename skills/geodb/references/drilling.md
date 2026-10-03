@@ -61,6 +61,18 @@ hole), re-weighted over the narrower span. Report every element the user asked
 for — dropping silver from a silver-bearing table is a silent omission, not a
 simplification.
 
+**Reading intercepts without re-deriving them.** geoDB serves the two halves
+of an intercept table as reads, so your numbers match the ones geoDB reports:
+(1) a hole's merged grades for ONE sampling pass — the project's export pass
+unless you name another — with below-detection values already substituted
+per the project's merge settings; (2) length-weighted intervals over the
+boundaries you send, each with its coverage, in the nested order you give
+(the hole row, then `incl.` / `and`). **There is no cutoff parameter, and a
+request that names one is refused**: read the grades, propose boundaries the
+way a geologist draws them, say why, and let the geologist rule. Report every
+element asked for, state coverage below 1.0, and never call downhole length
+true width.
+
 **Where a depth is in space.** A hole's desurveyed trace (from its collar and
 survey stations, minimum curvature by default) and the position at any depth
 down it are served by geoDB, on the PROJECT LOCAL GRID in metres — not degrees,
