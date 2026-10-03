@@ -93,9 +93,9 @@ python -m geodb_conformance.mock_server --port 8765 --break envelope.paginated_l
 
 > **Published with protocol 0.2.0.** The write profile's `status` is
 > `published`. geoDB's production servers accept writes from geoDB staff
-> connections only while API writing opens (other keys are refused
-> `writes_staff_only`), so point the suite at your own server or the public
-> write twin.
+> connections only while API writing opens (other keys — the public demo write
+> key included — are refused `writes_staff_only`), so point the suite at your
+> own server.
 
 ```bash
 python -m geodb_conformance write \

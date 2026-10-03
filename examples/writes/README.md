@@ -2,8 +2,8 @@
 
 > **Staff only for now.** geoDB's production servers serve the write half to
 > geoDB staff connections only while API writing opens (any other key is
-> refused `writes_staff_only`); these run against a server that accepts your
-> key's writes, or the public write twin with the demo write key.
+> refused `writes_staff_only` — the public demo write key too, until then);
+> these run against a server that accepts your key's writes.
 
 **Read [AGENTS.md](../../AGENTS.md), "Managing data", first** — these examples
 show the calls; the rules they follow are stated there. Three you must not

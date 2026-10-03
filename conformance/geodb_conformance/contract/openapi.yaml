@@ -412,7 +412,8 @@ paths:
         a dataframe. Methods, certificates and laboratories are named by id; read
         them once from `methods/`, `certificates/`, `laboratories/`. Takes the assay
         list's filters (`project` — required when the credential reads several projects
-        —, `certificate`, `include_excluded` …) and answers exactly its rows' values.
+        —, `certificate`, `include_excluded` …) and answers exactly its rows' values;
+        `withheld` (first page) says what the assay list's defaults left out.
       summary: Assay results as one flat table
       parameters:
       - name: limit
@@ -16296,6 +16297,21 @@ components:
         excluded_reason:
           type: string
           nullable: true
+        excluded_by_certificate:
+          type: object
+          additionalProperties: {}
+          nullable: true
+          description: The certificate whose QAQC review withheld it ({id, name}),
+            or null.
+        source_type:
+          type: string
+          description: '`lab` — a laboratory result. `field_xrf` — a portable-XRF
+            reading (field guidance, never a reportable grade).'
+        qaqc_status:
+          type: string
+          nullable: true
+          description: The producing certificate's QAQC review (`none` when not reviewed;
+            null without a certificate).
         data_warnings:
           type: array
           readOnly: true
@@ -16316,13 +16332,16 @@ components:
       - detection_limit
       - element
       - excluded
+      - excluded_by_certificate
       - excluded_reason
       - laboratory_id
       - method_id
       - project_id
+      - qaqc_status
       - sample_id
       - sample_name
       - sample_type
+      - source_type
       - units
       - upper_limit
       - value
@@ -22658,6 +22677,31 @@ components:
           nullable: true
           description: Echo of the `modified_since` value applied. Present only when
             the request sent `modified_since`.
+        withheld:
+          type: object
+          nullable: true
+          additionalProperties:
+            type: integer
+          description: 'What this list''s DEFAULT filters left out, as counts, so
+            a gap is never silent. The counts cover the whole list, not one page:
+            they are sent on the FIRST page (no `offset`, or `offset=0`) and later
+            pages carry null. `soft_deleted`: rows deleted on the server (their ids
+            are in `deleted_ids`). `qaqc_excluded` (assays, QC samples): rows withheld
+            by a QAQC review — a rejected or superseded certificate, or one pending
+            approval where the project requires it; present only when this response
+            left them out (ask again with `include_excluded=true` to see them, each
+            flagged with why). `planned` (QC samples): planned bags not yet collected,
+            held back unless you filter by `lab_status`. Mention these when you summarise:
+            a count or a pass rate over this list is a count over what is here.'
+          properties:
+            soft_deleted:
+              type: integer
+            qaqc_excluded:
+              type: integer
+            planned:
+              type: integer
+          required:
+          - soft_deleted
       additionalProperties: false
     PaginatedCertificateReadList:
       type: object

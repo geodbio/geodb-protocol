@@ -18,8 +18,8 @@ and the server disagree, the server is right and the file is a bug: please
 A geoDB project holds a mineral-exploration dataset — drill holes and what was
 logged down them, the samples cut from them, the assay results with the
 laboratory chain of custody behind each value, and large binary assets like
-grids and imagery. This protocol is a read-only, project-scoped, authenticated
-REST + STAC surface over that data, described by an OpenAPI 3 document that is
+grids and imagery. This protocol is a project-scoped, authenticated REST + STAC
+surface over that data, described by an OpenAPI 3 document that is
 generated from the running server rather than written beside it. It reads,
 and — for a key given write access — writes through one endpoint
 (`POST /api/v2/records/`, "Managing data" below).
@@ -352,9 +352,11 @@ Every refusal carries `reason_code` + `remedy`: act on the remedy.
 
 Your key writes only if `GET /api/v2/grant-context/` says `"read_only":
 false` (its `writes` block names the endpoint, the models and the intents);
-a read-only key is refused `grant_write_forbidden`. To try it without an
-account, geoDB publishes a **demo write key** on a write twin of the demo
-project — a separate project, reset every night — beside the read demo key.
+a read-only key is refused `grant_write_forbidden`. While API writing opens,
+geoDB's own servers accept writes only from geoDB staff members' connections:
+every other key — the public demo write key included — is refused
+`writes_staff_only` there. The write contract below is the protocol's; a server
+that opens writes to your key answers it exactly so.
 
 **One endpoint.** Every write is `POST /api/v2/records/` with `model`,
 `intent` and `records` (up to 1,000 rows), and is answered row by row. A
