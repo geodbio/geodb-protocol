@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Changed — protocol v0.2, phase 1: one seam per concern (geoDB `feature/protocol-v0-2`)
+- **No read answers differently.** Scope, exports, the response projection, the interval set filter and the teaching each moved to ONE seam in the reference implementation, pinned response-for-response against the previous server. The only wire change is additive and grant-only:
+- **Every refusal a grant meets carries a `reason_code` and a `remedy`.** The app endpoints' hand-written 4xx bodies (`{"error": …}`) gain the two keys for a grant caller — the status's registered code (`validation_error`, `authentication_failed`, `permission_denied`, `not_found`, `method_not_allowed`, `conflict`, `throttled`) unless the endpoint names a more specific one. First-party (Knox) bodies are unchanged. New reason code **`conflict`** (409). 27 codes.
+
 ### Changed — connector scope fixes (geoDB `feature/connector-scope-fixes`)
 - **One rule for which projects a read answers.** A credential that can read several projects (a connected AI over the projects a person ticked, or a regional key) reads its DEFAULT project unless the call names another: `project=<id>` (or its exact name) selects any project it can read, on every list and every pin-scoped detail read; `scope=company` reads all of them. Lists that used to answer every readable project without being asked (certificates, assays, the `*-sets` lists, photos, the vocabularies) now answer the default project — ⚠️ a regional key that pulled one of those without a project parameter now gets its default project; add `scope=company` for all. A pin-scoped list that refused `project=<another readable project>` (400) now answers it.
 - ⚠️ **A project parameter on a single-record read is judged too.** `project` / `project_id` on a `…/{id}/` read now resolves within the projects the credential can read like it does on a list: an unreadable or unknown project is refused `400 invalid_parameter` (it used to be ignored on a record read and answer the default project's record).

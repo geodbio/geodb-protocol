@@ -13,6 +13,12 @@
       "remedy": "Send `Authorization: Grant <token>` with a current grant.",
       "retry": "no"
     },
+    "conflict": {
+      "http": 409,
+      "meaning": "The request conflicts with the current state of the record.",
+      "remedy": "Read the record again, then resend the change against what is stored now.",
+      "retry": "no"
+    },
     "connector_staff_only": {
       "http": 401,
       "meaning": "Connecting an AI assistant is open to geoDB staff accounts only for now, and the person this connection acts as is not one (checked on every call).",
