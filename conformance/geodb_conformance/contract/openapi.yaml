@@ -408,12 +408,14 @@ paths:
   /api/v2/assay-results/:
     get:
       operationId: assay_results_list
-      description: One row per sample × element × method — the table to load into
+      description: 'One row per sample × element × method — the table to load into
         a dataframe. Methods, certificates and laboratories are named by id; read
         them once from `methods/`, `certificates/`, `laboratories/`. Takes the assay
-        list's filters (`project` — required when the credential reads several projects
-        —, `certificate`, `include_excluded` …) and answers exactly its rows' values;
-        `withheld` (first page) says what the assay list's defaults left out.
+        list''s filters (`project` — required when the credential reads several projects
+        —, `certificate`, `include_excluded` …) and answers exactly its rows'' values;
+        `withheld` (first page) says what the assay list''s defaults left out — counted
+        in assay RECORDS (one per sample), not in this table''s value rows: never
+        compare it with `count`.'
       summary: Assay results as one flat table
       parameters:
       - name: limit

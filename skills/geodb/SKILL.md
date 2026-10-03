@@ -178,7 +178,10 @@ to them (a hole takes its samples and intervals); a dry run lists exactly
 what goes (`cascade`), and the real request needs `"confirm": "retract"`,
 else `confirm_required`. `restore` (`{"intent": "restore", "write_id": …}`)
 brings a retract back. A record you read can be written back unchanged as a
-no-op: the same field names both ways, read-only decorations ignored.
+no-op: the same field names both ways, read-only decorations ignored. Set a
+relation by its write column (`certificate`, `method`, `laboratory`, the set
+by `set`), never by the `*_id` echo a read adds (`certificate_id`,
+`method_id`, `company_id`, `set_id`): those are ignored on write.
 
 **9 · Undo.** `{"intent": "undo", "write_id": "<from the write>"}` reverses
 one write: a create's records go to the Trash — and so does any set the
