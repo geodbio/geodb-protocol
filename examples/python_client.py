@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Pull collars and assays into DataFrames with the geodb-client library.
 
-    pip install "geodb-client>=0.2,<0.3" pandas
+    pip install "geodb-client>=0.3,<0.4" pandas
     export GEODB_TOKEN=<your grant>              # the public sandbox token works
     export GEODB_BASE_URL=https://api.geodb.io   # optional; this is the default
     python examples/python_client.py

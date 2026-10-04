@@ -84,7 +84,7 @@ anything.
 
 ---
 
-## 3. Eight traps
+## 3. Ten traps
 
 These are the things that produce confidently wrong answers. They are not edge
 cases; the first one will affect nearly every project you touch.
@@ -213,9 +213,9 @@ ignored. `?modified_since=yesterday` is an error, not a full table scan.
 {"element": "Au", "value": "5.5575", "units": "ppm", "detection_limit": 0.005}
 ```
 
-`value` is a JSON string on purpose: it preserves exactly what the laboratory
-reported, and parsing it as a float will silently round it. **Parse it with a
-decimal type** (`decimal.Decimal`, `BigDecimal`, `pandas` with `dtype=object`
+`value` is a JSON string on purpose: it is stored and sent at **4 decimal places**
+(a laboratory value with more was rounded to 4 when it was loaded), and parsing it as a
+float may round it again. **Parse it with a decimal type** (`decimal.Decimal`, `BigDecimal`, `pandas` with `dtype=object`
 or an explicit conversion). Do not let a JSON library coerce it.
 
 `units` are **per value**, not per sample and not per element — one sample can
@@ -233,6 +233,17 @@ A value **below** the detection limit is stored as the sentinel `-1.0000` with
 measurement. `above_det_limit: true` means the opposite end — the value is **over
 the method's upper range** (reported as the limit, e.g. `>10000`) — and it is
 `false` for every ordinary detected value.
+
+**Where the values are (0.3).** A drill-sample row names its assay by id only
+(`assay_id`); `?expand=assay` (or a merge request — `assay_config_id`,
+`merge_assays`) returns the nested record exactly as before. Read values from the
+flat table `GET /api/v2/assay-results/` — one row per sample × element × method,
+with `below_detection`, `above_det_limit`, `detection_limit`, `upper_limit`, the
+withheld flags and `qaqc_status` (always filled) — or, for a WHOLE project, export
+`assay_results` (`POST /api/v2/exports/` with `model: "assay_results"`, the connector's
+`export_link`, or the client's `export()`): one file, every flag kept. Field portable-XRF readings are
+listed beside laboratory results (`source_type`: `lab` / `field_xrf`;
+`?source_type=lab` reads lab values only).
 
 ### 3.5 `geometry` is EWKT, not GeoJSON
 
@@ -289,10 +300,33 @@ A value the laboratory reported below its detection limit is stored as `-1.0000`
 `below_detection: true` on the value; the threshold is that value's `detection_limit`. The
 sentinel is a marker, never a grade. Merged reads (exports) have already substituted it once per
 the project's settings (half the detection limit by default) — do not substitute it again.
+The merged `drill_samples` export SAYS so (the job's `notes`, and a parquet file's `geodb`
+metadata); for statistics, detection limits or flags, export `assay_results` instead.
+
+### 3.9 Answers point at the guide — `see_guide`
+
+The reads where a guide section changes how the answer should be read (`assay-results`,
+`assays`, `methods`, `drill-samples`, `qc-samples`, `qaqc-*`, `qc-configuration`,
+`detection-limits`, `drill-intercepts`, an export's job status) carry
+`see_guide: [{topic, section, url, why}]`. Read those sections before you report from the
+answer: `GET /api/v2/guide/<topic>/<section>/` returns one section (`?section=` does the same);
+`GET /api/v2/guide/<topic>/` returns the whole topic.
+
+### 3.10 Downhole positions are local-grid metres — `xyz_epsg`, `xyz_status`
+
+A drill-sample row's `xyz_from` / `xyz_to` are desurveyed `[x, y, z]` on the project's LOCAL
+GRID in metres — not a CRS, not WGS84 (the `xyz_*_wgs84` twins are EPSG:4326). `xyz_epsg`
+names the projected CRS a standard grid is built on (add the grid origin back, from
+`projects/{id}/coordinate-system/`); it is null for a custom mine grid, which has no EPSG
+relation — use the WGS84 twins there. `xyz_status` says why a position is missing:
+`ok` · `no_trace` · `no_local_grid` · `not_requested` · `failed`.
 
 ### Bonus trap: paging is `limit`/`offset`
 
-Lists page with **`limit`** (default 100, maximum 500) and **`offset`**. A
+Lists page with **`limit`** (default 100, maximum 500 — 2,000 on `assay-results/` and on
+lean `drill-samples/` rows) and **`offset`**. A larger `limit` is served at the cap and SAID:
+the envelope carries `limit_clamped: {asked, served}`. `assay-results/` counts its total on the
+first page only (later pages carry `count: null`; follow `next`). A
 parameter a list does not read — `page_size`, a guessed filter name — is
 **refused** `400 invalid_parameter`, and the refusal names the parameters that
 list honours; it is never silently ignored, so a wrong guess cannot quietly
@@ -337,6 +371,7 @@ Every refusal carries `reason_code` + `remedy`: act on the remedy.
 - `coordinates` · Coordinates: the native numbers, their CRS, and the derived WGS84 — [`skills/geodb/references/coordinates.md`](skills/geodb/references/coordinates.md) · `GET /api/v2/guide/coordinates/`
 - `drilling` · Drilling: the programme, drill intercepts, and sampling passes — [`skills/geodb/references/drilling.md`](skills/geodb/references/drilling.md) · `GET /api/v2/guide/drilling/`
 - `geochem` · Lithogeochemistry: indices, element-native screens, pathfinder suites — [`skills/geodb/references/geochem.md`](skills/geodb/references/geochem.md) · `GET /api/v2/guide/geochem/`
+- `geostatistics` · Geostatistics: compositing, declustering, capping and variography — [`skills/geodb/references/geostatistics.md`](skills/geodb/references/geostatistics.md) · `GET /api/v2/guide/geostatistics/`
 - `qaqc` · QAQC: reading geoDB's QC verdicts honestly — [`skills/geodb/references/qaqc.md`](skills/geodb/references/qaqc.md) · `GET /api/v2/guide/qaqc/`
 - `reports` · Reports: informal reports, sections, figures, and faithful numbers — [`skills/geodb/references/reports.md`](skills/geodb/references/reports.md) · `GET /api/v2/guide/reports/`
 - `sets` · Sets: several versions of the same downhole data, side by side — [`skills/geodb/references/sets.md`](skills/geodb/references/sets.md) · `GET /api/v2/guide/sets/`
@@ -413,21 +448,25 @@ given (`set_not_owned`).
 values is `skipped` (`record_exists`) and every differing field is named with
 both values (`conflicts`); nothing is overwritten. If the sent values should
 win, ask the user, then send `upsert` (or `update`): only the fields you send
-change, and the old values are kept for Undo. **Nulls:** in an `update`,
+change, and the old values are kept for Undo. The exception: values for an
+assay, standard or method that already exists are refused `undo_not_covered`
+(not skipped) — Undo cannot reach them yet; act on its remedy. **Nulls:** in an `update`,
 `"field": null` empties that field (Undo restores it) — a field that must
 always hold a value is refused `null_not_allowed`; in `create` / `upsert` a
 null means "not given" and leaves the stored value alone. A field you leave
 out is never changed.
 
-**7 · Read the answer.** `summary` counts the rows by status; each entry of
-`rows` is `{index, status, id, reason_code?, remedy?, …}`. Statuses:
+**7 · Read the answer.** `summary` counts the records by status (for a
+long-form record type — one row per value, like assay results — `values` counts
+the values); each entry of `rows` is `{index, status, id, reason_code?,
+remedy?, warnings?, …}`. Statuses:
 `created` · `updated` · `unchanged` · `skipped` · `refused` · `retracted` ·
 `restored`. Match on `reason_code`, act on `remedy`, never parse `detail`. A
 refusal of the whole request (a bad body, a key that may not write) is an
 HTTP error with the same `{reason_code, detail, remedy}`. A write that changed
 anything returns a `write_id` and an `undo` handle. A dry run of an intent
-that changes existing records carries `before_writing`: what to show the
-user before you send it.
+that changes existing records, or one that carries warnings, carries
+`before_writing`: what to show the user before you send it.
 
 **8 · Correct and remove.** `update` changes the fields you send on the
 records each row names (by `id` as a read returns it, or the identifying
@@ -669,6 +708,17 @@ that saves the cursor will skip the rows it never read.
 
 ## 6. Every refusal, and what to do about it
 
+A write is refused per row with a reason code (below — 0.3 adds `interval_invalid`: a
+negative depth, or `depth_from >= depth_to`) and answered per row with WARNING codes it
+did not refuse: every one, with its meaning and remedy, is in [`errors.json`](errors.json)
+`warning_codes`. 0.3 adds the import's own findings — `method_detection_limit_missing`,
+`qc_type_missing`, `sample_not_linked`, `value_unparseable` — and `value_rounded`,
+`fuzzy_sample_match`, `detection_limit_not_kept`, `value_unit_impossible`,
+`beyond_total_depth`. A dry run that carries warnings sets `before_writing`: tell the user
+each one before the real write. Write and Undo summaries count RECORDS and, for a
+long-form record type (assay results), VALUES (`summary.values`).
+
+
 Every 4xx carries the same shape:
 
 ```json
@@ -686,7 +736,7 @@ to do. `offending` names the thing at fault when there is one. Branch on
 
 <!-- BEGIN:reason-codes (generated by scripts/emit_agents.py — do not edit) -->
 
-**86 codes.** Generated from [`errors.json`](errors.json), which is itself generated from the server, so this table cannot fall behind what you will actually be refused with. Match on `reason_code`, never on `detail` prose.
+**87 codes.** Generated from [`errors.json`](errors.json), which is itself generated from the server, so this table cannot fall behind what you will actually be refused with. Match on `reason_code`, never on `detail` prose.
 
 `retry` — **no**: retrying the identical request cannot succeed. **after**: retry once `Retry-After` has elapsed. **maybe**: transient or state-dependent, safe to retry later.
 
@@ -700,6 +750,7 @@ to do. `offending` names the thing at fault when there is one. Branch on
 | `duplicate_in_batch` | 400 | no | (per row) An earlier row of the same request has the same identifying fields; the first one is kept. | Merge the duplicate rows into one, or correct the identifying fields of the second, and resend it. |
 | `idempotency_key_invalid` | 400 | no | The Idempotency-Key header is longer than 255 characters or contains control characters. | Send a printable key of at most 255 characters (a UUID is ideal). |
 | `intercept_cutoff_refused` | 400 | no | An intercept read named a grade cutoff or threshold. geoDB never chooses intercept boundaries: they are a geologist's judgement, and real intercepts open and close below their own average. | Read the hole's merged grades, propose boundaries and say why, then send them as interval=from:to. |
+| `interval_invalid` | 400 | no | (per row) The interval is impossible: a depth is negative, or depth_from is not less than depth_to (zero length or upside down). Nothing is stored for the row; the rest of the batch goes on. | Check the row's depths with the user (a swapped pair or a sign error is the usual cause), correct them, and resend the row. |
 | `invalid_crs` | 400 | no | (per row) "epsg" is not a known coordinate system, or it disagrees with the SRID inside the geometry. | Send the EPSG code (an integer, e.g. 26911) of the system the coordinates are in, matching the geometry's SRID if it has one. |
 | `invalid_geometry` | 400 | no | (per row) The coordinates or geometry cannot be a place: not numbers, half a pair, off the globe for a degree system, or a geometry that does not parse. The row is never counted as a clean create. | Correct the coordinates named in `offending` (or the epsg they are in) and resend the row; validate first with "dry_run": true. |
 | `invalid_parameter` | 400 | no | A query parameter was present but could not be understood. | Correct the parameter named in `offending` and resend. Dates are ISO 8601 (YYYY-MM-DD or a full timestamp). |
@@ -940,5 +991,5 @@ print(f"assay values: {len(values)}   e.g. {values[:2]}")
 | [`CONTRIBUTING.md`](CONTRIBUTING.md) | How to file a useful issue. |
 | [`SECURITY.md`](SECURITY.md) | How to report a vulnerability. |
 
-**Python client:** `pip install "geodb-client>=0.2,<0.3"` (paired with protocol 0.2) —
+**Python client:** `pip install "geodb-client>=0.3,<0.4"` (paired with protocol 0.3) —
 [source](https://github.com/geodbio/geodb-client).

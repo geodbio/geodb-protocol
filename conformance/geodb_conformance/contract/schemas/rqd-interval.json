@@ -1,9 +1,9 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://spec.geodb.io/exploration/v0.2.0/rqd-interval.json",
+  "$id": "https://spec.geodb.io/exploration/v0.3.0/rqd-interval.json",
   "title": "Geotechnical interval",
   "description": "Core recovery and rock-mass character over a depth interval: RQD, discontinuities, strength and weathering.\n\nGENERATED from the normative OpenAPI document (`spec/openapi.yaml`) — do not edit by hand; run `python scripts/regenerate.py`. The OpenAPI document is normative for the wire; this file is the same contract for one record type, readable on its own.",
-  "x-generated-by": "scripts/regenerate.py from spec/openapi.yaml (geoDB Open Exploration Protocol v0.2.0)",
+  "x-generated-by": "scripts/regenerate.py from spec/openapi.yaml (geoDB Open Exploration Protocol v0.3.0)",
   "x-openapi-component": "DrillRQDRead",
   "type": "object",
   "properties": {

@@ -157,7 +157,7 @@ Whole tables, built in the background, as GeoParquet / Parquet / CSV. One POST i
 | `exports_retrieve` | `GET /api/v2/exports/{job_id}/` | Poll an export job |
 | `exports_download_retrieve` | `GET /api/v2/exports/{job_id}/download/` | Download a finished export |
 
-## geoDB extensions — 122 operations
+## geoDB extensions — 123 operations
 
 Supported, project-scoped, and outside the contract. Read them freely against geoDB; do not expect them from another implementation.
 
@@ -170,7 +170,7 @@ Supported, project-scoped, and outside the contract. Read them freely against ge
 | Feedback | 1 |  |
 | Files | 10 | Project files, their raster map tiles, and elevation data. |
 | Geophysics | 2 | Geophysical survey acquisition metadata. The bulk data itself travels as STAC assets, which ARE core. |
-| Guide | 3 |  |
+| Guide | 4 |  |
 | Land Holdings | 2 | Mineral claims and other land holdings. A project chooses how much of this a grant may read. |
 | Map Layers | 8 | Vector layers, their features, and roads. |
 | Photos | 5 | Core photography and general project photographs. |

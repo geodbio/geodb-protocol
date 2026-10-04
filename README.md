@@ -31,7 +31,7 @@ missing *exploration* vocabulary.
 - **Spec + docs:** CC-BY-4.0 · **Schemas + code:** Apache-2.0
 - **Version:** `0.1.0` (pre-1.0 — the shape is stable, field details may still move)
 - **Reference implementation:** the geoDB API itself (this is not a paper standard)
-- **Python client:** [`geodb-client`](https://pypi.org/project/geodb-client/) — `pip install "geodb-client>=0.2,<0.3"` (the release paired with protocol 0.2)
+- **Python client:** [`geodb-client`](https://pypi.org/project/geodb-client/) — `pip install "geodb-client>=0.3,<0.4"` (the release paired with protocol 0.3)
 
 ## Two lanes
 

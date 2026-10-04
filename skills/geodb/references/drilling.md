@@ -34,7 +34,7 @@ negative meters value is a data-entry flag worth surfacing, not clipping.
 
 Merged grade reads return `depth_from` / `depth_to` / the hole name / one column
 per element. Below-detection values in a MERGED read are **ALREADY substituted**
-per the project's `AssayMergeSettings` (half the detection limit by default) —
+per the project's Assay Merge Settings (half the detection limit by default) —
 do NOT substitute them again, and do not treat the substituted value as a real
 measurement.
 

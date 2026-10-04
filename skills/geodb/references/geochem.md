@@ -1,6 +1,6 @@
 # Lithogeochemistry: indices, element-native screens, pathfinder suites
 
-The standard lithogeochem toolkit (AI, CCPI, Na-K, immobile screens, pathfinder profiles) with its authors, how to read what elements a project really has, and how a classified group becomes a derived set.
+The standard lithogeochem toolkit (AI, CCPI, Na-K, immobile screens, pathfinder profiles) with its authors, how to read what elements a project really has, which screens the digestion method breaks, how to use field (portable) XRF, and how a classified group becomes a derived set.
 
 Inputs are whole-rock MAJOR-ELEMENT OXIDES in wt% (`FeO*` = total iron as FeO —
 reconcile `Fe2O3` to FeO* with `FeO* = Fe2O3 * 0.8998`), except the pathfinder
@@ -45,8 +45,8 @@ dismissed as "only Ag/Cu/Pb").
   the oxide/element mass ratio): `SiO2 = Si×2.1393`, `Al2O3 = Al×1.8895`, `FeO = Fe×1.2865`
   (`Fe2O3 = Fe×1.4297`), `MnO = Mn×1.2912`, `MgO = Mg×1.6582`, `CaO = Ca×1.3992`,
   `Na2O = Na×1.3480`, `K2O = K×1.2046`, `TiO2 = Ti×1.6681`, `P2O5 = P×2.2916`. ICP values
-  are usually ppm → wt% = ppm/10000 first. (Total-digestion / whole-rock ICP only; a
-  partial/aqua-regia leach is NOT whole-rock — say so rather than force the conversion.)
+  are usually ppm → wt% = ppm/10000 first. (Whole-rock ICP: fusion, or four-acid without Si;
+  a partial/aqua-regia leach is NOT whole-rock — say so rather than force the conversion.)
 - **Or skip oxides entirely — the ELEMENT-native recipes.** For LITHOLOGY work (the common
   ask) you do NOT need oxides at all: **C4(ii)** is an immobile-element-vs-**Sc** lithology
   screen and **C5** pathfinder suites are element-ppm by design. When the project is
@@ -55,12 +55,95 @@ dismissed as "only Ag/Cu/Pb").
   (which tracks ORE, not rock type). e.g. "categorize lithologies" on this data → C4(ii)
   Sc-maficness screen or a Zr/Ti/Sc immobile-element frame, not an Ag-Cu scatter.
 
+**Which digestion produced the numbers decides which screens you can trust.**
+A four-acid ("near-total") digest dissolves most rock but not all of it.
+Resistate minerals (zircon, rutile, titanite, chromite, monazite, garnet)
+survive it in part, so the elements they host come back LOW, by an amount
+that varies from sample to sample with how much of that mineral is present:
+Zr and Hf most of all, then Nb, Ta, Ti, Cr and the heavy rare earths.
+Silicon is driven off during the digest and is not reported from it.
+Aqua regia is a partial leach and under-reports far more. A lithium-borate
+fusion (ICP-MS finish; or fused-bead XRF for Zr, Nb, Y and Ti) is the total
+method for these elements.
+
+- **Screens that suffer on four-acid data:** anything built on Zr or Hf
+  (Zr/Ti, Zr/Y, a Zr-vs-TiO2 immobility line, the Zr/Ti vs Nb/Y
+  classification, which reads too mafic and too alkaline; Zr/Hf fertility
+  ratios, which read falsely anomalous), heavy-rare-earth patterns, and any
+  oxide recalculation that needs SiO2.
+- **Screens that held up** in a published fusion-versus-four-acid comparison:
+  Ti/Nb vs V/Sc, Nb/Ta and the Eu anomaly, with Sc and V themselves
+  unaffected (Zivkovic et al. 2023, *Geochemistry: Exploration,
+  Environment, Analysis* 23, doi:10.1144/geochem2022-054).
+
+So before an immobile-element screen, read which method produced each
+element (the method's digestion and finish). If the immobile elements came
+from a four-acid or aqua-regia method, say so, prefer the ratios that survive
+it, and suggest fusion re-assay of a representative subset before anyone
+draws unit boundaries from Zr. Never plot fusion and four-acid values of one
+element as one population without saying so.
+
+**Field (portable) XRF is guidance, not a grade.** A reading taken on core or
+chips with a hand-held analyser is stored like an assay — a point down the
+hole with element values — under a reading session whose source is field XRF.
+geoDB keeps it OUT of lab-assay analytics, QC verdicts, intercepts, grade
+shells and merged reads by default. Use it for what it is good
+at — logging decisions, picking intervals to send to the lab, a downhole
+pathfinder profile — and always label it as field XRF. Never average it with
+lab results, never report it as a grade, and never use it in a resource
+estimate. Anything you derive from it is a new set, never an edit to
+someone's logged set.
+
+**What it measures well, and what it does not.** In a multi-instrument test
+on pulps (Hall, Bonham-Carter & Buchar 2014, *Geochemistry: Exploration,
+Environment, Analysis* 14, 99–123) the major elements except Mg read well
+(P and Cl lacked the sensitivity), as did Mn and Ti; As, Cu, Nb, Pb, Rb, Sr and Y very well and Ba, Mo, Sn, Zn and
+Zr well; Cr, Sb, Se, Th and U only moderately; Ag, Co, Ni and V poorly; and
+Au, Bi, Hf, Hg, Sc, Ta, Te and W very poorly. Known spectral overlaps (Pb on
+As, Zn on Au, U on Mo, Th on Bi, rare earths on the transition metals) can
+make one element read as another, and the ratios this section recommends sit
+among such overlaps (Sr on Zr, Rb on Y, Y on Nb): instrument software
+normally corrects them, but check in Sr- or Rb-rich, altered rock. A
+hand-held unit in air does not measure Na. Instruments differ markedly, so check the one that took the readings.
+
+**Telling volcanic (or any) units apart.** Use ratios of elements it measures
+robustly and that are usually immobile through alteration: Ti, Zr, Nb and Y
+(Zr/Ti, Nb/Y). An Sc- or V-based screen, and anything needing Mg or Na, is not
+a field-XRF job. Ratios cancel some of the surface and moisture effect that
+raw values carry. Colour the result by the logged lithology to test it, and
+offer any boundary it suggests to the geologist as a proposal.
+
+**What goes wrong, and how to tell.** The beam reads a spot about a
+centimetre across or less, and only the outermost layer of it (shallower
+still for the light elements): grain size, a vein, a weathered or cut face
+and a short count time all move a reading, so one shot is not the interval. Water
+dilutes and absorbs the signal, so wet core reads low. Calibration mode (soil
+or mining), instrument and campaign each shift the numbers, so readings from
+two of them are not one population until shown to be. Signs of trouble:
+values that step at a session or instrument change, a robust element that
+does not track the lab, an element sitting at its detection limit.
+
+**Calibrate against the lab before you interpret.** Pair field readings with
+lab assays of the same intervals (a total method for the immobile elements),
+plot field against lab per element, and use only elements whose pairs fall
+on a consistent line; correct by that line and say so. Read reference
+materials and a blank through each session to watch drift. A published
+workflow, including QA/QC, for field XRF in exploration: Fisher et al. 2014, *Geochemistry:
+Exploration, Environment, Analysis* 14, 149–159. However good the fit, a
+field reading is never a grade.
+
+**Field readings in the flat assay table.** The flat `assay-results/` table
+carries field-XRF readings beside lab results, each marked `source_type`
+`field_xrf`: filter on it before you compare field with lab or compute
+anything from lab values. The `field-xrf/` read returns the readings on
+their own, with their sessions and instruments.
+
 | Index | Formula | Attribution |
 |---|---|---|
-| **AI** (Ishikawa) | `AI = 100*(K2O + MgO) / (K2O + MgO + Na2O + CaO)` | Large, Gemmell, Herrmann, Paulick & Huston 2001, Econ. Geol. 96:957 |
+| **AI** (Ishikawa) | `AI = 100*(K2O + MgO) / (K2O + MgO + Na2O + CaO)` | Large, Gemmell, Paulick & Huston 2001, Econ. Geol. 96:957 |
 | **CCPI** | `CCPI = 100*(MgO + FeO*) / (MgO + FeO* + Na2O + K2O)` | Large et al. 2001 (denominator is Na2O+K2O — the +CaO variant is wrong) |
-| **SEDEX AI3** | `AI3 = 100*(FeO* + 10*MnO) / (FeO* + 10*MnO + MgO + Al2O3)` | Large 2001 (SEDEX/carbonate systems) |
-| **MnOd** | `MnOd = MnO * 40.03 / CaO` | Large 2001 (carbonate-chemistry vector; pair with Tl) |
+| **SEDEX AI3** | `AI3 = 100*(FeO* + 10*MnO) / (FeO* + 10*MnO + MgO + Al2O3)` | AI Mark 3: Large, Bull & McGoldrick 2000, J. Geochem. Explor. 68:105 (formula as presented by Large 2003, IGES); dolomitic sequences only |
+| **MnOd** | `MnOd = MnO * 30.41 / CaO` | Large & McGoldrick 1998, J. Geochem. Explor. 63:37 (dolomitic sequences only; pair with Tl) |
 | **Gresens ΔXn** | `dXn = w * (XB_n * (XA_im / XB_im) - XA_n)` — A=precursor, B=altered, _im=immobile ref (e.g. TiO2), w=100. Immobile n ⇒ ΔXn≈0 | Mathieu (Trepanier) 2018 Eq.18, Geosciences 8:245 |
 | **Immobility test** | on an immobile-vs-immobile binary (Al2O3 vs TiO2), co-precursor samples sit on a line THROUGH THE ORIGIN; report slope + Pearson r (r>0.85 ⇒ usable reference) | Large/Mathieu lineage |
 | **MER/PER** | convert wt%oxide→moles cation (`moles = wt% / molar_mass * cations`), then ratio over a CONSERVED denominator (Zr/TiO2/Al2O3) | Stanley 2020, GEEA 20:233 |
@@ -109,9 +192,9 @@ Te 0.027, Sn 2.1, W 1.9, Zn 67, Mn 774, Cu 28, Pb 17, Cs 4.9, Li 24, Au 0.0015.
 
 - **porphyry_cu** — oxyanion (zoned outflow) **Mo, Sn, W, Bi, Te, As, Sb, Tl** + chloride
   (peripheral doughnut) **Zn, Mn, Cu, Pb, Ag, Co, Ni**. Distal→proximal zonation
-  **Tl → Sb → As → Te → Bi → Se → Sn → Mo** (i.e. Mo proximal, Tl distal). Per-element ppm
-  thresholds (porphyry only): Mo>5, Sn>5, Bi>1, Te>1, As>50, Sb>5, Tl>2. Needs ICP-MS /
-  4-acid (AES DLs are too high for Bi/Te/Sb/Tl). *(Public porphyry-Cu workshop.)*
+  **Tl → Sb → As → Te → Bi → Se → Sn → Mo** (i.e. Mo proximal, Tl distal). ILLUSTRATIVE ppm
+  thresholds (porphyry only; tune to local background): Mo>5, Sn>5, Bi>1, Te>1, As>50, Sb>5, Tl>2. Needs ICP-MS /
+  4-acid (AES DLs are too high for Bi/Te/Sb/Tl).
 - **epithermal_au** — Au, Ag, As, Sb, Cs, Li, Mn (LSE clay-blanket; Barker et al. 2019).
   **vms** — Cu, Zn, Pb, Ag, As, Sb, Tl, Ba. **sed_cu** — Cu, Co, Ni (brine-pyrite
   signature). **orogenic_au** — Au, As, Sb, Cs, Li (Sb-Cs-Li outflow). These four have no
@@ -135,14 +218,3 @@ MINSQ = Herrmann & Berry 2002; crustal table = Rudnick & Gao 2003. The three-sta
 classify–alteration–vector WORKFLOW comes from industry workshop practice, but the
 FORMULAS are the toolkit above — put their authors on the chart, never a workshop
 presenter's name on a formula.
-
-**Field (portable) XRF is guidance, not a grade.** A reading taken on core or
-chips with a hand-held analyser is stored like an assay — a point down the
-hole with element values — under a reading session whose source is field XRF.
-geoDB keeps it OUT of lab-assay analytics, QC verdicts, intercepts, grade
-shells and merged reads by default. Use it for what it is good
-at — logging decisions, picking intervals to send to the lab, a downhole
-pathfinder profile — and always label it as field XRF. Never average it with
-lab results, never report it as a grade, and never use it in a resource
-estimate. Anything you derive from it is a new set, never an edit to
-someone's logged set.

@@ -155,21 +155,25 @@ given (`set_not_owned`).
 values is `skipped` (`record_exists`) and every differing field is named with
 both values (`conflicts`); nothing is overwritten. If the sent values should
 win, ask the user, then send `upsert` (or `update`): only the fields you send
-change, and the old values are kept for Undo. **Nulls:** in an `update`,
+change, and the old values are kept for Undo. The exception: values for an
+assay, standard or method that already exists are refused `undo_not_covered`
+(not skipped) — Undo cannot reach them yet; act on its remedy. **Nulls:** in an `update`,
 `"field": null` empties that field (Undo restores it) — a field that must
 always hold a value is refused `null_not_allowed`; in `create` / `upsert` a
 null means "not given" and leaves the stored value alone. A field you leave
 out is never changed.
 
-**7 · Read the answer.** `summary` counts the rows by status; each entry of
-`rows` is `{index, status, id, reason_code?, remedy?, …}`. Statuses:
+**7 · Read the answer.** `summary` counts the records by status (for a
+long-form record type — one row per value, like assay results — `values` counts
+the values); each entry of `rows` is `{index, status, id, reason_code?,
+remedy?, warnings?, …}`. Statuses:
 `created` · `updated` · `unchanged` · `skipped` · `refused` · `retracted` ·
 `restored`. Match on `reason_code`, act on `remedy`, never parse `detail`. A
 refusal of the whole request (a bad body, a key that may not write) is an
 HTTP error with the same `{reason_code, detail, remedy}`. A write that changed
 anything returns a `write_id` and an `undo` handle. A dry run of an intent
-that changes existing records carries `before_writing`: what to show the
-user before you send it.
+that changes existing records, or one that carries warnings, carries
+`before_writing`: what to show the user before you send it.
 
 **8 · Correct and remove.** `update` changes the fields you send on the
 records each row names (by `id` as a read returns it, or the identifying
@@ -244,6 +248,7 @@ Read the topic before answering a question in its area; each is `references/<id>
 - `coordinates` · Coordinates: the native numbers, their CRS, and the derived WGS84
 - `drilling` · Drilling: the programme, drill intercepts, and sampling passes
 - `geochem` · Lithogeochemistry: indices, element-native screens, pathfinder suites
+- `geostatistics` · Geostatistics: compositing, declustering, capping and variography
 - `qaqc` · QAQC: reading geoDB's QC verdicts honestly
 - `reports` · Reports: informal reports, sections, figures, and faithful numbers
 - `sets` · Sets: several versions of the same downhole data, side by side

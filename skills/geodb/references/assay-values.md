@@ -1,6 +1,6 @@
 # Assay values: below detection, over range, and laboratory statuses
 
-How a below-detection result is stored (the `-1` sentinel) and why it is never a grade, where detection limits live, what over-range values and lab statuses mean, and when a substitute has already been applied.
+How a below-detection result is stored (the `-1` sentinel) and why it is never a grade, where detection limits live, what over-range values and lab statuses mean, when a substitute has already been applied, and how to spot a unit error.
 
 ### Below detection is a state, not a number
 
@@ -14,8 +14,8 @@ averaged in with real results.
 ### Where a detection limit comes from
 
 A below-detection value's threshold is resolved in two tiers. Most methods
-have a FIXED limit per element, on the method's per-element row (`MethodUnit`:
-`element`, `detection_limit`, `upper_limit`, `units`), never on the assay row.
+have a FIXED limit per element, on the method's per-element row (`element`,
+`detection_limit`, `upper_limit`, `units`), never on the assay row.
 A FLOATING-limit method (`is_floating_dl`, e.g. photon assay) reports the
 lab's "<X" threshold per sample instead, in the sample's
 `detection_limit_per_sample`. So the limit is the per-sample value when the
@@ -52,3 +52,35 @@ been substituted, and is never substituted again. When you compute statistics
 from raw values, use the project's substitute rather than dropping
 below-detection samples (dropping them biases the low tail), unless the user
 asks to exclude them, and say which you did.
+
+### Read a value against its method before trusting its unit
+
+A unit error does not look like an error: it moves every value by an exact
+factor and leaves a tidy table. As units, 1 ppm = 1 g/t = 1000 ppb (so a
+value in ppb is a thousand times the same value in ppm) and 1 % = 10 000 ppm.
+Before any statistic, read
+each element's values beside its method's detection limit and upper limit
+(the method's per-element row, in the method's units) and beside the range
+that element plausibly takes in rock:
+
+- **The ppb-labelled-ppm signature:** values about a thousand times the
+  element's usual range, whose smallest detected values sit near a thousand
+  times the method's detection limit, with nothing between the limit and
+  there (gold in ordinary drill core reading tens to thousands of "ppm").
+  That is a ppb result stored under a ppm label.
+- **The reverse, ppm stored as ppb:** most values at or below the detection
+  limit and grades a thousand times too low for the rock.
+- **Detected values below the method's own detection limit** (or, for a
+  floating-limit method, below the sample's own limit): the limit or the unit
+  is wrong for those rows.
+- **One element on two methods disagreeing by about a thousand times** over
+  the same samples: one of the two carries the wrong unit.
+- **A percentage above 100, or ppm above a million:** physically impossible;
+  a unit or decimal error.
+
+When you see one, REPORT it: the element, the method, how many values, and
+the evidence (the ratio to the detection limit, the range you expected).
+Never rescale, relabel or drop the values yourself, and never compute a
+statistic over the suspect rows as if they were right. The fix belongs to
+the user (correct the method's unit, or re-import), because a unit corrected
+in one answer is still wrong in every export and every other reader.

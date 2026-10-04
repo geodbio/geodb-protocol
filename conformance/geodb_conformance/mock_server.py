@@ -347,11 +347,13 @@ METHOD = {
 def _make_drill_samples(collars):
     rows = []
     for index, collar in enumerate(collars):
+        # Protocol 0.3: a grant's drill-sample LIST row is lean — the assay
+        # by id (expand=assay restores the record), no project / sampling-pass
+        # objects (project_id, set_id / set_name say them) — and its positions
+        # say what they are (xyz_epsg) and why one is missing (xyz_status).
         rows.append({
             'id': 262072 + index,
             'name': f'SB{index + 101:05d}',
-            'project': {'name': 'Mock Sandbox (projected UTM 15N)',
-                        'company': 'Mock Co'},
             'bhid': {'hole_id': collar['name'],
                      'project': 'Mock Sandbox (projected UTM 15N)',
                      'company': 'Mock Co'},
@@ -360,21 +362,19 @@ def _make_drill_samples(collars):
             'display_units': 'M',
             'xyz_from': None, 'xyz_to': None,
             'xyz_from_wgs84': None, 'xyz_to_wgs84': None,
+            'xyz_epsg': NATIVE_EPSG, 'xyz_status': 'no_trace',
             'images': [],
             'notes': None,
             'date_collected': None,
             'collected_by': None,
             'length_units': 'M',
             'lab_status': 'CO',
-            'assay': None,
+            'assay_id': None,
             'submittal': None,
             'submittal_name': None,
             'package_number': None,
             # Specific-gravity inputs (grams); null when not measured.
             'dry_weight': None, 'wet_weight': None,
-            'drill_sample_set': {'id': 18, 'name': 'default',
-                                 'kind': 'primary',
-                                 'description': 'System default sampling pass'},
             'date_created': '2026-09-21',
             'last_edited': '2026-09-21',
         })

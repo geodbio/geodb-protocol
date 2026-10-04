@@ -33,7 +33,7 @@ engine already owned those rules.
 
 **A QC row the user cannot find is far more often HIDDEN than missing.**
 `Assay` and `QCSample` carry `qaqc_excluded` — set when the parent
-certificate's `QAQCApproval.status='rejected'` — and the web grids hide those
+certificate's QAQC review is rejected — and the web grids hide those
 rows by default (the QC Samples page's "Show Rejected" is the user's switch).
 Whether a data read returns them depends on how it asks.
 **Quick Log does not filter on it**, so one project legitimately shows more QC
@@ -88,7 +88,7 @@ numbers; never recompute a pass rate, and if you disagree, say why.
 **Working through a project's QAQC, from geoDB's reads.** Read in this order,
 and report what the reads say before anything of your own:
 
-1. **The QC rules in force** — the thresholds, the blank limits per element,
+1. **The QC rules in force** (`qc-configuration/`) — the thresholds, the blank limits per element,
    the duplicate criteria, the elements left out of pass rates. A blank with
    no limit for an element is judged `unknown` there: missing configuration,
    not a clean blank.
@@ -151,7 +151,7 @@ id; say so when you report it.
 
 ⚠️ **Deleting a certificate DOES take its assays — and leaves its QC samples
 standing.** A certificate delete cascades to its assays, its QAQC approval and
-its saved QC charts (`qaqc_charts`). `QCSample` is deliberately NOT in it: the
+its saved QC charts. `QCSample` is deliberately NOT in it: the
 QC sample is the PARENT of the QC chain (a bag of material actually inserted in
 the field) and the assay is only one lab's result for it, so deleting the bag
 because a result was withdrawn would destroy the record that QC *was* inserted
@@ -161,12 +161,12 @@ certificate. Report it that way — the values are recoverable from the Trash,
 not lost, and the result can be reconnected.
 
 ⛔ **Two ERAS of this, and a row can be in either — check, don't assume.**
-Until 2026-09-01 the web grid's delete button soft-deleted the certificate
-ALONE, orphaning live `Assay` rows under a deleted parent: the user saw results
-but could not find the certificate, and a re-import was refused as a duplicate
-against rows they could not trace. That defect is fixed and the historical
-orphans were repaired — so say "was", not "is", and resolve the actual row
-(deleted rows included) before explaining. Never say the record is gone.
+An earlier web-grid delete soft-deleted the certificate ALONE, orphaning live
+`Assay` rows under a deleted parent: the user saw results but could not find
+the certificate, and a re-import was refused as a duplicate against rows they
+could not trace. That is fixed and the orphans were repaired — so say "was",
+not "is", and resolve the actual row (deleted rows included) before
+explaining. Never say the record is gone.
 
 ⭐ **An INVENTORY that mentions deleted rows must COUNT them, per model.** A
 default read returns live rows only. So when the user says *"include
@@ -181,7 +181,7 @@ the rows the cleanup was about.)
 
 ⛔ **Read the type from `qc_type`, NEVER `sample_type`.** `qc_type` (the QC
 type: `.name`, `.category`) is what every verdict reads. `sample_type` is a
-frozen column marked *"Legacy field"* in the code, used only as a fallback when
+frozen legacy column, used only as a fallback when
 `qc_type` is empty — and its enum has **no Field
 Duplicate code**, so a correctly-typed row reads EMPTY there. Reporting
 "N untyped QC rows" off `sample_type` invents a cleanup the user cannot do.
@@ -215,12 +215,12 @@ extrapolate a count.
 never imply the data is bad, never propose clearing the flag, never re-judge
 the certificate.
 
-#### Rejection is judged PER VALUE, not per row (2026-08-27)
+#### Rejection is judged PER VALUE, not per row
 
 ⭐ **A rejection has a ROW half and a VALUE half.** A sample row is
 keyed `(name, project)` and ACCUMULATES values across lab jobs; every value
-carries `AssayUnit.certificate` — **the job that PRODUCED it**, which is NOT
-always `Assay.certificate` (the job that CREATED the row). They differ on any
+carries its OWN certificate — **the job that PRODUCED it**, which is NOT
+always the row's certificate (the job that CREATED the row). They differ on any
 row a second lab landed onto. ⛔ Never "fix" one to match the other.
 
 So *"is this showing?"* has two answers, and you must give the right one:
@@ -230,9 +230,8 @@ So *"is this showing?"* has two answers, and you must give the right one:
 * **The VALUE** from a rejected job is hidden on that surviving row — in QAQC,
   merged reads, exports, map, 3D and cert-scoped dataroom views.
 
-⇒ Rejecting lab A's certificate no longer takes lab B's values down with it,
-and rejecting lab B is no longer a no-op. Before this shipped, both were true
-and both were wrong.
+⇒ Rejecting lab A's certificate does not take lab B's values down with it,
+and rejecting lab B is not a no-op.
 
 **What this changes in your answers.** A user who says *"I rejected that cert
 and my other lab's numbers vanished"* is describing OLD behaviour — say it was
@@ -242,11 +241,11 @@ value on it is live. Name **which job** is still live, from each value's OWN
 certificate — never the row header; quoting the header as the source of a value
 is the exact wrong answer that column exists to prevent.
 
-⚠️ **Values landed BEFORE 2026-08-27 carry the ROW's certificate**, because the
-backfill could only copy the parent's. On a pre-existing merged row a second
-lab's values therefore still read as the first lab's job until that job is
-re-landed. Say so plainly when provenance looks wrong on old data — it is a
-known limit of the backfill, not a bug and not the user misremembering.
+⚠️ **Older values can carry the ROW's certificate**: values landed before
+per-value provenance existed were back-filled from the row. On such a merged
+row a second lab's values therefore still read as the first lab's job until
+that job is re-landed. Say so plainly when provenance looks wrong on old data — it is a
+known limit of the back-fill, not a bug and not the user misremembering.
 
 ⭐ **A cert-scoped view keeps its OWN values even when rejected** — a rejected
 certificate's page must still show why it was rejected. That is deliberate;
@@ -280,10 +279,10 @@ excludes data they need (it can mean excluding a whole live certificate). Never 
   rejected primary with no assay and `lab_status='SU'` is the EXPECTED state,
   not a sync failure. The re-assay's certificate re-links it by name through
   the ordinary import path and the status returns to AN on its own.
-- `QCSample` → `qaqc_excluded=True` and the assay FK is **KEPT** (the audit
+- `QCSample` → `qaqc_excluded=True` and it **KEEPS** its link to the assay (the audit
   chain back to the failed cert). Un-rejecting clears the flags but never
   re-links a primary. A re-imported QC keeps its lab name — rejected names are
-  reclaimable (the unique key excludes the flag) — so after a re-assay one name
+  reclaimable (a rejected row does not hold the name) — so after a re-assay one name
   can legitimately be TWO rows: one rejected, one live.
 
 **Where rejected rows are HIDDEN vs SHOWN — say which, never "gone":**
@@ -313,8 +312,8 @@ it follows its parent primary in every respect.
 
 **The reply shape for "where did my QC go":** name the certificate and the
 rejection date, point at the grid's "Show Rejected (N)" button, say what the
-counters now do, and stop. Two edges once open are CLOSED — describe the
-behaviour, never call them gaps. The mobile pack scan answers a rejected QC
+counters now do, and stop. Two related behaviours are by design — describe
+them, never call them gaps. The mobile pack scan answers a rejected QC
 bag's barcode with *"matches QC sample X from a rejected certificate —
 not active inventory"* and counts only LIVE rows as duplicates (a re-assay's
 live twin is not a duplicate of its rejected twin). The classic cert-import
@@ -325,7 +324,7 @@ written, the checkbox stays the user's, and the result lists every skipped
 
 - **The verdict engine.** Standards: |z|≤2 pass / ≤3 warn / >3 fail; a bias
   fallback (10%/15%) only when no SD is usable; a |bias|>50% ceiling fails a
-  row even at low z (per-project `QAQCProtocol.standards_max_pass_bias`) but is
+  row even at low z (a per-project QC setting) but is
   only consulted where z said pass. ⭐ **A CRM certified at or below the
   method's detection limit cannot get an accuracy verdict from that method:**
   the method cannot resolve that element on that standard, so a
@@ -335,20 +334,20 @@ written, the checkbox stays the user's, and the result lists every skipped
   excused; a below-detection reading of a value the method CAN resolve is
   still a real failure.
   Duplicates: a TWO-REGIME verdict — both results ≥
-  `QAQCProtocol.duplicate_dl_multiple` × DL ⇒ RPD against the tier threshold
+  the project's duplicate DL multiple × DL ⇒ RPD against the tier threshold
   (field 20%/30%, **coarse 20%/30% on its own rung**, pulp+lab 10%/15%);
   either result below ⇒ an **absolute** test, fail only if `|a−b| > 1 × DL`
-  (warn to 1.5× that). `duplicate_dl_multiple` is **NULL-means-5×** — the
-  floor ships ON, the opposite convention to `blank_dl_multiple`, because it
+  (warn to 1.5× that). That multiple is **unset-means-5×** — the
+  floor ships ON, the opposite convention to the blank multiple, because it
   can only ever REMOVE failures; `0` switches it off. A **never-stricter
   guard** takes the more permissive of the two tests in the absolute regime,
   so the floor can only rescue a pair and raising the multiple is monotone.
   The per-element project override is resolved AFTER the tier: it tightens
   any tier and may loosen only field. Blanks: a THRESHOLD LADDER — (1) the
-  linked certified blank's supplier `<` bound, (2) a `BlankWarningLimit` row
-  (element lookup case-robust, exact case wins), (3)
-  `QAQCProtocol.blank_dl_multiple` × detection limit, **NULL by default and
-  NULL means skip the rung**, (4) nothing ⇒ **`'unknown'`, never `'pass'`**;
+  linked certified blank's supplier `<` bound, (2) a per-element blank warning
+  limit (element match case-robust, exact case wins), (3)
+  the project's blank DL multiple × detection limit, **unset by default, and
+  unset means skip the rung**, (4) nothing ⇒ **`'unknown'`, never `'pass'`**;
   warn band still threshold × 1.5. Each row carries `threshold_source` +
   `threshold_reason` so the page can say which rung answered — and duplicate
   rows carry the same pair plus `duplicate_regime`, because two rows in one
@@ -361,20 +360,18 @@ written, the checkbox stays the user's, and the result lists every skipped
   Z-score — for that the user RETYPES the row to a standard, their call. Never
   imply the link did more than it did.
   ⛔ Near-DL duplicate pairs are RE-JUDGED, never dropped.
-- **Two DOCUMENTED divergences — state them, never paper over them:**
-  1. **Two SD ladders.** The certificate page/approval resolves SD as 1SD →
-     calc-SD (the batch's own scatter) → 2SD-derived → 0; the project-summary
-     reads resolve 1SD → 2SD-derived → bias fallback. Deliberate and recorded.
-     Consequence: the two surfaces can disagree for CRMs without a certified
-     1SD. The calc-SD rung is unsupported by industry guidance — never
-     *recommend* it (`qaqc_missing_certified_sd`).
-  2. ~~**Blank surfaces disagree.**~~ **CLOSED 2026-08-03.** Both surfaces
-     now run the same blank ladder (before, a missing limit read as a silent
-     pass on one and usually a fail on the other), so an unjudgeable blank is
-     `'unknown'` and
-     EXCLUDED from the denominator everywhere. If blanks read all-`unknown`,
-     that is missing configuration honestly reported — not clean blanks
-     (`qaqc_blank_thresholds`).
+- **One DOCUMENTED divergence — state it, never paper over it: two SD
+  ladders.** The certificate page/approval resolves SD as 1SD →
+  calc-SD (the batch's own scatter) → 2SD-derived → 0; the project-summary
+  reads resolve 1SD → 2SD-derived → bias fallback. Deliberate and recorded.
+  Consequence: the two surfaces can disagree for CRMs without a certified
+  1SD. The calc-SD rung is unsupported by industry guidance — never
+  *recommend* it (`qaqc_missing_certified_sd`).
+- **Blanks read the same everywhere.** Every surface runs the same blank
+  ladder, so an unjudgeable blank is `'unknown'` and EXCLUDED from the
+  denominator everywhere. If blanks read all-`unknown`, that is missing
+  configuration honestly reported — not clean blanks
+  (`qaqc_blank_thresholds`).
 - **Rows and statistics.** Certified values are method-matched (digestion +
   finish fingerprint); the detection limit is resolved onto standard, blank
   AND duplicate rows (duplicates carry both sides' limits and are judged
@@ -385,19 +382,32 @@ written, the checkbox stays the user's, and the result lists every skipped
   critical) + an evidence advisor that states on the approval page what the
   QC evidence supports (no QC at all, a missing QC type, a below-floor
   insertion rate, a category nothing could be judged in). Every approval
-  snapshots that guidance onto `QAQCApproval.qc_guidance`.
+  snapshots that guidance onto the approval record.
 
   ⚠️ **GUIDANCE, NOT PROHIBITION.** Approval is never blocked and no reason is
   ever required — a company manager may approve any certificate they want to,
-  including one with zero QC (most certificates in geoDB have none,
-  overwhelmingly legacy imports). So an `approved` status is a manager's
+  including one with zero QC (many certificates carry none, especially
+  historical imports). So an `approved` status is a manager's
   decision, NOT evidence that QC was present or passing. If asked whether a
   certificate's QC is good, do not read the approval status as the answer;
-  `qc_guidance` on the approval records the evidence, and it is NULL on
-  approvals written before 2026-08-03 (those simply predate the guidance —
+  the guidance snapshot on the approval records the evidence, and older
+  approvals have none (they simply predate the guidance —
   never flag, question or re-open a signed-off certificate that did not flip
   pass↔fail). The page also draws control charts with certified asymmetric
   2SD/3SD bands, contamination and precision.
+
+**Where the project's QC rules live: `qc-configuration/`.** Every threshold
+the verdict engine applies can be set per project, so the industry defaults
+are only defaults. One read returns the rules in force as geoDB resolves them
+now: the standards Z and bias thresholds with the maximum-bias ceiling, the
+blank and duplicate detection-limit multiples, the per-element blank warning
+limits and duplicate RPD thresholds, the elements left out of pass rates, the
+QC protocol's insertion intervals, and whether results wait for QAQC approval
+before they are used. Read it before you explain a verdict or quote a limit,
+and quote the project's value, not a default it may have overridden. An
+element with no blank limit is judged `unknown` there: missing configuration,
+not a clean blank. These rules are changed by the user on the project's QAQC
+settings pages, never by a data write.
 
 Your own analysis = **what the pages don't draw**. Frame every result as
 analysis, never as the official verdict — and label every statistic (RPD =
@@ -466,7 +476,7 @@ exclude via the same convention the engine uses, and say when you excluded.
 Certified 2SD bounds are asymmetric — never symmetrize. And the standing
 rule: **no invented thresholds.**
 
-⛔ **`QCSample.weight` has no unit column** — the number is stored bare. Quote
+⛔ **A QC sample's `weight` has no unit column** — the number is stored bare. Quote
 it as entered and say the unit is not recorded; never assume kg or g, never
 convert it.
 
@@ -499,14 +509,14 @@ name the QP. ⚠️ Draft these for the elements the blanks EXIST TO POLICE, nev
 across a whole multi-element scan — a barren blank legitimately carries
 percent-level Na/Ca/Fe/Mg, thousands of times their DL (a global 10× floor
 over a multi-element suite produces thousands of false warn/fail readings).
-The project-wide alternative is `QAQCProtocol.blank_dl_multiple` (rung 3 of
-the verdict ladder, NULL by default = no floor) — offer it only when the
+The project-wide alternative is the project's blank DL multiple (rung 3 of
+the verdict ladder, unset by default = no floor) — offer it only when the
 project's blanks and elements genuinely suit one number. **(3)** else LIST the
 pair as "cannot draft — no detection limit on the method" (passing path: add
 the DL on the method settings page). Never silently skip a pair. Units must be
 the method's REPORTING units.
 
-**The QC configuration's shape.** `QAQCProtocol` intervals are "one every N
+**The QC configuration's shape.** The QC protocol's intervals are "one every N
 samples": CONVERT percentage targets to 1-in-N (5% ⇒ interval 20); there are
 NO rate/percentage columns and NO umpire field (insertion shape: ~20% total,
 ~4–6% per type — `qaqc_insertion_rates`).

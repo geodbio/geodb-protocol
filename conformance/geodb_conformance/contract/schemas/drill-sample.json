@@ -1,9 +1,9 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://spec.geodb.io/exploration/v0.2.0/drill-sample.json",
+  "$id": "https://spec.geodb.io/exploration/v0.3.0/drill-sample.json",
   "title": "Drill sample",
   "description": "A sample cut from an interval of core or cuttings, and sent to a laboratory.\n\nGENERATED from the normative OpenAPI document (`spec/openapi.yaml`) — do not edit by hand; run `python scripts/regenerate.py`. The OpenAPI document is normative for the wire; this file is the same contract for one record type, readable on its own.",
-  "x-generated-by": "scripts/regenerate.py from spec/openapi.yaml (geoDB Open Exploration Protocol v0.2.0)",
+  "x-generated-by": "scripts/regenerate.py from spec/openapi.yaml (geoDB Open Exploration Protocol v0.3.0)",
   "x-openapi-component": "DrillSampleRead",
   "type": "object",
   "properties": {
@@ -20,7 +20,7 @@
         "null"
       ],
       "additionalProperties": true,
-      "description": "Natural key of the project: `{\"name\", \"company\"}`."
+      "description": "Natural key of the project: `{\"name\", \"company\"}`. Omitted from lean list rows (read the record by id, or list with `expand`)."
     },
     "bhid": {
       "type": [
@@ -87,6 +87,24 @@
       },
       "description": "Desurveyed position at `depth_to` as `[longitude, latitude, elevation]` in WGS84 degrees."
     },
+    "xyz_epsg": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "EPSG of the projected CRS the project LOCAL GRID is built on (the `crs_epsg` of `GET /api/v2/projects/{id}/coordinate-system/`). `xyz_from` / `xyz_to` are metres from that grid's origin (offset, possibly rotated) — add the origin back (after the rotation) to get coordinates in this EPSG; `xyz_*_wgs84` are EPSG:4326. Null when the project has no grid, and when its local grid is a custom mine grid (calibrated, possibly in feet, not an offset of any EPSG): use the `xyz_*_wgs84` twins there."
+    },
+    "xyz_status": {
+      "type": "string",
+      "enum": [
+        "ok",
+        "no_trace",
+        "no_local_grid",
+        "not_requested",
+        "failed"
+      ],
+      "description": "Why the positions are what they are: `ok` — both ends desurveyed; `no_trace` — the hole has no computed trace, or its trace does not reach this depth (the end it reaches is still sent; the WGS84 twins need both ends); `no_local_grid` — the project has no local grid, so nothing can be placed; `not_requested` — the read asked `include_xyz=false`; `failed` — the collar could not be placed on the grid (no collar position, or a transform error)."
+    },
     "images": {
       "type": "array",
       "items": {
@@ -147,7 +165,7 @@
       ]
     },
     "assay": {
-      "description": "The assay on this sample, or null when it has not been assayed. An object: the assay record by default, or merged per-element values when the request names an assay configuration (`merged: true`).",
+      "description": "The assay on this sample, or null when it has not been assayed. An object: the assay record by default, or merged per-element values when the request names an assay configuration (`merged: true`). Sent only with `expand=assay` (or a read sending `assay_config_id` / `merge_assays`); otherwise `assay_id` names it.",
       "oneOf": [
         {
           "type": "object",
@@ -444,7 +462,7 @@
         "object",
         "null"
       ],
-      "description": "The sampling pass this interval belongs to, or null when it has not been assigned to one. A pass groups the intervals sampled together in one campaign, so two passes may cover the same depths for different purposes.",
+      "description": "The sampling pass this interval belongs to, or null when it has not been assigned to one. A pass groups the intervals sampled together in one campaign, so two passes may cover the same depths for different purposes. Omitted from lean list rows (read the record by id, or list with `expand`).",
       "properties": {
         "id": {
           "type": "integer"
@@ -497,6 +515,13 @@
     "project_id": {
       "type": "integer",
       "description": "The project this record is in (a credential may read several; GET /api/v2/grant-context/ names them)."
+    },
+    "assay_id": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Id of the assay record (one per sample: `assays/{id}/`). An assay a QAQC review withholds is left out of `assays/` and `assay-results/` by default, so this id may join to nothing there; their `withheld` counts say so. Ask with `include_excluded=true` to receive it, flagged."
     },
     "data_warnings": {
       "type": "array",
@@ -567,25 +592,24 @@
     }
   },
   "required": [
-    "assay",
     "bhid",
     "date_created",
     "depth_from",
     "depth_to",
     "display_units",
-    "drill_sample_set",
     "dry_weight",
     "id",
     "images",
     "last_edited",
     "name",
     "package_number",
-    "project",
     "submittal",
     "submittal_name",
     "wet_weight",
+    "xyz_epsg",
     "xyz_from",
     "xyz_from_wgs84",
+    "xyz_status",
     "xyz_to",
     "xyz_to_wgs84"
   ],

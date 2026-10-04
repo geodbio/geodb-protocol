@@ -229,6 +229,12 @@
       "remedy": "Read the hole's merged grades, propose boundaries and say why, then send them as interval=from:to.",
       "retry": "no"
     },
+    "interval_invalid": {
+      "http": 400,
+      "meaning": "(per row) The interval is impossible: a depth is negative, or depth_from is not less than depth_to (zero length or upside down). Nothing is stored for the row; the rest of the batch goes on.",
+      "remedy": "Check the row's depths with the user (a swapped pair or a sign error is the usual cause), correct them, and resend the row.",
+      "retry": "no"
+    },
     "interval_overlap": {
       "http": 409,
       "meaning": "(per row) The interval overlaps another interval of the SAME set in the same hole; within one set intervals may not overlap.",
@@ -525,6 +531,11 @@
     }
   },
   "warning_codes": {
+    "beyond_total_depth": {
+      "meaning": "(per-row warning) The interval runs past its hole's recorded total depth; the detail names the hole, its total depth and the depth.",
+      "remedy": "Check the depth (and its unit) with the user; if the hole was drilled deeper than recorded, the hole's total depth needs correcting instead.",
+      "retry": "no"
+    },
     "crs_implausible": {
       "meaning": "(per-row warning) The coordinates look like degrees but the epsg is a projected system (or the reverse) \u2014 the web import's plausibility rule. Stored exactly as sent.",
       "remedy": "Check the epsg with the user; if it was wrong, resend the row with the right one (intent \"upsert\").",
@@ -533,6 +544,11 @@
     "depth_units_implausible": {
       "meaning": "(batch warning) Depths run past the hole's total depth \u2014 the mislabeled-units signature (feet under a metres header). The rows landed.",
       "remedy": "Check the depth units with the user; if they were wrong, correct the rows (intent \"upsert\").",
+      "retry": "no"
+    },
+    "detection_limit_not_kept": {
+      "meaning": "(per-row warning) A below-detection result (\"<x\", or a negative number) is stored as below detection, but its x is not the method's detection limit (or the method has none), so the reported limit is kept nowhere.",
+      "remedy": "Tell the user. If x is the lab's detection limit for this method, write it on the method (model \"Method\", intent \"upsert\") before the results \u2014 a method is shared by the whole company, so a key that does not reach every project of it is refused out_of_scope, and then the user sets it on the web; otherwise say the reported limit is not stored.",
       "retry": "no"
     },
     "external_id_conflict": {
@@ -555,9 +571,29 @@
       "remedy": "Read the detail; tell the user if it matters to them.",
       "retry": "no"
     },
+    "fuzzy_sample_match": {
+      "meaning": "(per-row warning) A name the row refers to (a laboratory) matched an existing record by resemblance, not exactly; the row is attached to that record. The detail names both.",
+      "remedy": "Confirm with the user that it is the same record; resend with the exact existing name to avoid the warning, or use a clearly different name if it is a different one.",
+      "retry": "no"
+    },
     "geometry_ring_closed": {
       "meaning": "(batch warning) A polygon's ring was not closed and was closed for it; the misclosure is reported.",
       "remedy": "If the misclosure is large, check the geometry with the user.",
+      "retry": "no"
+    },
+    "method_detection_limit_missing": {
+      "meaning": "(batch warning) These (method, element) pairs have no detection limit on their method, so a below-detection result keeps no limit at all.",
+      "remedy": "If the lab reported detection limits, write them on the method first (model \"Method\", intent \"upsert\", with detection_limit and units), then the results. A method is shared by the whole company: a key that does not reach every project of it is refused out_of_scope, and then the user sets the limit on the web. Tell the user which pairs have none.",
+      "retry": "no"
+    },
+    "qc_type_missing": {
+      "meaning": "(per-row warning) The sample name looks like a lab QC marker (a standard, blank or duplicate) but the row carries no qc_type, so it lands as a routine sample and never reaches the QAQC checks.",
+      "remedy": "Ask the user whether it is QC. If it is, resend the row with its qc_type (and the standard it is); if it is a real sample id, go on.",
+      "retry": "no"
+    },
+    "sample_not_linked": {
+      "meaning": "(per-row warning) No sample of this name exists in the project, so the result is stored but waits unlinked to any sample. A misspelt sample name is the usual cause.",
+      "remedy": "Compare the name with the project's samples (read drill-samples/ or point-samples/); if it is misspelt, correct it before the write. If the sample is simply not written yet, say so to the user: it links when it is.",
       "retry": "no"
     },
     "set_exists_derived_from_ignored": {
@@ -568,6 +604,21 @@
     "stored_differently": {
       "meaning": "(per-row warning) The row WAS written, but the stored values differ from what was sent (geoDB normalised them); `conflicts` lists each field with `stored` and `sent`. The row is not refused and Undo reaches it.",
       "remedy": "Read the record back and tell the user how it was stored; if the sent value must win, correct it with an update.",
+      "retry": "no"
+    },
+    "value_rounded": {
+      "meaning": "(per-row warning) The value has more decimal places than the database keeps; it is stored rounded. The detail names the value sent and the value stored.",
+      "remedy": "Nothing is refused. Tell the user the value is stored rounded; if the extra precision matters, it is lost here.",
+      "retry": "no"
+    },
+    "value_unit_impossible": {
+      "meaning": "(per-row warning) The value is physically impossible in its unit (more than 100 %, 1,000,000 ppm or 1,000,000,000 ppb). A unit mix-up (ppb read as ppm, a fraction read as percent) or a typo is the usual cause. It is stored as sent.",
+      "remedy": "Show the user the value and its unit before the write; correct the value or the unit, and never change it without asking.",
+      "retry": "no"
+    },
+    "value_unparseable": {
+      "meaning": "(per-row warning) The result is neither a number nor a lab status; nothing is stored for it.",
+      "remedy": "Ask the user what the lab meant, correct the value (a number, \"<x\", \">x\" or a lab status) and resend the row.",
       "retry": "no"
     },
     "write_not_recorded": {

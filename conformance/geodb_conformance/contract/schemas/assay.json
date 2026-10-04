@@ -1,9 +1,9 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://spec.geodb.io/exploration/v0.2.0/assay.json",
+  "$id": "https://spec.geodb.io/exploration/v0.3.0/assay.json",
   "title": "Assay result",
   "description": "One sample's laboratory results: a row per sample carrying its analyte values in `elements[]`, each traceable to the method and certificate that produced it.\n\nGENERATED from the normative OpenAPI document (`spec/openapi.yaml`) — do not edit by hand; run `python scripts/regenerate.py`. The OpenAPI document is normative for the wire; this file is the same contract for one record type, readable on its own.",
-  "x-generated-by": "scripts/regenerate.py from spec/openapi.yaml (geoDB Open Exploration Protocol v0.2.0)",
+  "x-generated-by": "scripts/regenerate.py from spec/openapi.yaml (geoDB Open Exploration Protocol v0.3.0)",
   "x-openapi-component": "AssayRead",
   "type": "object",
   "properties": {
@@ -150,7 +150,7 @@
             "type": "string",
             "format": "decimal",
             "pattern": "^-?\\d{0,6}(?:\\.\\d{0,4})?$",
-            "description": "The analyte value, as a DECIMAL STRING rather than a JSON number — precision is preserved exactly as the laboratory reported it, and parsing it as a float will silently round it. Parse it with a decimal type. Its units are the sibling `units` field: units are per VALUE, not per sample and not per element, because one sample can carry values from two laboratories at different units. ⚠️ A below-detection result is stored and sent as the sentinel `-1.0000` (and flagged `below_detection: true` where the value carries that flag) — a marker, never a measurement or a grade. Compare it NUMERICALLY (a negative value is below detection), never as text: \"-1\", \"-1.0\" and \"-1.0000\" are the same value. The lab's threshold for that sample is `detection_limit_per_sample` when the method reports one, else the method's `detection_limit`."
+            "description": "The analyte value, as a DECIMAL STRING rather than a JSON number, stored and sent at 4 decimal places (a value the laboratory reported with more was rounded to 4 when it was loaded); parsing it as a float may round it again. Parse it with a decimal type. Its units are the sibling `units` field: units are per VALUE, not per sample and not per element, because one sample can carry values from two laboratories at different units. ⚠️ A below-detection result is stored and sent as the sentinel `-1.0000` (and flagged `below_detection: true` where the value carries that flag) — a marker, never a measurement or a grade. Compare it NUMERICALLY (a negative value is below detection), never as text: \"-1\", \"-1.0\" and \"-1.0000\" are the same value. The lab's threshold for that sample is `detection_limit_per_sample` when the method reports one, else the method's `detection_limit`."
           },
           "units": {
             "type": [

@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: geoDB Exploration Data API
-  version: 0.2.0
+  version: 0.3.0
   description: |
     Access to exploration projects' data — drill holes and what was logged down
     them, samples, laboratory results, quality control, surface geology, maps and
@@ -74,7 +74,7 @@ info:
     tool: drf-spectacular
     source: the geoDB reference implementation's serializers and the runtime grant
       gate
-    protocol_version: 0.2.0
+    protocol_version: 0.3.0
     warning: Generated file — do not edit by hand. Changes belong in the reference
       implementation; regenerate to publish them.
 paths:
@@ -236,7 +236,9 @@ paths:
       - name: limit
         required: false
         in: query
-        description: Number of results to return per page.
+        description: 'Rows per page: default 100, at most 500 (2,000 on `assay-results/`
+          and on `drill-samples/` rows without `expand=assay`, for an access grant).
+          A larger value is served at the cap and the envelope says so (`limit_clamped`).'
         schema:
           type: integer
       - name: offset
@@ -413,15 +415,20 @@ paths:
         them once from `methods/`, `certificates/`, `laboratories/`. Takes the assay
         list''s filters (`project` — required when the credential reads several projects
         —, `certificate`, `include_excluded` …) and answers exactly its rows'' values;
-        `withheld` (first page) says what the assay list''s defaults left out — counted
-        in assay RECORDS (one per sample), not in this table''s value rows: never
-        compare it with `count`.'
+        field-XRF readings are listed beside laboratory results (each row says its
+        `source_type`; `source_type=lab` reads lab values only); `withheld` (first
+        page) says what the assay list''s defaults left out — counted in assay RECORDS
+        (one per sample), not in this table''s value rows: never compare it with `count`.
+        `count` (the total) is on the first page; later pages carry `count: null`
+        — follow `next`, or page by `offset` up to the first page''s `count`.'
       summary: Assay results as one flat table
       parameters:
       - name: limit
         required: false
         in: query
-        description: Number of results to return per page.
+        description: 'Rows per page: default 100, at most 500 (2,000 on `assay-results/`
+          and on `drill-samples/` rows without `expand=assay`, for an access grant).
+          A larger value is served at the cap and the envelope says so (`limit_clamped`).'
         schema:
           type: integer
       - name: offset
@@ -430,6 +437,15 @@ paths:
         description: The initial index from which to return the results.
         schema:
           type: integer
+      - in: query
+        name: source_type
+        schema:
+          type: string
+          enum:
+          - field_xrf
+          - lab
+        description: 'Read one kind of value: `lab` (laboratory results) or `field_xrf`
+          (portable-XRF readings). Omitted: both.'
       - in: query
         name: project_id
         schema:
@@ -578,7 +594,9 @@ paths:
       - name: limit
         required: false
         in: query
-        description: Number of results to return per page.
+        description: 'Rows per page: default 100, at most 500 (2,000 on `assay-results/`
+          and on `drill-samples/` rows without `expand=assay`, for an access grant).
+          A larger value is served at the cap and the envelope says so (`limit_clamped`).'
         schema:
           type: integer
       - in: query
@@ -808,7 +826,9 @@ paths:
       - name: limit
         required: false
         in: query
-        description: Number of results to return per page.
+        description: 'Rows per page: default 100, at most 500 (2,000 on `assay-results/`
+          and on `drill-samples/` rows without `expand=assay`, for an access grant).
+          A larger value is served at the cap and the envelope says so (`limit_clamped`).'
         schema:
           type: integer
       - name: offset
@@ -1035,7 +1055,9 @@ paths:
       - name: limit
         required: false
         in: query
-        description: Number of results to return per page.
+        description: 'Rows per page: default 100, at most 500 (2,000 on `assay-results/`
+          and on `drill-samples/` rows without `expand=assay`, for an access grant).
+          A larger value is served at the cap and the envelope says so (`limit_clamped`).'
         schema:
           type: integer
       - name: offset
@@ -1398,7 +1420,9 @@ paths:
       - name: limit
         required: false
         in: query
-        description: Number of results to return per page.
+        description: 'Rows per page: default 100, at most 500 (2,000 on `assay-results/`
+          and on `drill-samples/` rows without `expand=assay`, for an access grant).
+          A larger value is served at the cap and the envelope says so (`limit_clamped`).'
         schema:
           type: integer
       - name: offset
@@ -1580,7 +1604,9 @@ paths:
       - name: limit
         required: false
         in: query
-        description: Number of results to return per page.
+        description: 'Rows per page: default 100, at most 500 (2,000 on `assay-results/`
+          and on `drill-samples/` rows without `expand=assay`, for an access grant).
+          A larger value is served at the cap and the envelope says so (`limit_clamped`).'
         schema:
           type: integer
       - name: offset
@@ -1913,7 +1939,9 @@ paths:
       - name: limit
         required: false
         in: query
-        description: Number of results to return per page.
+        description: 'Rows per page: default 100, at most 500 (2,000 on `assay-results/`
+          and on `drill-samples/` rows without `expand=assay`, for an access grant).
+          A larger value is served at the cap and the envelope says so (`limit_clamped`).'
         schema:
           type: integer
       - name: offset
@@ -2095,7 +2123,9 @@ paths:
       - name: limit
         required: false
         in: query
-        description: Number of results to return per page.
+        description: 'Rows per page: default 100, at most 500 (2,000 on `assay-results/`
+          and on `drill-samples/` rows without `expand=assay`, for an access grant).
+          A larger value is served at the cap and the envelope says so (`limit_clamped`).'
         schema:
           type: integer
       - name: offset
@@ -2348,7 +2378,9 @@ paths:
       - name: limit
         required: false
         in: query
-        description: Number of results to return per page.
+        description: 'Rows per page: default 100, at most 500 (2,000 on `assay-results/`
+          and on `drill-samples/` rows without `expand=assay`, for an access grant).
+          A larger value is served at the cap and the envelope says so (`limit_clamped`).'
         schema:
           type: integer
       - name: offset
@@ -2709,7 +2741,9 @@ paths:
       - name: limit
         required: false
         in: query
-        description: Number of results to return per page.
+        description: 'Rows per page: default 100, at most 500 (2,000 on `assay-results/`
+          and on `drill-samples/` rows without `expand=assay`, for an access grant).
+          A larger value is served at the cap and the envelope says so (`limit_clamped`).'
         schema:
           type: integer
       - name: offset
@@ -2892,7 +2926,9 @@ paths:
       - name: limit
         required: false
         in: query
-        description: Number of results to return per page.
+        description: 'Rows per page: default 100, at most 500 (2,000 on `assay-results/`
+          and on `drill-samples/` rows without `expand=assay`, for an access grant).
+          A larger value is served at the cap and the envelope says so (`limit_clamped`).'
         schema:
           type: integer
       - name: offset
@@ -3249,7 +3285,9 @@ paths:
       - name: limit
         required: false
         in: query
-        description: Number of results to return per page.
+        description: 'Rows per page: default 100, at most 500 (2,000 on `assay-results/`
+          and on `drill-samples/` rows without `expand=assay`, for an access grant).
+          A larger value is served at the cap and the envelope says so (`limit_clamped`).'
         schema:
           type: integer
       - name: offset
@@ -3499,7 +3537,9 @@ paths:
       - name: limit
         required: false
         in: query
-        description: Number of results to return per page.
+        description: 'Rows per page: default 100, at most 500 (2,000 on `assay-results/`
+          and on `drill-samples/` rows without `expand=assay`, for an access grant).
+          A larger value is served at the cap and the envelope says so (`limit_clamped`).'
         schema:
           type: integer
       - name: offset
@@ -3683,7 +3723,9 @@ paths:
       - name: limit
         required: false
         in: query
-        description: Number of results to return per page.
+        description: 'Rows per page: default 100, at most 500 (2,000 on `assay-results/`
+          and on `drill-samples/` rows without `expand=assay`, for an access grant).
+          A larger value is served at the cap and the envelope says so (`limit_clamped`).'
         schema:
           type: integer
       - name: offset
@@ -3866,7 +3908,9 @@ paths:
       - name: limit
         required: false
         in: query
-        description: Number of results to return per page.
+        description: 'Rows per page: default 100, at most 500 (2,000 on `assay-results/`
+          and on `drill-samples/` rows without `expand=assay`, for an access grant).
+          A larger value is served at the cap and the envelope says so (`limit_clamped`).'
         schema:
           type: integer
       - name: offset
@@ -4115,7 +4159,9 @@ paths:
       - name: limit
         required: false
         in: query
-        description: Number of results to return per page.
+        description: 'Rows per page: default 100, at most 500 (2,000 on `assay-results/`
+          and on `drill-samples/` rows without `expand=assay`, for an access grant).
+          A larger value is served at the cap and the envelope says so (`limit_clamped`).'
         schema:
           type: integer
       - name: offset
@@ -4426,7 +4472,9 @@ paths:
       - name: limit
         required: false
         in: query
-        description: Number of results to return per page.
+        description: 'Rows per page: default 100, at most 500 (2,000 on `assay-results/`
+          and on `drill-samples/` rows without `expand=assay`, for an access grant).
+          A larger value is served at the cap and the envelope says so (`limit_clamped`).'
         schema:
           type: integer
       - name: offset
@@ -4717,7 +4765,9 @@ paths:
       - name: limit
         required: false
         in: query
-        description: Number of results to return per page.
+        description: 'Rows per page: default 100, at most 500 (2,000 on `assay-results/`
+          and on `drill-samples/` rows without `expand=assay`, for an access grant).
+          A larger value is served at the cap and the envelope says so (`limit_clamped`).'
         schema:
           type: integer
       - name: offset
@@ -4901,7 +4951,9 @@ paths:
       - name: limit
         required: false
         in: query
-        description: Number of results to return per page.
+        description: 'Rows per page: default 100, at most 500 (2,000 on `assay-results/`
+          and on `drill-samples/` rows without `expand=assay`, for an access grant).
+          A larger value is served at the cap and the envelope says so (`limit_clamped`).'
         schema:
           type: integer
       - name: offset
@@ -5232,7 +5284,9 @@ paths:
       - name: limit
         required: false
         in: query
-        description: Number of results to return per page.
+        description: 'Rows per page: default 100, at most 500 (2,000 on `assay-results/`
+          and on `drill-samples/` rows without `expand=assay`, for an access grant).
+          A larger value is served at the cap and the envelope says so (`limit_clamped`).'
         schema:
           type: integer
       - name: offset
@@ -5345,6 +5399,12 @@ paths:
           type: string
         description: The same as `set` (kept for clients that name the set by the
           field the rows carry).
+      - in: query
+        name: expand
+        schema:
+          type: string
+        description: 'Restore nested objects the lean shape names by id, comma-separated:
+          assay. For a small one-off read; a table reads the lookup tables once instead.'
       - in: query
         name: assay_config_id
         schema:
@@ -5559,7 +5619,9 @@ paths:
       - name: limit
         required: false
         in: query
-        description: Number of results to return per page.
+        description: 'Rows per page: default 100, at most 500 (2,000 on `assay-results/`
+          and on `drill-samples/` rows without `expand=assay`, for an access grant).
+          A larger value is served at the cap and the envelope says so (`limit_clamped`).'
         schema:
           type: integer
       - name: offset
@@ -5809,7 +5871,9 @@ paths:
       - name: limit
         required: false
         in: query
-        description: Number of results to return per page.
+        description: 'Rows per page: default 100, at most 500 (2,000 on `assay-results/`
+          and on `drill-samples/` rows without `expand=assay`, for an access grant).
+          A larger value is served at the cap and the envelope says so (`limit_clamped`).'
         schema:
           type: integer
       - name: offset
@@ -5991,7 +6055,9 @@ paths:
       - name: limit
         required: false
         in: query
-        description: Number of results to return per page.
+        description: 'Rows per page: default 100, at most 500 (2,000 on `assay-results/`
+          and on `drill-samples/` rows without `expand=assay`, for an access grant).
+          A larger value is served at the cap and the envelope says so (`limit_clamped`).'
         schema:
           type: integer
       - name: offset
@@ -6174,7 +6240,9 @@ paths:
       - name: limit
         required: false
         in: query
-        description: Number of results to return per page.
+        description: 'Rows per page: default 100, at most 500 (2,000 on `assay-results/`
+          and on `drill-samples/` rows without `expand=assay`, for an access grant).
+          A larger value is served at the cap and the envelope says so (`limit_clamped`).'
         schema:
           type: integer
       - name: offset
@@ -6407,7 +6475,9 @@ paths:
       - name: limit
         required: false
         in: query
-        description: Number of results to return per page.
+        description: 'Rows per page: default 100, at most 500 (2,000 on `assay-results/`
+          and on `drill-samples/` rows without `expand=assay`, for an access grant).
+          A larger value is served at the cap and the envelope says so (`limit_clamped`).'
         schema:
           type: integer
       - name: offset
@@ -6640,7 +6710,9 @@ paths:
       - name: limit
         required: false
         in: query
-        description: Number of results to return per page.
+        description: 'Rows per page: default 100, at most 500 (2,000 on `assay-results/`
+          and on `drill-samples/` rows without `expand=assay`, for an access grant).
+          A larger value is served at the cap and the envelope says so (`limit_clamped`).'
         schema:
           type: integer
       - name: offset
@@ -6892,7 +6964,9 @@ paths:
       - name: limit
         required: false
         in: query
-        description: Number of results to return per page.
+        description: 'Rows per page: default 100, at most 500 (2,000 on `assay-results/`
+          and on `drill-samples/` rows without `expand=assay`, for an access grant).
+          A larger value is served at the cap and the envelope says so (`limit_clamped`).'
         schema:
           type: integer
       - name: offset
@@ -7074,7 +7148,9 @@ paths:
       - name: limit
         required: false
         in: query
-        description: Number of results to return per page.
+        description: 'Rows per page: default 100, at most 500 (2,000 on `assay-results/`
+          and on `drill-samples/` rows without `expand=assay`, for an access grant).
+          A larger value is served at the cap and the envelope says so (`limit_clamped`).'
         schema:
           type: integer
       - name: offset
@@ -7635,7 +7711,9 @@ paths:
       - name: limit
         required: false
         in: query
-        description: Number of results to return per page.
+        description: 'Rows per page: default 100, at most 500 (2,000 on `assay-results/`
+          and on `drill-samples/` rows without `expand=assay`, for an access grant).
+          A larger value is served at the cap and the envelope says so (`limit_clamped`).'
         schema:
           type: integer
       - name: offset
@@ -7957,7 +8035,9 @@ paths:
       - name: limit
         required: false
         in: query
-        description: Number of results to return per page.
+        description: 'Rows per page: default 100, at most 500 (2,000 on `assay-results/`
+          and on `drill-samples/` rows without `expand=assay`, for an access grant).
+          A larger value is served at the cap and the envelope says so (`limit_clamped`).'
         schema:
           type: integer
       - name: offset
@@ -8141,7 +8221,9 @@ paths:
       - name: limit
         required: false
         in: query
-        description: Number of results to return per page.
+        description: 'Rows per page: default 100, at most 500 (2,000 on `assay-results/`
+          and on `drill-samples/` rows without `expand=assay`, for an access grant).
+          A larger value is served at the cap and the envelope says so (`limit_clamped`).'
         schema:
           type: integer
       - name: offset
@@ -8416,7 +8498,7 @@ paths:
       operationId: guide_retrieve
       description: 'What is true about geology and geoDB''s data, written for an AI:
         one entry per topic (title, one-line summary, section ids, version). Read
-        a topic before answering a question in its area.'
+        a topic before answering a question in its area; one section is at guide/<topic>/<section>/.'
       summary: List the topics of geoDB's domain guide
       parameters:
       - in: query
@@ -8486,10 +8568,11 @@ paths:
   /api/v2/guide/{topic_id}/:
     get:
       operationId: guide_retrieve_2
-      description: The topic paged by section (limit/offset), or one section with
-        ?section=<id>. ETag = the topic version; send If-None-Match to skip an unchanged
+      description: The whole topic — every section — by default; limit/offset page
+        its sections when asked, and ?section=<id> (or the path guide/<topic>/<section>/)
+        returns one. ETag = the topic version; send If-None-Match to skip an unchanged
         topic.
-      summary: Read one topic of geoDB's domain guide, section by section
+      summary: Read one topic of geoDB's domain guide
       parameters:
       - in: query
         name: limit
@@ -8522,6 +8605,77 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/GuideTopicPage'
+          description: ''
+        '400':
+          description: The request could not be understood (see `reason_code`).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 'No usable credential. `reason_code` distinguishes a revoked
+            grant from an expired, unknown or malformed one; the response carries
+            `WWW-Authenticate: Grant`.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: The credential is valid but not permitted this operation —
+            outside the grant surface, a write with a read-only grant, or outside
+            a room-pinned grant's room.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: No such resource inside this credential's scope. A row in another
+            project is indistinguishable from one that does not exist, by design.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: The grant's request rate was exceeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            Retry-After:
+              description: Seconds to wait before retrying. Sent on every throttled
+                response.
+              schema:
+                type: integer
+      x-geodb-extension: true
+  /api/v2/guide/{topic_id}/{section_id}/:
+    get:
+      operationId: guide_retrieve_3
+      description: One section of a topic, by id — the path a response's `see_guide`
+        pointer names. ETag = the topic version.
+      summary: Read one section of a guide topic
+      parameters:
+      - in: path
+        name: section_id
+        schema:
+          type: string
+        required: true
+      - in: path
+        name: topic_id
+        schema:
+          type: string
+        required: true
+      tags:
+      - Guide
+      security:
+      - knoxApiToken: []
+      - GrantAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GuideSectionPage'
           description: ''
         '400':
           description: The request could not be understood (see `reason_code`).
@@ -8670,7 +8824,9 @@ paths:
       - name: limit
         required: false
         in: query
-        description: Number of results to return per page.
+        description: 'Rows per page: default 100, at most 500 (2,000 on `assay-results/`
+          and on `drill-samples/` rows without `expand=assay`, for an access grant).
+          A larger value is served at the cap and the envelope says so (`limit_clamped`).'
         schema:
           type: integer
       - in: query
@@ -8864,7 +9020,9 @@ paths:
       - name: limit
         required: false
         in: query
-        description: Number of results to return per page.
+        description: 'Rows per page: default 100, at most 500 (2,000 on `assay-results/`
+          and on `drill-samples/` rows without `expand=assay`, for an access grant).
+          A larger value is served at the cap and the envelope says so (`limit_clamped`).'
         schema:
           type: integer
       - name: offset
@@ -9091,7 +9249,9 @@ paths:
       - name: limit
         required: false
         in: query
-        description: Number of results to return per page.
+        description: 'Rows per page: default 100, at most 500 (2,000 on `assay-results/`
+          and on `drill-samples/` rows without `expand=assay`, for an access grant).
+          A larger value is served at the cap and the envelope says so (`limit_clamped`).'
         schema:
           type: integer
       - name: offset
@@ -9349,7 +9509,9 @@ paths:
       - name: limit
         required: false
         in: query
-        description: Number of results to return per page.
+        description: 'Rows per page: default 100, at most 500 (2,000 on `assay-results/`
+          and on `drill-samples/` rows without `expand=assay`, for an access grant).
+          A larger value is served at the cap and the envelope says so (`limit_clamped`).'
         schema:
           type: integer
       - name: offset
@@ -9524,7 +9686,9 @@ paths:
       - name: limit
         required: false
         in: query
-        description: Number of results to return per page.
+        description: 'Rows per page: default 100, at most 500 (2,000 on `assay-results/`
+          and on `drill-samples/` rows without `expand=assay`, for an access grant).
+          A larger value is served at the cap and the envelope says so (`limit_clamped`).'
         schema:
           type: integer
       - name: offset
@@ -9706,7 +9870,9 @@ paths:
       - name: limit
         required: false
         in: query
-        description: Number of results to return per page.
+        description: 'Rows per page: default 100, at most 500 (2,000 on `assay-results/`
+          and on `drill-samples/` rows without `expand=assay`, for an access grant).
+          A larger value is served at the cap and the envelope says so (`limit_clamped`).'
         schema:
           type: integer
       - name: offset
@@ -10066,7 +10232,9 @@ paths:
       - name: limit
         required: false
         in: query
-        description: Number of results to return per page.
+        description: 'Rows per page: default 100, at most 500 (2,000 on `assay-results/`
+          and on `drill-samples/` rows without `expand=assay`, for an access grant).
+          A larger value is served at the cap and the envelope says so (`limit_clamped`).'
         schema:
           type: integer
       - name: offset
@@ -10252,7 +10420,9 @@ paths:
       - name: limit
         required: false
         in: query
-        description: Number of results to return per page.
+        description: 'Rows per page: default 100, at most 500 (2,000 on `assay-results/`
+          and on `drill-samples/` rows without `expand=assay`, for an access grant).
+          A larger value is served at the cap and the envelope says so (`limit_clamped`).'
         schema:
           type: integer
       - name: offset
@@ -10560,7 +10730,9 @@ paths:
       - name: limit
         required: false
         in: query
-        description: Number of results to return per page.
+        description: 'Rows per page: default 100, at most 500 (2,000 on `assay-results/`
+          and on `drill-samples/` rows without `expand=assay`, for an access grant).
+          A larger value is served at the cap and the envelope says so (`limit_clamped`).'
         schema:
           type: integer
       - name: offset
@@ -11110,7 +11282,9 @@ paths:
       - name: limit
         required: false
         in: query
-        description: Number of results to return per page.
+        description: 'Rows per page: default 100, at most 500 (2,000 on `assay-results/`
+          and on `drill-samples/` rows without `expand=assay`, for an access grant).
+          A larger value is served at the cap and the envelope says so (`limit_clamped`).'
         schema:
           type: integer
       - name: offset
@@ -11942,7 +12116,9 @@ paths:
       - name: limit
         required: false
         in: query
-        description: Number of results to return per page.
+        description: 'Rows per page: default 100, at most 500 (2,000 on `assay-results/`
+          and on `drill-samples/` rows without `expand=assay`, for an access grant).
+          A larger value is served at the cap and the envelope says so (`limit_clamped`).'
         schema:
           type: integer
       - in: query
@@ -12181,7 +12357,9 @@ paths:
       - name: limit
         required: false
         in: query
-        description: Number of results to return per page.
+        description: 'Rows per page: default 100, at most 500 (2,000 on `assay-results/`
+          and on `drill-samples/` rows without `expand=assay`, for an access grant).
+          A larger value is served at the cap and the envelope says so (`limit_clamped`).'
         schema:
           type: integer
       - name: offset
@@ -12920,7 +13098,9 @@ paths:
       - name: limit
         required: false
         in: query
-        description: Number of results to return per page.
+        description: 'Rows per page: default 100, at most 500 (2,000 on `assay-results/`
+          and on `drill-samples/` rows without `expand=assay`, for an access grant).
+          A larger value is served at the cap and the envelope says so (`limit_clamped`).'
         schema:
           type: integer
       - name: offset
@@ -13365,7 +13545,9 @@ paths:
       - name: limit
         required: false
         in: query
-        description: Number of results to return per page.
+        description: 'Rows per page: default 100, at most 500 (2,000 on `assay-results/`
+          and on `drill-samples/` rows without `expand=assay`, for an access grant).
+          A larger value is served at the cap and the envelope says so (`limit_clamped`).'
         schema:
           type: integer
       - name: offset
@@ -13548,7 +13730,9 @@ paths:
       - name: limit
         required: false
         in: query
-        description: Number of results to return per page.
+        description: 'Rows per page: default 100, at most 500 (2,000 on `assay-results/`
+          and on `drill-samples/` rows without `expand=assay`, for an access grant).
+          A larger value is served at the cap and the envelope says so (`limit_clamped`).'
         schema:
           type: integer
       - name: offset
@@ -14156,7 +14340,9 @@ paths:
       - name: limit
         required: false
         in: query
-        description: Number of results to return per page.
+        description: 'Rows per page: default 100, at most 500 (2,000 on `assay-results/`
+          and on `drill-samples/` rows without `expand=assay`, for an access grant).
+          A larger value is served at the cap and the envelope says so (`limit_clamped`).'
         schema:
           type: integer
       - name: offset
@@ -14332,7 +14518,9 @@ paths:
       - name: limit
         required: false
         in: query
-        description: Number of results to return per page.
+        description: 'Rows per page: default 100, at most 500 (2,000 on `assay-results/`
+          and on `drill-samples/` rows without `expand=assay`, for an access grant).
+          A larger value is served at the cap and the envelope says so (`limit_clamped`).'
         schema:
           type: integer
       - name: offset
@@ -14555,7 +14743,9 @@ paths:
       - name: limit
         required: false
         in: query
-        description: Number of results to return per page.
+        description: 'Rows per page: default 100, at most 500 (2,000 on `assay-results/`
+          and on `drill-samples/` rows without `expand=assay`, for an access grant).
+          A larger value is served at the cap and the envelope says so (`limit_clamped`).'
         schema:
           type: integer
       - name: offset
@@ -14742,7 +14932,9 @@ paths:
       - name: limit
         required: false
         in: query
-        description: Number of results to return per page.
+        description: 'Rows per page: default 100, at most 500 (2,000 on `assay-results/`
+          and on `drill-samples/` rows without `expand=assay`, for an access grant).
+          A larger value is served at the cap and the envelope says so (`limit_clamped`).'
         schema:
           type: integer
       - name: offset
@@ -14936,7 +15128,9 @@ paths:
       - name: limit
         required: false
         in: query
-        description: Number of results to return per page.
+        description: 'Rows per page: default 100, at most 500 (2,000 on `assay-results/`
+          and on `drill-samples/` rows without `expand=assay`, for an access grant).
+          A larger value is served at the cap and the envelope says so (`limit_clamped`).'
         schema:
           type: integer
       - name: offset
@@ -15122,7 +15316,9 @@ paths:
       - name: limit
         required: false
         in: query
-        description: Number of results to return per page.
+        description: 'Rows per page: default 100, at most 500 (2,000 on `assay-results/`
+          and on `drill-samples/` rows without `expand=assay`, for an access grant).
+          A larger value is served at the cap and the envelope says so (`limit_clamped`).'
         schema:
           type: integer
       - name: offset
@@ -15238,7 +15434,9 @@ paths:
       - name: limit
         required: false
         in: query
-        description: Number of results to return per page.
+        description: 'Rows per page: default 100, at most 500 (2,000 on `assay-results/`
+          and on `drill-samples/` rows without `expand=assay`, for an access grant).
+          A larger value is served at the cap and the envelope says so (`limit_clamped`).'
         schema:
           type: integer
       - name: offset
@@ -15420,7 +15618,9 @@ paths:
       - name: limit
         required: false
         in: query
-        description: Number of results to return per page.
+        description: 'Rows per page: default 100, at most 500 (2,000 on `assay-results/`
+          and on `drill-samples/` rows without `expand=assay`, for an access grant).
+          A larger value is served at the cap and the envelope says so (`limit_clamped`).'
         schema:
           type: integer
       - name: offset
@@ -15667,7 +15867,9 @@ paths:
       - name: limit
         required: false
         in: query
-        description: Number of results to return per page.
+        description: 'Rows per page: default 100, at most 500 (2,000 on `assay-results/`
+          and on `drill-samples/` rows without `expand=assay`, for an access grant).
+          A larger value is served at the cap and the envelope says so (`limit_clamped`).'
         schema:
           type: integer
       - name: offset
@@ -16219,6 +16421,10 @@ components:
       properties:
         assay_id:
           type: integer
+          description: 'Id of the assay record (one per sample: `assays/{id}/`). An
+            assay a QAQC review withholds is left out of `assays/` and `assay-results/`
+            by default, so this id may join to nothing there; their `withheld` counts
+            say so. Ask with `include_excluded=true` to receive it, flagged.'
         project_id:
           type: integer
         sample_type:
@@ -16258,9 +16464,10 @@ components:
         value:
           type: string
           nullable: true
-          description: 'The lab value as a decimal STRING (parse with a decimal type).
-            A below-detection result is the sentinel -1.0000 with `below_detection:
-            true` — compare numerically, never as text.'
+          description: 'The lab value as a decimal STRING (parse with a decimal type),
+            stored and sent at 4 decimal places (a value reported with more was rounded
+            to 4 when it was loaded). A below-detection result is the sentinel -1.0000
+            with `below_detection: true` — compare numerically, never as text.'
         units:
           type: string
           nullable: true
@@ -16308,12 +16515,12 @@ components:
         source_type:
           type: string
           description: '`lab` — a laboratory result. `field_xrf` — a portable-XRF
-            reading (field guidance, never a reportable grade).'
+            reading (field guidance, never a reportable grade). Both are listed by
+            default; `source_type=lab` reads laboratory results only.'
         qaqc_status:
           type: string
-          nullable: true
-          description: The producing certificate's QAQC review (`none` when not reviewed;
-            null without a certificate).
+          description: The producing certificate's QAQC review (`none` when not reviewed,
+            or the value has no certificate).
         data_warnings:
           type: array
           readOnly: true
@@ -16368,17 +16575,18 @@ components:
           format: decimal
           pattern: ^-?\d{0,6}(?:\.\d{0,4})?$
           description: 'The analyte value, as a DECIMAL STRING rather than a JSON
-            number — precision is preserved exactly as the laboratory reported it,
-            and parsing it as a float will silently round it. Parse it with a decimal
-            type. Its units are the sibling `units` field: units are per VALUE, not
-            per sample and not per element, because one sample can carry values from
-            two laboratories at different units. ⚠️ A below-detection result is stored
-            and sent as the sentinel `-1.0000` (and flagged `below_detection: true`
-            where the value carries that flag) — a marker, never a measurement or
-            a grade. Compare it NUMERICALLY (a negative value is below detection),
-            never as text: "-1", "-1.0" and "-1.0000" are the same value. The lab''s
-            threshold for that sample is `detection_limit_per_sample` when the method
-            reports one, else the method''s `detection_limit`.'
+            number, stored and sent at 4 decimal places (a value the laboratory reported
+            with more was rounded to 4 when it was loaded); parsing it as a float
+            may round it again. Parse it with a decimal type. Its units are the sibling
+            `units` field: units are per VALUE, not per sample and not per element,
+            because one sample can carry values from two laboratories at different
+            units. ⚠️ A below-detection result is stored and sent as the sentinel
+            `-1.0000` (and flagged `below_detection: true` where the value carries
+            that flag) — a marker, never a measurement or a grade. Compare it NUMERICALLY
+            (a negative value is below detection), never as text: "-1", "-1.0" and
+            "-1.0000" are the same value. The lab''s threshold for that sample is
+            `detection_limit_per_sample` when the method reports one, else the method''s
+            `detection_limit`.'
         units:
           type: string
           readOnly: true
@@ -17142,6 +17350,27 @@ components:
           items:
             type: object
             additionalProperties: {}
+        see_guide:
+          type: array
+          description: The guide sections that change how this answer should be read
+            — read them before reporting from it. Each names the topic, the section,
+            its path (GET it, no key needed beyond this one) and why it matters here.
+          items:
+            type: object
+            properties:
+              topic:
+                type: string
+              section:
+                type: string
+              url:
+                type: string
+              why:
+                type: string
+            required:
+            - topic
+            - section
+            - url
+            - why
       required:
       - below_detection
       - project
@@ -17990,6 +18219,27 @@ components:
           type: array
           items:
             type: string
+        see_guide:
+          type: array
+          description: The guide sections that change how this answer should be read
+            — read them before reporting from it. Each names the topic, the section,
+            its path (GET it, no key needed beyond this one) and why it matters here.
+          items:
+            type: object
+            properties:
+              topic:
+                type: string
+              section:
+                type: string
+              url:
+                type: string
+              why:
+                type: string
+            required:
+            - topic
+            - section
+            - url
+            - why
       required:
       - drill_sample_set
       - elements
@@ -19167,7 +19417,8 @@ components:
           type: object
           nullable: true
           additionalProperties: true
-          description: 'Natural key of the project: `{"name", "company"}`.'
+          description: 'Natural key of the project: `{"name", "company"}`. Omitted
+            from lean list rows (read the record by id, or list with `expand`).'
           readOnly: true
         bhid:
           type: object
@@ -19225,6 +19476,28 @@ components:
           description: Desurveyed position at `depth_to` as `[longitude, latitude,
             elevation]` in WGS84 degrees.
           readOnly: true
+        xyz_epsg:
+          type: integer
+          nullable: true
+          description: 'EPSG of the projected CRS the project LOCAL GRID is built
+            on (the `crs_epsg` of `GET /api/v2/projects/{id}/coordinate-system/`).
+            `xyz_from` / `xyz_to` are metres from that grid''s origin (offset, possibly
+            rotated) — add the origin back (after the rotation) to get coordinates
+            in this EPSG; `xyz_*_wgs84` are EPSG:4326. Null when the project has no
+            grid, and when its local grid is a custom mine grid (calibrated, possibly
+            in feet, not an offset of any EPSG): use the `xyz_*_wgs84` twins there.'
+          readOnly: true
+        xyz_status:
+          allOf:
+          - $ref: '#/components/schemas/XyzStatusEnum'
+          description: 'Why the positions are what they are: `ok` — both ends desurveyed;
+            `no_trace` — the hole has no computed trace, or its trace does not reach
+            this depth (the end it reaches is still sent; the WGS84 twins need both
+            ends); `no_local_grid` — the project has no local grid, so nothing can
+            be placed; `not_requested` — the read asked `include_xyz=false`; `failed`
+            — the collar could not be placed on the grid (no collar position, or a
+            transform error).'
+          readOnly: true
         images:
           type: array
           items:
@@ -19266,7 +19539,9 @@ components:
           readOnly: true
           description: 'The assay on this sample, or null when it has not been assayed.
             An object: the assay record by default, or merged per-element values when
-            the request names an assay configuration (`merged: true`).'
+            the request names an assay configuration (`merged: true`). Sent only with
+            `expand=assay` (or a read sending `assay_config_id` / `merge_assays`);
+            otherwise `assay_id` names it.'
           oneOf:
           - type: object
             additionalProperties: false
@@ -19480,7 +19755,8 @@ components:
           description: The sampling pass this interval belongs to, or null when it
             has not been assigned to one. A pass groups the intervals sampled together
             in one campaign, so two passes may cover the same depths for different
-            purposes.
+            purposes. Omitted from lean list rows (read the record by id, or list
+            with `expand`).
           properties:
             id:
               type: integer
@@ -19520,6 +19796,14 @@ components:
           readOnly: true
           description: The project this record is in (a credential may read several;
             GET /api/v2/grant-context/ names them).
+        assay_id:
+          type: integer
+          readOnly: true
+          nullable: true
+          description: 'Id of the assay record (one per sample: `assays/{id}/`). An
+            assay a QAQC review withholds is left out of `assays/` and `assay-results/`
+            by default, so this id may join to nothing there; their `withheld` counts
+            say so. Ask with `include_excluded=true` to receive it, flagged.'
         data_warnings:
           type: array
           readOnly: true
@@ -19544,25 +19828,24 @@ components:
           description: Machine-readable reason a metal-equivalent value is blank,
             when it is.
       required:
-      - assay
       - bhid
       - date_created
       - depth_from
       - depth_to
       - display_units
-      - drill_sample_set
       - dry_weight
       - id
       - images
       - last_edited
       - name
       - package_number
-      - project
       - submittal
       - submittal_name
       - wet_weight
+      - xyz_epsg
       - xyz_from
       - xyz_from_wgs84
+      - xyz_status
       - xyz_to
       - xyz_to_wgs84
       patternProperties:
@@ -20890,6 +21173,7 @@ components:
             * `qc_samples` - qc_samples
             * `geophysical_surveys` - geophysical_surveys
             * `vector_features` - vector_features
+            * `assay_results` - assay_results
         format:
           allOf:
           - $ref: '#/components/schemas/FormatEnum'
@@ -20995,6 +21279,33 @@ components:
             to download.
         message:
           type: string
+        notes:
+          type: object
+          additionalProperties: {}
+          description: What this table's file merged or left unflagged, or how to
+            read its columns (the same text is in a parquet file's `geodb` metadata).
+            Present for the tables that have notes.
+        see_guide:
+          type: array
+          description: The guide sections that change how this answer should be read
+            — read them before reporting from it. Each names the topic, the section,
+            its path (GET it, no key needed beyond this one) and why it matters here.
+          items:
+            type: object
+            properties:
+              topic:
+                type: string
+              section:
+                type: string
+              url:
+                type: string
+              why:
+                type: string
+            required:
+            - topic
+            - section
+            - url
+            - why
       required:
       - state
       additionalProperties: false
@@ -21029,6 +21340,19 @@ components:
           type: integer
         elapsed_seconds:
           type: integer
+        notes:
+          type: object
+          additionalProperties: {}
+          description: What this table's file merged or left unflagged, or how to
+            read its columns (the same text is in a parquet file's `geodb` metadata).
+            Present for the tables that have notes.
+        see_guide:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+          description: The guide sections to read before reporting from this table
+            (as on its list).
       required:
       - elapsed_seconds
       - progress_message
@@ -21708,6 +22032,42 @@ components:
       - next
       - previous
       - results
+      additionalProperties: false
+    GuideSectionPage:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        summary:
+          type: string
+        version:
+          type: string
+        count:
+          type: integer
+        next:
+          type: string
+          format: uri
+          nullable: true
+        previous:
+          type: string
+          format: uri
+          nullable: true
+        results:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+      required:
+      - count
+      - id
+      - next
+      - previous
+      - results
+      - summary
+      - title
+      - version
       additionalProperties: false
     GuideTopicPage:
       type: object
@@ -22443,6 +22803,7 @@ components:
       - qc_samples
       - geophysical_surveys
       - vector_features
+      - assay_results
       type: string
       description: |-
         * `drill_collars` - drill_collars
@@ -22463,6 +22824,7 @@ components:
         * `qc_samples` - qc_samples
         * `geophysical_surveys` - geophysical_surveys
         * `vector_features` - vector_features
+        * `assay_results` - assay_results
     ModelTypeEnum:
       enum:
       - DrillCollar
@@ -22559,6 +22921,10 @@ components:
         count:
           type: integer
           example: 123
+          nullable: true
+          description: Total rows the list answers. Null when the request sent `skip_count=1`,
+            and on `assay-results/` pages after the first (read the total from the
+            first page).
         next:
           type: string
           nullable: true
@@ -22578,6 +22944,21 @@ components:
           nullable: true
           description: Echo of the `modified_since` value applied. Present only when
             the request sent `modified_since`.
+        limit_clamped:
+          type: object
+          description: 'Present only when the request asked for more rows per page
+            than this list serves: `asked` is the `limit` sent, `served` the page
+            size used (500; 2,000 on `assay-results/` and on `drill-samples/` rows
+            without `expand=assay`). Page on with `next`, or by `offset` in steps
+            of `served`.'
+          properties:
+            asked:
+              type: integer
+            served:
+              type: integer
+          required:
+          - asked
+          - served
       additionalProperties: false
     PaginatedAssayReadList:
       type: object
@@ -22588,6 +22969,10 @@ components:
         count:
           type: integer
           example: 123
+          nullable: true
+          description: Total rows the list answers. Null when the request sent `skip_count=1`,
+            and on `assay-results/` pages after the first (read the total from the
+            first page).
         next:
           type: string
           nullable: true
@@ -22625,6 +23010,21 @@ components:
           nullable: true
           description: Echo of the `modified_since` value applied. Present only when
             the request sent `modified_since`.
+        limit_clamped:
+          type: object
+          description: 'Present only when the request asked for more rows per page
+            than this list serves: `asked` is the `limit` sent, `served` the page
+            size used (500; 2,000 on `assay-results/` and on `drill-samples/` rows
+            without `expand=assay`). Page on with `next`, or by `offset` in steps
+            of `served`.'
+          properties:
+            asked:
+              type: integer
+            served:
+              type: integer
+          required:
+          - asked
+          - served
         withheld:
           type: object
           nullable: true
@@ -22650,6 +23050,27 @@ components:
               type: integer
           required:
           - soft_deleted
+        see_guide:
+          type: array
+          description: The guide sections that change how this answer should be read
+            — read them before reporting from it. Each names the topic, the section,
+            its path (GET it, no key needed beyond this one) and why it matters here.
+          items:
+            type: object
+            properties:
+              topic:
+                type: string
+              section:
+                type: string
+              url:
+                type: string
+              why:
+                type: string
+            required:
+            - topic
+            - section
+            - url
+            - why
       additionalProperties: false
     PaginatedAssayResultList:
       type: object
@@ -22660,6 +23081,10 @@ components:
         count:
           type: integer
           example: 123
+          nullable: true
+          description: Total rows the list answers. Null when the request sent `skip_count=1`,
+            and on `assay-results/` pages after the first (read the total from the
+            first page).
         next:
           type: string
           nullable: true
@@ -22679,6 +23104,21 @@ components:
           nullable: true
           description: Echo of the `modified_since` value applied. Present only when
             the request sent `modified_since`.
+        limit_clamped:
+          type: object
+          description: 'Present only when the request asked for more rows per page
+            than this list serves: `asked` is the `limit` sent, `served` the page
+            size used (500; 2,000 on `assay-results/` and on `drill-samples/` rows
+            without `expand=assay`). Page on with `next`, or by `offset` in steps
+            of `served`.'
+          properties:
+            asked:
+              type: integer
+            served:
+              type: integer
+          required:
+          - asked
+          - served
         withheld:
           type: object
           nullable: true
@@ -22704,6 +23144,27 @@ components:
               type: integer
           required:
           - soft_deleted
+        see_guide:
+          type: array
+          description: The guide sections that change how this answer should be read
+            — read them before reporting from it. Each names the topic, the section,
+            its path (GET it, no key needed beyond this one) and why it matters here.
+          items:
+            type: object
+            properties:
+              topic:
+                type: string
+              section:
+                type: string
+              url:
+                type: string
+              why:
+                type: string
+            required:
+            - topic
+            - section
+            - url
+            - why
       additionalProperties: false
     PaginatedCertificateReadList:
       type: object
@@ -22714,6 +23175,10 @@ components:
         count:
           type: integer
           example: 123
+          nullable: true
+          description: Total rows the list answers. Null when the request sent `skip_count=1`,
+            and on `assay-results/` pages after the first (read the total from the
+            first page).
         next:
           type: string
           nullable: true
@@ -22751,6 +23216,21 @@ components:
           nullable: true
           description: Echo of the `modified_since` value applied. Present only when
             the request sent `modified_since`.
+        limit_clamped:
+          type: object
+          description: 'Present only when the request asked for more rows per page
+            than this list serves: `asked` is the `limit` sent, `served` the page
+            size used (500; 2,000 on `assay-results/` and on `drill-samples/` rows
+            without `expand=assay`). Page on with `next`, or by `offset` in steps
+            of `served`.'
+          properties:
+            asked:
+              type: integer
+            served:
+              type: integer
+          required:
+          - asked
+          - served
         withheld:
           type: object
           nullable: true
@@ -22786,6 +23266,10 @@ components:
         count:
           type: integer
           example: 123
+          nullable: true
+          description: Total rows the list answers. Null when the request sent `skip_count=1`,
+            and on `assay-results/` pages after the first (read the total from the
+            first page).
         next:
           type: string
           nullable: true
@@ -22805,6 +23289,21 @@ components:
           nullable: true
           description: Echo of the `modified_since` value applied. Present only when
             the request sent `modified_since`.
+        limit_clamped:
+          type: object
+          description: 'Present only when the request asked for more rows per page
+            than this list serves: `asked` is the `limit` sent, `served` the page
+            size used (500; 2,000 on `assay-results/` and on `drill-samples/` rows
+            without `expand=assay`). Page on with `next`, or by `offset` in steps
+            of `served`.'
+          properties:
+            asked:
+              type: integer
+            served:
+              type: integer
+          required:
+          - asked
+          - served
       additionalProperties: false
     PaginatedCustomIntervalTypeReadList:
       type: object
@@ -22815,6 +23314,10 @@ components:
         count:
           type: integer
           example: 123
+          nullable: true
+          description: Total rows the list answers. Null when the request sent `skip_count=1`,
+            and on `assay-results/` pages after the first (read the total from the
+            first page).
         next:
           type: string
           nullable: true
@@ -22834,6 +23337,21 @@ components:
           nullable: true
           description: Echo of the `modified_since` value applied. Present only when
             the request sent `modified_since`.
+        limit_clamped:
+          type: object
+          description: 'Present only when the request asked for more rows per page
+            than this list serves: `asked` is the `limit` sent, `served` the page
+            size used (500; 2,000 on `assay-results/` and on `drill-samples/` rows
+            without `expand=assay`). Page on with `next`, or by `offset` in steps
+            of `served`.'
+          properties:
+            asked:
+              type: integer
+            served:
+              type: integer
+          required:
+          - asked
+          - served
       additionalProperties: false
     PaginatedCutsheetReadList:
       type: object
@@ -22844,6 +23362,10 @@ components:
         count:
           type: integer
           example: 123
+          nullable: true
+          description: Total rows the list answers. Null when the request sent `skip_count=1`,
+            and on `assay-results/` pages after the first (read the total from the
+            first page).
         next:
           type: string
           nullable: true
@@ -22863,6 +23385,21 @@ components:
           nullable: true
           description: Echo of the `modified_since` value applied. Present only when
             the request sent `modified_since`.
+        limit_clamped:
+          type: object
+          description: 'Present only when the request asked for more rows per page
+            than this list serves: `asked` is the `limit` sent, `served` the page
+            size used (500; 2,000 on `assay-results/` and on `drill-samples/` rows
+            without `expand=assay`). Page on with `next`, or by `offset` in steps
+            of `served`.'
+          properties:
+            asked:
+              type: integer
+            served:
+              type: integer
+          required:
+          - asked
+          - served
       additionalProperties: false
     PaginatedDrillAlterationReadList:
       type: object
@@ -22873,6 +23410,10 @@ components:
         count:
           type: integer
           example: 123
+          nullable: true
+          description: Total rows the list answers. Null when the request sent `skip_count=1`,
+            and on `assay-results/` pages after the first (read the total from the
+            first page).
         next:
           type: string
           nullable: true
@@ -22910,6 +23451,21 @@ components:
           nullable: true
           description: Echo of the `modified_since` value applied. Present only when
             the request sent `modified_since`.
+        limit_clamped:
+          type: object
+          description: 'Present only when the request asked for more rows per page
+            than this list serves: `asked` is the `limit` sent, `served` the page
+            size used (500; 2,000 on `assay-results/` and on `drill-samples/` rows
+            without `expand=assay`). Page on with `next`, or by `offset` in steps
+            of `served`.'
+          properties:
+            asked:
+              type: integer
+            served:
+              type: integer
+          required:
+          - asked
+          - served
         withheld:
           type: object
           nullable: true
@@ -22945,6 +23501,10 @@ components:
         count:
           type: integer
           example: 123
+          nullable: true
+          description: Total rows the list answers. Null when the request sent `skip_count=1`,
+            and on `assay-results/` pages after the first (read the total from the
+            first page).
         next:
           type: string
           nullable: true
@@ -22964,6 +23524,21 @@ components:
           nullable: true
           description: Echo of the `modified_since` value applied. Present only when
             the request sent `modified_since`.
+        limit_clamped:
+          type: object
+          description: 'Present only when the request asked for more rows per page
+            than this list serves: `asked` is the `limit` sent, `served` the page
+            size used (500; 2,000 on `assay-results/` and on `drill-samples/` rows
+            without `expand=assay`). Page on with `next`, or by `offset` in steps
+            of `served`.'
+          properties:
+            asked:
+              type: integer
+            served:
+              type: integer
+          required:
+          - asked
+          - served
       additionalProperties: false
     PaginatedDrillCollarReadList:
       type: object
@@ -22974,6 +23549,10 @@ components:
         count:
           type: integer
           example: 123
+          nullable: true
+          description: Total rows the list answers. Null when the request sent `skip_count=1`,
+            and on `assay-results/` pages after the first (read the total from the
+            first page).
         next:
           type: string
           nullable: true
@@ -23011,6 +23590,21 @@ components:
           nullable: true
           description: Echo of the `modified_since` value applied. Present only when
             the request sent `modified_since`.
+        limit_clamped:
+          type: object
+          description: 'Present only when the request asked for more rows per page
+            than this list serves: `asked` is the `limit` sent, `served` the page
+            size used (500; 2,000 on `assay-results/` and on `drill-samples/` rows
+            without `expand=assay`). Page on with `next`, or by `offset` in steps
+            of `served`.'
+          properties:
+            asked:
+              type: integer
+            served:
+              type: integer
+          required:
+          - asked
+          - served
         withheld:
           type: object
           nullable: true
@@ -23046,6 +23640,10 @@ components:
         count:
           type: integer
           example: 123
+          nullable: true
+          description: Total rows the list answers. Null when the request sent `skip_count=1`,
+            and on `assay-results/` pages after the first (read the total from the
+            first page).
         next:
           type: string
           nullable: true
@@ -23083,6 +23681,21 @@ components:
           nullable: true
           description: Echo of the `modified_since` value applied. Present only when
             the request sent `modified_since`.
+        limit_clamped:
+          type: object
+          description: 'Present only when the request asked for more rows per page
+            than this list serves: `asked` is the `limit` sent, `served` the page
+            size used (500; 2,000 on `assay-results/` and on `drill-samples/` rows
+            without `expand=assay`). Page on with `next`, or by `offset` in steps
+            of `served`.'
+          properties:
+            asked:
+              type: integer
+            served:
+              type: integer
+          required:
+          - asked
+          - served
         withheld:
           type: object
           nullable: true
@@ -23118,6 +23731,10 @@ components:
         count:
           type: integer
           example: 123
+          nullable: true
+          description: Total rows the list answers. Null when the request sent `skip_count=1`,
+            and on `assay-results/` pages after the first (read the total from the
+            first page).
         next:
           type: string
           nullable: true
@@ -23137,6 +23754,21 @@ components:
           nullable: true
           description: Echo of the `modified_since` value applied. Present only when
             the request sent `modified_since`.
+        limit_clamped:
+          type: object
+          description: 'Present only when the request asked for more rows per page
+            than this list serves: `asked` is the `limit` sent, `served` the page
+            size used (500; 2,000 on `assay-results/` and on `drill-samples/` rows
+            without `expand=assay`). Page on with `next`, or by `offset` in steps
+            of `served`.'
+          properties:
+            asked:
+              type: integer
+            served:
+              type: integer
+          required:
+          - asked
+          - served
       additionalProperties: false
     PaginatedDrillLithologyReadList:
       type: object
@@ -23147,6 +23779,10 @@ components:
         count:
           type: integer
           example: 123
+          nullable: true
+          description: Total rows the list answers. Null when the request sent `skip_count=1`,
+            and on `assay-results/` pages after the first (read the total from the
+            first page).
         next:
           type: string
           nullable: true
@@ -23184,6 +23820,21 @@ components:
           nullable: true
           description: Echo of the `modified_since` value applied. Present only when
             the request sent `modified_since`.
+        limit_clamped:
+          type: object
+          description: 'Present only when the request asked for more rows per page
+            than this list serves: `asked` is the `limit` sent, `served` the page
+            size used (500; 2,000 on `assay-results/` and on `drill-samples/` rows
+            without `expand=assay`). Page on with `next`, or by `offset` in steps
+            of `served`.'
+          properties:
+            asked:
+              type: integer
+            served:
+              type: integer
+          required:
+          - asked
+          - served
         withheld:
           type: object
           nullable: true
@@ -23219,6 +23870,10 @@ components:
         count:
           type: integer
           example: 123
+          nullable: true
+          description: Total rows the list answers. Null when the request sent `skip_count=1`,
+            and on `assay-results/` pages after the first (read the total from the
+            first page).
         next:
           type: string
           nullable: true
@@ -23238,6 +23893,21 @@ components:
           nullable: true
           description: Echo of the `modified_since` value applied. Present only when
             the request sent `modified_since`.
+        limit_clamped:
+          type: object
+          description: 'Present only when the request asked for more rows per page
+            than this list serves: `asked` is the `limit` sent, `served` the page
+            size used (500; 2,000 on `assay-results/` and on `drill-samples/` rows
+            without `expand=assay`). Page on with `next`, or by `offset` in steps
+            of `served`.'
+          properties:
+            asked:
+              type: integer
+            served:
+              type: integer
+          required:
+          - asked
+          - served
       additionalProperties: false
     PaginatedDrillMineralizationReadList:
       type: object
@@ -23248,6 +23918,10 @@ components:
         count:
           type: integer
           example: 123
+          nullable: true
+          description: Total rows the list answers. Null when the request sent `skip_count=1`,
+            and on `assay-results/` pages after the first (read the total from the
+            first page).
         next:
           type: string
           nullable: true
@@ -23285,6 +23959,21 @@ components:
           nullable: true
           description: Echo of the `modified_since` value applied. Present only when
             the request sent `modified_since`.
+        limit_clamped:
+          type: object
+          description: 'Present only when the request asked for more rows per page
+            than this list serves: `asked` is the `limit` sent, `served` the page
+            size used (500; 2,000 on `assay-results/` and on `drill-samples/` rows
+            without `expand=assay`). Page on with `next`, or by `offset` in steps
+            of `served`.'
+          properties:
+            asked:
+              type: integer
+            served:
+              type: integer
+          required:
+          - asked
+          - served
         withheld:
           type: object
           nullable: true
@@ -23320,6 +24009,10 @@ components:
         count:
           type: integer
           example: 123
+          nullable: true
+          description: Total rows the list answers. Null when the request sent `skip_count=1`,
+            and on `assay-results/` pages after the first (read the total from the
+            first page).
         next:
           type: string
           nullable: true
@@ -23339,6 +24032,21 @@ components:
           nullable: true
           description: Echo of the `modified_since` value applied. Present only when
             the request sent `modified_since`.
+        limit_clamped:
+          type: object
+          description: 'Present only when the request asked for more rows per page
+            than this list serves: `asked` is the `limit` sent, `served` the page
+            size used (500; 2,000 on `assay-results/` and on `drill-samples/` rows
+            without `expand=assay`). Page on with `next`, or by `offset` in steps
+            of `served`.'
+          properties:
+            asked:
+              type: integer
+            served:
+              type: integer
+          required:
+          - asked
+          - served
       additionalProperties: false
     PaginatedDrillPadReadList:
       type: object
@@ -23349,6 +24057,10 @@ components:
         count:
           type: integer
           example: 123
+          nullable: true
+          description: Total rows the list answers. Null when the request sent `skip_count=1`,
+            and on `assay-results/` pages after the first (read the total from the
+            first page).
         next:
           type: string
           nullable: true
@@ -23368,6 +24080,21 @@ components:
           nullable: true
           description: Echo of the `modified_since` value applied. Present only when
             the request sent `modified_since`.
+        limit_clamped:
+          type: object
+          description: 'Present only when the request asked for more rows per page
+            than this list serves: `asked` is the `limit` sent, `served` the page
+            size used (500; 2,000 on `assay-results/` and on `drill-samples/` rows
+            without `expand=assay`). Page on with `next`, or by `offset` in steps
+            of `served`.'
+          properties:
+            asked:
+              type: integer
+            served:
+              type: integer
+          required:
+          - asked
+          - served
       additionalProperties: false
     PaginatedDrillPhotoReadList:
       type: object
@@ -23378,6 +24105,10 @@ components:
         count:
           type: integer
           example: 123
+          nullable: true
+          description: Total rows the list answers. Null when the request sent `skip_count=1`,
+            and on `assay-results/` pages after the first (read the total from the
+            first page).
         next:
           type: string
           nullable: true
@@ -23415,6 +24146,21 @@ components:
           nullable: true
           description: Echo of the `modified_since` value applied. Present only when
             the request sent `modified_since`.
+        limit_clamped:
+          type: object
+          description: 'Present only when the request asked for more rows per page
+            than this list serves: `asked` is the `limit` sent, `served` the page
+            size used (500; 2,000 on `assay-results/` and on `drill-samples/` rows
+            without `expand=assay`). Page on with `next`, or by `offset` in steps
+            of `served`.'
+          properties:
+            asked:
+              type: integer
+            served:
+              type: integer
+          required:
+          - asked
+          - served
         withheld:
           type: object
           nullable: true
@@ -23450,6 +24196,10 @@ components:
         count:
           type: integer
           example: 123
+          nullable: true
+          description: Total rows the list answers. Null when the request sent `skip_count=1`,
+            and on `assay-results/` pages after the first (read the total from the
+            first page).
         next:
           type: string
           nullable: true
@@ -23487,6 +24237,21 @@ components:
           nullable: true
           description: Echo of the `modified_since` value applied. Present only when
             the request sent `modified_since`.
+        limit_clamped:
+          type: object
+          description: 'Present only when the request asked for more rows per page
+            than this list serves: `asked` is the `limit` sent, `served` the page
+            size used (500; 2,000 on `assay-results/` and on `drill-samples/` rows
+            without `expand=assay`). Page on with `next`, or by `offset` in steps
+            of `served`.'
+          properties:
+            asked:
+              type: integer
+            served:
+              type: integer
+          required:
+          - asked
+          - served
         withheld:
           type: object
           nullable: true
@@ -23522,6 +24287,10 @@ components:
         count:
           type: integer
           example: 123
+          nullable: true
+          description: Total rows the list answers. Null when the request sent `skip_count=1`,
+            and on `assay-results/` pages after the first (read the total from the
+            first page).
         next:
           type: string
           nullable: true
@@ -23541,6 +24310,21 @@ components:
           nullable: true
           description: Echo of the `modified_since` value applied. Present only when
             the request sent `modified_since`.
+        limit_clamped:
+          type: object
+          description: 'Present only when the request asked for more rows per page
+            than this list serves: `asked` is the `limit` sent, `served` the page
+            size used (500; 2,000 on `assay-results/` and on `drill-samples/` rows
+            without `expand=assay`). Page on with `next`, or by `offset` in steps
+            of `served`.'
+          properties:
+            asked:
+              type: integer
+            served:
+              type: integer
+          required:
+          - asked
+          - served
       additionalProperties: false
     PaginatedDrillSampleReadList:
       type: object
@@ -23551,6 +24335,10 @@ components:
         count:
           type: integer
           example: 123
+          nullable: true
+          description: Total rows the list answers. Null when the request sent `skip_count=1`,
+            and on `assay-results/` pages after the first (read the total from the
+            first page).
         next:
           type: string
           nullable: true
@@ -23588,6 +24376,21 @@ components:
           nullable: true
           description: Echo of the `modified_since` value applied. Present only when
             the request sent `modified_since`.
+        limit_clamped:
+          type: object
+          description: 'Present only when the request asked for more rows per page
+            than this list serves: `asked` is the `limit` sent, `served` the page
+            size used (500; 2,000 on `assay-results/` and on `drill-samples/` rows
+            without `expand=assay`). Page on with `next`, or by `offset` in steps
+            of `served`.'
+          properties:
+            asked:
+              type: integer
+            served:
+              type: integer
+          required:
+          - asked
+          - served
         withheld:
           type: object
           nullable: true
@@ -23613,6 +24416,27 @@ components:
               type: integer
           required:
           - soft_deleted
+        see_guide:
+          type: array
+          description: The guide sections that change how this answer should be read
+            — read them before reporting from it. Each names the topic, the section,
+            its path (GET it, no key needed beyond this one) and why it matters here.
+          items:
+            type: object
+            properties:
+              topic:
+                type: string
+              section:
+                type: string
+              url:
+                type: string
+              why:
+                type: string
+            required:
+            - topic
+            - section
+            - url
+            - why
       additionalProperties: false
     PaginatedDrillSpectralIntervalReadList:
       type: object
@@ -23623,6 +24447,10 @@ components:
         count:
           type: integer
           example: 123
+          nullable: true
+          description: Total rows the list answers. Null when the request sent `skip_count=1`,
+            and on `assay-results/` pages after the first (read the total from the
+            first page).
         next:
           type: string
           nullable: true
@@ -23660,6 +24488,21 @@ components:
           nullable: true
           description: Echo of the `modified_since` value applied. Present only when
             the request sent `modified_since`.
+        limit_clamped:
+          type: object
+          description: 'Present only when the request asked for more rows per page
+            than this list serves: `asked` is the `limit` sent, `served` the page
+            size used (500; 2,000 on `assay-results/` and on `drill-samples/` rows
+            without `expand=assay`). Page on with `next`, or by `offset` in steps
+            of `served`.'
+          properties:
+            asked:
+              type: integer
+            served:
+              type: integer
+          required:
+          - asked
+          - served
         withheld:
           type: object
           nullable: true
@@ -23695,6 +24538,10 @@ components:
         count:
           type: integer
           example: 123
+          nullable: true
+          description: Total rows the list answers. Null when the request sent `skip_count=1`,
+            and on `assay-results/` pages after the first (read the total from the
+            first page).
         next:
           type: string
           nullable: true
@@ -23714,6 +24561,21 @@ components:
           nullable: true
           description: Echo of the `modified_since` value applied. Present only when
             the request sent `modified_since`.
+        limit_clamped:
+          type: object
+          description: 'Present only when the request asked for more rows per page
+            than this list serves: `asked` is the `limit` sent, `served` the page
+            size used (500; 2,000 on `assay-results/` and on `drill-samples/` rows
+            without `expand=assay`). Page on with `next`, or by `offset` in steps
+            of `served`.'
+          properties:
+            asked:
+              type: integer
+            served:
+              type: integer
+          required:
+          - asked
+          - served
       additionalProperties: false
     PaginatedDrillStructureFeatureTypeReadList:
       type: object
@@ -23724,6 +24586,10 @@ components:
         count:
           type: integer
           example: 123
+          nullable: true
+          description: Total rows the list answers. Null when the request sent `skip_count=1`,
+            and on `assay-results/` pages after the first (read the total from the
+            first page).
         next:
           type: string
           nullable: true
@@ -23743,6 +24609,21 @@ components:
           nullable: true
           description: Echo of the `modified_since` value applied. Present only when
             the request sent `modified_since`.
+        limit_clamped:
+          type: object
+          description: 'Present only when the request asked for more rows per page
+            than this list serves: `asked` is the `limit` sent, `served` the page
+            size used (500; 2,000 on `assay-results/` and on `drill-samples/` rows
+            without `expand=assay`). Page on with `next`, or by `offset` in steps
+            of `served`.'
+          properties:
+            asked:
+              type: integer
+            served:
+              type: integer
+          required:
+          - asked
+          - served
       additionalProperties: false
     PaginatedDrillStructureReadList:
       type: object
@@ -23753,6 +24634,10 @@ components:
         count:
           type: integer
           example: 123
+          nullable: true
+          description: Total rows the list answers. Null when the request sent `skip_count=1`,
+            and on `assay-results/` pages after the first (read the total from the
+            first page).
         next:
           type: string
           nullable: true
@@ -23790,6 +24675,21 @@ components:
           nullable: true
           description: Echo of the `modified_since` value applied. Present only when
             the request sent `modified_since`.
+        limit_clamped:
+          type: object
+          description: 'Present only when the request asked for more rows per page
+            than this list serves: `asked` is the `limit` sent, `served` the page
+            size used (500; 2,000 on `assay-results/` and on `drill-samples/` rows
+            without `expand=assay`). Page on with `next`, or by `offset` in steps
+            of `served`.'
+          properties:
+            asked:
+              type: integer
+            served:
+              type: integer
+          required:
+          - asked
+          - served
         withheld:
           type: object
           nullable: true
@@ -23825,6 +24725,10 @@ components:
         count:
           type: integer
           example: 123
+          nullable: true
+          description: Total rows the list answers. Null when the request sent `skip_count=1`,
+            and on `assay-results/` pages after the first (read the total from the
+            first page).
         next:
           type: string
           nullable: true
@@ -23862,6 +24766,21 @@ components:
           nullable: true
           description: Echo of the `modified_since` value applied. Present only when
             the request sent `modified_since`.
+        limit_clamped:
+          type: object
+          description: 'Present only when the request asked for more rows per page
+            than this list serves: `asked` is the `limit` sent, `served` the page
+            size used (500; 2,000 on `assay-results/` and on `drill-samples/` rows
+            without `expand=assay`). Page on with `next`, or by `offset` in steps
+            of `served`.'
+          properties:
+            asked:
+              type: integer
+            served:
+              type: integer
+          required:
+          - asked
+          - served
         withheld:
           type: object
           nullable: true
@@ -23897,6 +24816,10 @@ components:
         count:
           type: integer
           example: 123
+          nullable: true
+          description: Total rows the list answers. Null when the request sent `skip_count=1`,
+            and on `assay-results/` pages after the first (read the total from the
+            first page).
         next:
           type: string
           nullable: true
@@ -23916,6 +24839,21 @@ components:
           nullable: true
           description: Echo of the `modified_since` value applied. Present only when
             the request sent `modified_since`.
+        limit_clamped:
+          type: object
+          description: 'Present only when the request asked for more rows per page
+            than this list serves: `asked` is the `limit` sent, `served` the page
+            size used (500; 2,000 on `assay-results/` and on `drill-samples/` rows
+            without `expand=assay`). Page on with `next`, or by `offset` in steps
+            of `served`.'
+          properties:
+            asked:
+              type: integer
+            served:
+              type: integer
+          required:
+          - asked
+          - served
       additionalProperties: false
     PaginatedDrillVeinReadList:
       type: object
@@ -23926,6 +24864,10 @@ components:
         count:
           type: integer
           example: 123
+          nullable: true
+          description: Total rows the list answers. Null when the request sent `skip_count=1`,
+            and on `assay-results/` pages after the first (read the total from the
+            first page).
         next:
           type: string
           nullable: true
@@ -23963,6 +24905,21 @@ components:
           nullable: true
           description: Echo of the `modified_since` value applied. Present only when
             the request sent `modified_since`.
+        limit_clamped:
+          type: object
+          description: 'Present only when the request asked for more rows per page
+            than this list serves: `asked` is the `limit` sent, `served` the page
+            size used (500; 2,000 on `assay-results/` and on `drill-samples/` rows
+            without `expand=assay`). Page on with `next`, or by `offset` in steps
+            of `served`.'
+          properties:
+            asked:
+              type: integer
+            served:
+              type: integer
+          required:
+          - asked
+          - served
         withheld:
           type: object
           nullable: true
@@ -23998,6 +24955,10 @@ components:
         count:
           type: integer
           example: 123
+          nullable: true
+          description: Total rows the list answers. Null when the request sent `skip_count=1`,
+            and on `assay-results/` pages after the first (read the total from the
+            first page).
         next:
           type: string
           nullable: true
@@ -24017,6 +24978,21 @@ components:
           nullable: true
           description: Echo of the `modified_since` value applied. Present only when
             the request sent `modified_since`.
+        limit_clamped:
+          type: object
+          description: 'Present only when the request asked for more rows per page
+            than this list serves: `asked` is the `limit` sent, `served` the page
+            size used (500; 2,000 on `assay-results/` and on `drill-samples/` rows
+            without `expand=assay`). Page on with `next`, or by `offset` in steps
+            of `served`.'
+          properties:
+            asked:
+              type: integer
+            served:
+              type: integer
+          required:
+          - asked
+          - served
       additionalProperties: false
     PaginatedElevationDataList:
       type: object
@@ -24027,6 +25003,10 @@ components:
         count:
           type: integer
           example: 123
+          nullable: true
+          description: Total rows the list answers. Null when the request sent `skip_count=1`,
+            and on `assay-results/` pages after the first (read the total from the
+            first page).
         next:
           type: string
           nullable: true
@@ -24046,6 +25026,21 @@ components:
           nullable: true
           description: Echo of the `modified_since` value applied. Present only when
             the request sent `modified_since`.
+        limit_clamped:
+          type: object
+          description: 'Present only when the request asked for more rows per page
+            than this list serves: `asked` is the `limit` sent, `served` the page
+            size used (500; 2,000 on `assay-results/` and on `drill-samples/` rows
+            without `expand=assay`). Page on with `next`, or by `offset` in steps
+            of `served`.'
+          properties:
+            asked:
+              type: integer
+            served:
+              type: integer
+          required:
+          - asked
+          - served
       additionalProperties: false
     PaginatedFieldNoteReadList:
       type: object
@@ -24056,6 +25051,10 @@ components:
         count:
           type: integer
           example: 123
+          nullable: true
+          description: Total rows the list answers. Null when the request sent `skip_count=1`,
+            and on `assay-results/` pages after the first (read the total from the
+            first page).
         next:
           type: string
           nullable: true
@@ -24093,6 +25092,21 @@ components:
           nullable: true
           description: Echo of the `modified_since` value applied. Present only when
             the request sent `modified_since`.
+        limit_clamped:
+          type: object
+          description: 'Present only when the request asked for more rows per page
+            than this list serves: `asked` is the `limit` sent, `served` the page
+            size used (500; 2,000 on `assay-results/` and on `drill-samples/` rows
+            without `expand=assay`). Page on with `next`, or by `offset` in steps
+            of `served`.'
+          properties:
+            asked:
+              type: integer
+            served:
+              type: integer
+          required:
+          - asked
+          - served
         withheld:
           type: object
           nullable: true
@@ -24128,6 +25142,10 @@ components:
         count:
           type: integer
           example: 123
+          nullable: true
+          description: Total rows the list answers. Null when the request sent `skip_count=1`,
+            and on `assay-results/` pages after the first (read the total from the
+            first page).
         next:
           type: string
           nullable: true
@@ -24147,6 +25165,21 @@ components:
           nullable: true
           description: Echo of the `modified_since` value applied. Present only when
             the request sent `modified_since`.
+        limit_clamped:
+          type: object
+          description: 'Present only when the request asked for more rows per page
+            than this list serves: `asked` is the `limit` sent, `served` the page
+            size used (500; 2,000 on `assay-results/` and on `drill-samples/` rows
+            without `expand=assay`). Page on with `next`, or by `offset` in steps
+            of `served`.'
+          properties:
+            asked:
+              type: integer
+            served:
+              type: integer
+          required:
+          - asked
+          - served
       additionalProperties: false
     PaginatedGeophysicalSurveyReadList:
       type: object
@@ -24157,6 +25190,10 @@ components:
         count:
           type: integer
           example: 123
+          nullable: true
+          description: Total rows the list answers. Null when the request sent `skip_count=1`,
+            and on `assay-results/` pages after the first (read the total from the
+            first page).
         next:
           type: string
           nullable: true
@@ -24194,6 +25231,21 @@ components:
           nullable: true
           description: Echo of the `modified_since` value applied. Present only when
             the request sent `modified_since`.
+        limit_clamped:
+          type: object
+          description: 'Present only when the request asked for more rows per page
+            than this list serves: `asked` is the `limit` sent, `served` the page
+            size used (500; 2,000 on `assay-results/` and on `drill-samples/` rows
+            without `expand=assay`). Page on with `next`, or by `offset` in steps
+            of `served`.'
+          properties:
+            asked:
+              type: integer
+            served:
+              type: integer
+          required:
+          - asked
+          - served
         withheld:
           type: object
           nullable: true
@@ -24229,6 +25281,10 @@ components:
         count:
           type: integer
           example: 123
+          nullable: true
+          description: Total rows the list answers. Null when the request sent `skip_count=1`,
+            and on `assay-results/` pages after the first (read the total from the
+            first page).
         next:
           type: string
           nullable: true
@@ -24266,6 +25322,21 @@ components:
           nullable: true
           description: Echo of the `modified_since` value applied. Present only when
             the request sent `modified_since`.
+        limit_clamped:
+          type: object
+          description: 'Present only when the request asked for more rows per page
+            than this list serves: `asked` is the `limit` sent, `served` the page
+            size used (500; 2,000 on `assay-results/` and on `drill-samples/` rows
+            without `expand=assay`). Page on with `next`, or by `offset` in steps
+            of `served`.'
+          properties:
+            asked:
+              type: integer
+            served:
+              type: integer
+          required:
+          - asked
+          - served
         withheld:
           type: object
           nullable: true
@@ -24301,6 +25372,10 @@ components:
         count:
           type: integer
           example: 123
+          nullable: true
+          description: Total rows the list answers. Null when the request sent `skip_count=1`,
+            and on `assay-results/` pages after the first (read the total from the
+            first page).
         next:
           type: string
           nullable: true
@@ -24338,6 +25413,21 @@ components:
           nullable: true
           description: Echo of the `modified_since` value applied. Present only when
             the request sent `modified_since`.
+        limit_clamped:
+          type: object
+          description: 'Present only when the request asked for more rows per page
+            than this list serves: `asked` is the `limit` sent, `served` the page
+            size used (500; 2,000 on `assay-results/` and on `drill-samples/` rows
+            without `expand=assay`). Page on with `next`, or by `offset` in steps
+            of `served`.'
+          properties:
+            asked:
+              type: integer
+            served:
+              type: integer
+          required:
+          - asked
+          - served
         withheld:
           type: object
           nullable: true
@@ -24373,6 +25463,10 @@ components:
         count:
           type: integer
           example: 123
+          nullable: true
+          description: Total rows the list answers. Null when the request sent `skip_count=1`,
+            and on `assay-results/` pages after the first (read the total from the
+            first page).
         next:
           type: string
           nullable: true
@@ -24392,6 +25486,21 @@ components:
           nullable: true
           description: Echo of the `modified_since` value applied. Present only when
             the request sent `modified_since`.
+        limit_clamped:
+          type: object
+          description: 'Present only when the request asked for more rows per page
+            than this list serves: `asked` is the `limit` sent, `served` the page
+            size used (500; 2,000 on `assay-results/` and on `drill-samples/` rows
+            without `expand=assay`). Page on with `next`, or by `offset` in steps
+            of `served`.'
+          properties:
+            asked:
+              type: integer
+            served:
+              type: integer
+          required:
+          - asked
+          - served
       additionalProperties: false
     PaginatedMethodReadList:
       type: object
@@ -24402,6 +25511,10 @@ components:
         count:
           type: integer
           example: 123
+          nullable: true
+          description: Total rows the list answers. Null when the request sent `skip_count=1`,
+            and on `assay-results/` pages after the first (read the total from the
+            first page).
         next:
           type: string
           nullable: true
@@ -24421,6 +25534,42 @@ components:
           nullable: true
           description: Echo of the `modified_since` value applied. Present only when
             the request sent `modified_since`.
+        limit_clamped:
+          type: object
+          description: 'Present only when the request asked for more rows per page
+            than this list serves: `asked` is the `limit` sent, `served` the page
+            size used (500; 2,000 on `assay-results/` and on `drill-samples/` rows
+            without `expand=assay`). Page on with `next`, or by `offset` in steps
+            of `served`.'
+          properties:
+            asked:
+              type: integer
+            served:
+              type: integer
+          required:
+          - asked
+          - served
+        see_guide:
+          type: array
+          description: The guide sections that change how this answer should be read
+            — read them before reporting from it. Each names the topic, the section,
+            its path (GET it, no key needed beyond this one) and why it matters here.
+          items:
+            type: object
+            properties:
+              topic:
+                type: string
+              section:
+                type: string
+              url:
+                type: string
+              why:
+                type: string
+            required:
+            - topic
+            - section
+            - url
+            - why
       additionalProperties: false
     PaginatedMineralAssemblageReadList:
       type: object
@@ -24431,6 +25580,10 @@ components:
         count:
           type: integer
           example: 123
+          nullable: true
+          description: Total rows the list answers. Null when the request sent `skip_count=1`,
+            and on `assay-results/` pages after the first (read the total from the
+            first page).
         next:
           type: string
           nullable: true
@@ -24450,6 +25603,21 @@ components:
           nullable: true
           description: Echo of the `modified_since` value applied. Present only when
             the request sent `modified_since`.
+        limit_clamped:
+          type: object
+          description: 'Present only when the request asked for more rows per page
+            than this list serves: `asked` is the `limit` sent, `served` the page
+            size used (500; 2,000 on `assay-results/` and on `drill-samples/` rows
+            without `expand=assay`). Page on with `next`, or by `offset` in steps
+            of `served`.'
+          properties:
+            asked:
+              type: integer
+            served:
+              type: integer
+          required:
+          - asked
+          - served
       additionalProperties: false
     PaginatedMineralReadList:
       type: object
@@ -24460,6 +25628,10 @@ components:
         count:
           type: integer
           example: 123
+          nullable: true
+          description: Total rows the list answers. Null when the request sent `skip_count=1`,
+            and on `assay-results/` pages after the first (read the total from the
+            first page).
         next:
           type: string
           nullable: true
@@ -24479,6 +25651,21 @@ components:
           nullable: true
           description: Echo of the `modified_since` value applied. Present only when
             the request sent `modified_since`.
+        limit_clamped:
+          type: object
+          description: 'Present only when the request asked for more rows per page
+            than this list serves: `asked` is the `limit` sent, `served` the page
+            size used (500; 2,000 on `assay-results/` and on `drill-samples/` rows
+            without `expand=assay`). Page on with `next`, or by `offset` in steps
+            of `served`.'
+          properties:
+            asked:
+              type: integer
+            served:
+              type: integer
+          required:
+          - asked
+          - served
       additionalProperties: false
     PaginatedPhotoReadList:
       type: object
@@ -24489,6 +25676,10 @@ components:
         count:
           type: integer
           example: 123
+          nullable: true
+          description: Total rows the list answers. Null when the request sent `skip_count=1`,
+            and on `assay-results/` pages after the first (read the total from the
+            first page).
         next:
           type: string
           nullable: true
@@ -24508,6 +25699,21 @@ components:
           nullable: true
           description: Echo of the `modified_since` value applied. Present only when
             the request sent `modified_since`.
+        limit_clamped:
+          type: object
+          description: 'Present only when the request asked for more rows per page
+            than this list serves: `asked` is the `limit` sent, `served` the page
+            size used (500; 2,000 on `assay-results/` and on `drill-samples/` rows
+            without `expand=assay`). Page on with `next`, or by `offset` in steps
+            of `served`.'
+          properties:
+            asked:
+              type: integer
+            served:
+              type: integer
+          required:
+          - asked
+          - served
       additionalProperties: false
     PaginatedPointSampleReadList:
       type: object
@@ -24518,6 +25724,10 @@ components:
         count:
           type: integer
           example: 123
+          nullable: true
+          description: Total rows the list answers. Null when the request sent `skip_count=1`,
+            and on `assay-results/` pages after the first (read the total from the
+            first page).
         next:
           type: string
           nullable: true
@@ -24555,6 +25765,21 @@ components:
           nullable: true
           description: Echo of the `modified_since` value applied. Present only when
             the request sent `modified_since`.
+        limit_clamped:
+          type: object
+          description: 'Present only when the request asked for more rows per page
+            than this list serves: `asked` is the `limit` sent, `served` the page
+            size used (500; 2,000 on `assay-results/` and on `drill-samples/` rows
+            without `expand=assay`). Page on with `next`, or by `offset` in steps
+            of `served`.'
+          properties:
+            asked:
+              type: integer
+            served:
+              type: integer
+          required:
+          - asked
+          - served
         withheld:
           type: object
           nullable: true
@@ -24590,6 +25815,10 @@ components:
         count:
           type: integer
           example: 123
+          nullable: true
+          description: Total rows the list answers. Null when the request sent `skip_count=1`,
+            and on `assay-results/` pages after the first (read the total from the
+            first page).
         next:
           type: string
           nullable: true
@@ -24609,6 +25838,21 @@ components:
           nullable: true
           description: Echo of the `modified_since` value applied. Present only when
             the request sent `modified_since`.
+        limit_clamped:
+          type: object
+          description: 'Present only when the request asked for more rows per page
+            than this list serves: `asked` is the `limit` sent, `served` the page
+            size used (500; 2,000 on `assay-results/` and on `drill-samples/` rows
+            without `expand=assay`). Page on with `next`, or by `offset` in steps
+            of `served`.'
+          properties:
+            asked:
+              type: integer
+            served:
+              type: integer
+          required:
+          - asked
+          - served
       additionalProperties: false
     PaginatedQCSampleReadList:
       type: object
@@ -24619,6 +25863,10 @@ components:
         count:
           type: integer
           example: 123
+          nullable: true
+          description: Total rows the list answers. Null when the request sent `skip_count=1`,
+            and on `assay-results/` pages after the first (read the total from the
+            first page).
         next:
           type: string
           nullable: true
@@ -24656,6 +25904,21 @@ components:
           nullable: true
           description: Echo of the `modified_since` value applied. Present only when
             the request sent `modified_since`.
+        limit_clamped:
+          type: object
+          description: 'Present only when the request asked for more rows per page
+            than this list serves: `asked` is the `limit` sent, `served` the page
+            size used (500; 2,000 on `assay-results/` and on `drill-samples/` rows
+            without `expand=assay`). Page on with `next`, or by `offset` in steps
+            of `served`.'
+          properties:
+            asked:
+              type: integer
+            served:
+              type: integer
+          required:
+          - asked
+          - served
         withheld:
           type: object
           nullable: true
@@ -24681,6 +25944,27 @@ components:
               type: integer
           required:
           - soft_deleted
+        see_guide:
+          type: array
+          description: The guide sections that change how this answer should be read
+            — read them before reporting from it. Each names the topic, the section,
+            its path (GET it, no key needed beyond this one) and why it matters here.
+          items:
+            type: object
+            properties:
+              topic:
+                type: string
+              section:
+                type: string
+              url:
+                type: string
+              why:
+                type: string
+            required:
+            - topic
+            - section
+            - url
+            - why
       additionalProperties: false
     PaginatedQCTypeReadList:
       type: object
@@ -24691,6 +25975,10 @@ components:
         count:
           type: integer
           example: 123
+          nullable: true
+          description: Total rows the list answers. Null when the request sent `skip_count=1`,
+            and on `assay-results/` pages after the first (read the total from the
+            first page).
         next:
           type: string
           nullable: true
@@ -24710,6 +25998,21 @@ components:
           nullable: true
           description: Echo of the `modified_since` value applied. Present only when
             the request sent `modified_since`.
+        limit_clamped:
+          type: object
+          description: 'Present only when the request asked for more rows per page
+            than this list serves: `asked` is the `limit` sent, `served` the page
+            size used (500; 2,000 on `assay-results/` and on `drill-samples/` rows
+            without `expand=assay`). Page on with `next`, or by `offset` in steps
+            of `served`.'
+          properties:
+            asked:
+              type: integer
+            served:
+              type: integer
+          required:
+          - asked
+          - served
       additionalProperties: false
     PaginatedRegionalVectorFeatureList:
       type: object
@@ -24720,6 +26023,10 @@ components:
         count:
           type: integer
           example: 123
+          nullable: true
+          description: Total rows the list answers. Null when the request sent `skip_count=1`,
+            and on `assay-results/` pages after the first (read the total from the
+            first page).
         next:
           type: string
           nullable: true
@@ -24739,6 +26046,21 @@ components:
           nullable: true
           description: Echo of the `modified_since` value applied. Present only when
             the request sent `modified_since`.
+        limit_clamped:
+          type: object
+          description: 'Present only when the request asked for more rows per page
+            than this list serves: `asked` is the `limit` sent, `served` the page
+            size used (500; 2,000 on `assay-results/` and on `drill-samples/` rows
+            without `expand=assay`). Page on with `next`, or by `offset` in steps
+            of `served`.'
+          properties:
+            asked:
+              type: integer
+            served:
+              type: integer
+          required:
+          - asked
+          - served
       additionalProperties: false
     PaginatedRoadReadList:
       type: object
@@ -24749,6 +26071,10 @@ components:
         count:
           type: integer
           example: 123
+          nullable: true
+          description: Total rows the list answers. Null when the request sent `skip_count=1`,
+            and on `assay-results/` pages after the first (read the total from the
+            first page).
         next:
           type: string
           nullable: true
@@ -24786,6 +26112,21 @@ components:
           nullable: true
           description: Echo of the `modified_since` value applied. Present only when
             the request sent `modified_since`.
+        limit_clamped:
+          type: object
+          description: 'Present only when the request asked for more rows per page
+            than this list serves: `asked` is the `limit` sent, `served` the page
+            size used (500; 2,000 on `assay-results/` and on `drill-samples/` rows
+            without `expand=assay`). Page on with `next`, or by `offset` in steps
+            of `served`.'
+          properties:
+            asked:
+              type: integer
+            served:
+              type: integer
+          required:
+          - asked
+          - served
         withheld:
           type: object
           nullable: true
@@ -24821,6 +26162,10 @@ components:
         count:
           type: integer
           example: 123
+          nullable: true
+          description: Total rows the list answers. Null when the request sent `skip_count=1`,
+            and on `assay-results/` pages after the first (read the total from the
+            first page).
         next:
           type: string
           nullable: true
@@ -24840,6 +26185,21 @@ components:
           nullable: true
           description: Echo of the `modified_since` value applied. Present only when
             the request sent `modified_since`.
+        limit_clamped:
+          type: object
+          description: 'Present only when the request asked for more rows per page
+            than this list serves: `asked` is the `limit` sent, `served` the page
+            size used (500; 2,000 on `assay-results/` and on `drill-samples/` rows
+            without `expand=assay`). Page on with `next`, or by `offset` in steps
+            of `served`.'
+          properties:
+            asked:
+              type: integer
+            served:
+              type: integer
+          required:
+          - asked
+          - served
       additionalProperties: false
     PaginatedSpectralSchemeReadList:
       type: object
@@ -24850,6 +26210,10 @@ components:
         count:
           type: integer
           example: 123
+          nullable: true
+          description: Total rows the list answers. Null when the request sent `skip_count=1`,
+            and on `assay-results/` pages after the first (read the total from the
+            first page).
         next:
           type: string
           nullable: true
@@ -24869,6 +26233,21 @@ components:
           nullable: true
           description: Echo of the `modified_since` value applied. Present only when
             the request sent `modified_since`.
+        limit_clamped:
+          type: object
+          description: 'Present only when the request asked for more rows per page
+            than this list serves: `asked` is the `limit` sent, `served` the page
+            size used (500; 2,000 on `assay-results/` and on `drill-samples/` rows
+            without `expand=assay`). Page on with `next`, or by `offset` in steps
+            of `served`.'
+          properties:
+            asked:
+              type: integer
+            served:
+              type: integer
+          required:
+          - asked
+          - served
       additionalProperties: false
     PaginatedStandardReadList:
       type: object
@@ -24879,6 +26258,10 @@ components:
         count:
           type: integer
           example: 123
+          nullable: true
+          description: Total rows the list answers. Null when the request sent `skip_count=1`,
+            and on `assay-results/` pages after the first (read the total from the
+            first page).
         next:
           type: string
           nullable: true
@@ -24898,6 +26281,21 @@ components:
           nullable: true
           description: Echo of the `modified_since` value applied. Present only when
             the request sent `modified_since`.
+        limit_clamped:
+          type: object
+          description: 'Present only when the request asked for more rows per page
+            than this list serves: `asked` is the `limit` sent, `served` the page
+            size used (500; 2,000 on `assay-results/` and on `drill-samples/` rows
+            without `expand=assay`). Page on with `next`, or by `offset` in steps
+            of `served`.'
+          properties:
+            asked:
+              type: integer
+            served:
+              type: integer
+          required:
+          - asked
+          - served
       additionalProperties: false
     PaginatedStructureReadList:
       type: object
@@ -24908,6 +26306,10 @@ components:
         count:
           type: integer
           example: 123
+          nullable: true
+          description: Total rows the list answers. Null when the request sent `skip_count=1`,
+            and on `assay-results/` pages after the first (read the total from the
+            first page).
         next:
           type: string
           nullable: true
@@ -24945,6 +26347,21 @@ components:
           nullable: true
           description: Echo of the `modified_since` value applied. Present only when
             the request sent `modified_since`.
+        limit_clamped:
+          type: object
+          description: 'Present only when the request asked for more rows per page
+            than this list serves: `asked` is the `limit` sent, `served` the page
+            size used (500; 2,000 on `assay-results/` and on `drill-samples/` rows
+            without `expand=assay`). Page on with `next`, or by `offset` in steps
+            of `served`.'
+          properties:
+            asked:
+              type: integer
+            served:
+              type: integer
+          required:
+          - asked
+          - served
         withheld:
           type: object
           nullable: true
@@ -24980,6 +26397,10 @@ components:
         count:
           type: integer
           example: 123
+          nullable: true
+          description: Total rows the list answers. Null when the request sent `skip_count=1`,
+            and on `assay-results/` pages after the first (read the total from the
+            first page).
         next:
           type: string
           nullable: true
@@ -24999,6 +26420,21 @@ components:
           nullable: true
           description: Echo of the `modified_since` value applied. Present only when
             the request sent `modified_since`.
+        limit_clamped:
+          type: object
+          description: 'Present only when the request asked for more rows per page
+            than this list serves: `asked` is the `limit` sent, `served` the page
+            size used (500; 2,000 on `assay-results/` and on `drill-samples/` rows
+            without `expand=assay`). Page on with `next`, or by `offset` in steps
+            of `served`.'
+          properties:
+            asked:
+              type: integer
+            served:
+              type: integer
+          required:
+          - asked
+          - served
       additionalProperties: false
     PaginatedVectorFeatureReadList:
       type: object
@@ -25009,6 +26445,10 @@ components:
         count:
           type: integer
           example: 123
+          nullable: true
+          description: Total rows the list answers. Null when the request sent `skip_count=1`,
+            and on `assay-results/` pages after the first (read the total from the
+            first page).
         next:
           type: string
           nullable: true
@@ -25028,6 +26468,21 @@ components:
           nullable: true
           description: Echo of the `modified_since` value applied. Present only when
             the request sent `modified_since`.
+        limit_clamped:
+          type: object
+          description: 'Present only when the request asked for more rows per page
+            than this list serves: `asked` is the `limit` sent, `served` the page
+            size used (500; 2,000 on `assay-results/` and on `drill-samples/` rows
+            without `expand=assay`). Page on with `next`, or by `offset` in steps
+            of `served`.'
+          properties:
+            asked:
+              type: integer
+            served:
+              type: integer
+          required:
+          - asked
+          - served
       additionalProperties: false
     PaginatedVectorLayerSummaryList:
       type: object
@@ -25038,6 +26493,10 @@ components:
         count:
           type: integer
           example: 123
+          nullable: true
+          description: Total rows the list answers. Null when the request sent `skip_count=1`,
+            and on `assay-results/` pages after the first (read the total from the
+            first page).
         next:
           type: string
           nullable: true
@@ -25057,6 +26516,21 @@ components:
           nullable: true
           description: Echo of the `modified_since` value applied. Present only when
             the request sent `modified_since`.
+        limit_clamped:
+          type: object
+          description: 'Present only when the request asked for more rows per page
+            than this list serves: `asked` is the `limit` sent, `served` the page
+            size used (500; 2,000 on `assay-results/` and on `drill-samples/` rows
+            without `expand=assay`). Page on with `next`, or by `offset` in steps
+            of `served`.'
+          properties:
+            asked:
+              type: integer
+            served:
+              type: integer
+          required:
+          - asked
+          - served
       additionalProperties: false
     PaginatedVeinTypeReadList:
       type: object
@@ -25067,6 +26541,10 @@ components:
         count:
           type: integer
           example: 123
+          nullable: true
+          description: Total rows the list answers. Null when the request sent `skip_count=1`,
+            and on `assay-results/` pages after the first (read the total from the
+            first page).
         next:
           type: string
           nullable: true
@@ -25086,6 +26564,21 @@ components:
           nullable: true
           description: Echo of the `modified_since` value applied. Present only when
             the request sent `modified_since`.
+        limit_clamped:
+          type: object
+          description: 'Present only when the request asked for more rows per page
+            than this list serves: `asked` is the `limit` sent, `served` the page
+            size used (500; 2,000 on `assay-results/` and on `drill-samples/` rows
+            without `expand=assay`). Page on with `next`, or by `offset` in steps
+            of `served`.'
+          properties:
+            asked:
+              type: integer
+            served:
+              type: integer
+          required:
+          - asked
+          - served
       additionalProperties: false
     PaginatedWaterSampleReadList:
       type: object
@@ -25096,6 +26589,10 @@ components:
         count:
           type: integer
           example: 123
+          nullable: true
+          description: Total rows the list answers. Null when the request sent `skip_count=1`,
+            and on `assay-results/` pages after the first (read the total from the
+            first page).
         next:
           type: string
           nullable: true
@@ -25133,6 +26630,21 @@ components:
           nullable: true
           description: Echo of the `modified_since` value applied. Present only when
             the request sent `modified_since`.
+        limit_clamped:
+          type: object
+          description: 'Present only when the request asked for more rows per page
+            than this list serves: `asked` is the `limit` sent, `served` the page
+            size used (500; 2,000 on `assay-results/` and on `drill-samples/` rows
+            without `expand=assay`). Page on with `next`, or by `offset` in steps
+            of `served`.'
+          properties:
+            asked:
+              type: integer
+            served:
+              type: integer
+          required:
+          - asked
+          - served
         withheld:
           type: object
           nullable: true
@@ -25168,6 +26680,10 @@ components:
         count:
           type: integer
           example: 123
+          nullable: true
+          description: Total rows the list answers. Null when the request sent `skip_count=1`,
+            and on `assay-results/` pages after the first (read the total from the
+            first page).
         next:
           type: string
           nullable: true
@@ -25205,6 +26721,21 @@ components:
           nullable: true
           description: Echo of the `modified_since` value applied. Present only when
             the request sent `modified_since`.
+        limit_clamped:
+          type: object
+          description: 'Present only when the request asked for more rows per page
+            than this list serves: `asked` is the `limit` sent, `served` the page
+            size used (500; 2,000 on `assay-results/` and on `drill-samples/` rows
+            without `expand=assay`). Page on with `next`, or by `offset` in steps
+            of `served`.'
+          properties:
+            asked:
+              type: integer
+            served:
+              type: integer
+          required:
+          - asked
+          - served
         withheld:
           type: object
           nullable: true
@@ -26609,6 +28140,27 @@ components:
           type: array
           items:
             type: string
+        see_guide:
+          type: array
+          description: The guide sections that change how this answer should be read
+            — read them before reporting from it. Each names the topic, the section,
+            its path (GET it, no key needed beyond this one) and why it matters here.
+          items:
+            type: object
+            properties:
+              topic:
+                type: string
+              section:
+                type: string
+              url:
+                type: string
+              why:
+                type: string
+            required:
+            - topic
+            - section
+            - url
+            - why
       required:
       - coverage
       - notes
@@ -26655,6 +28207,27 @@ components:
           nullable: true
           description: The offset of the next page of readings, or null when this
             is the last.
+        see_guide:
+          type: array
+          description: The guide sections that change how this answer should be read
+            — read them before reporting from it. Each names the topic, the section,
+            its path (GET it, no key needed beyond this one) and why it matters here.
+          items:
+            type: object
+            properties:
+              topic:
+                type: string
+              section:
+                type: string
+              url:
+                type: string
+              why:
+                type: string
+            required:
+            - topic
+            - section
+            - url
+            - why
       required:
       - certificates
       - mode
@@ -26698,6 +28271,27 @@ components:
           items:
             type: object
             additionalProperties: {}
+        see_guide:
+          type: array
+          description: The guide sections that change how this answer should be read
+            — read them before reporting from it. Each names the topic, the section,
+            its path (GET it, no key needed beyond this one) and why it matters here.
+          items:
+            type: object
+            properties:
+              topic:
+                type: string
+              section:
+                type: string
+              url:
+                type: string
+              why:
+                type: string
+            required:
+            - topic
+            - section
+            - url
+            - why
       required:
       - blank_criteria
       - blank_warning_limits
@@ -26953,8 +28547,9 @@ components:
           format: date-time
         summary:
           type: object
-          additionalProperties:
-            type: integer
+          additionalProperties: {}
+          description: Records by status; `values` (long-form) and `links` (undo)
+            as in the write response.
         projects:
           type: array
           items:
@@ -27030,9 +28625,11 @@ components:
           description: '{write_id, available (true | "partial"), request, not_reached?}'
         summary:
           type: object
-          additionalProperties:
-            type: integer
-          description: Rows by status.
+          additionalProperties: {}
+          description: 'Records by status (integers). A long-form model (Assay, Method,
+            Standard, WaterAnalysis, WaterQualityMethod: one row per value) adds `values`:
+            the values by status. An undo that put sample links back adds `links`:
+            those links by status.'
         rows:
           type: array
           items:
@@ -27047,8 +28644,8 @@ components:
         before_writing:
           type: object
           additionalProperties: {}
-          description: 'A dry run of an intent that changes existing records: what
-            to show the user before sending it.'
+          description: 'A dry run of an intent that changes existing records, or one
+            that carries warnings: what to show the user before sending it.'
         ignored_fields:
           type: array
           items:
@@ -27664,11 +29261,12 @@ components:
           pattern: ^-?\d{0,8}(?:\.\d{0,6})?$
           nullable: true
           description: 'The analyte value, as a DECIMAL STRING rather than a JSON
-            number — precision is preserved exactly as the laboratory reported it,
-            and parsing it as a float will silently round it. Parse it with a decimal
-            type. Its units are the sibling `units` field: units are per VALUE, not
-            per sample and not per element, because one sample can carry values from
-            two laboratories at different units.'
+            number, stored and sent at 4 decimal places (a value the laboratory reported
+            with more was rounded to 4 when it was loaded); parsing it as a float
+            may round it again. Parse it with a decimal type. Its units are the sibling
+            `units` field: units are per VALUE, not per sample and not per element,
+            because one sample can carry values from two laboratories at different
+            units.'
         value_flag:
           default: ''
           oneOf:
@@ -29230,6 +30828,14 @@ components:
         * `g` - grams
         * `lb` - pounds
         * `oz` - ounces
+    XyzStatusEnum:
+      type: string
+      enum:
+      - ok
+      - no_trace
+      - no_local_grid
+      - not_requested
+      - failed
     ZoneTypeEnum:
       enum:
       - MRK

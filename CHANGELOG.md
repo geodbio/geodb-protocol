@@ -1,5 +1,98 @@
 # Changelog
 
+## [0.3.0] — prepared 2026-10-04 (published at the maintainer's go)
+
+Protocol **0.3.0** (`info.version`, the `X-GeoDB-Protocol-Version` header and
+`grant-context.protocol_version` all say `0.3.0`). ⚠️ **Breaking for grant
+callers**; geoDB's first-party (Knox) clients are unchanged (their bodies are
+pinned byte for byte). The exploration schemas publish at a new `$id`,
+`https://spec.geodb.io/exploration/v0.3.0/…`; the `v0.1.0` and `v0.2.0` copies
+stay served as they were.
+
+### ⚠️ Release order
+1. **`geodb-client` 0.3.0 on PyPI BEFORE the geoDB deploy.** The deploy raises
+   the served install line to `pip install "geodb-client>=0.3,<0.4"`; without
+   the client on PyPI every connector sandbox gets "No matching distribution".
+   A 0.2 client against a 0.3 server raises `ProtocolVersionMismatch` naming
+   that install line.
+2. Deploy geoDB.
+3. Push this repository (the spec at 0.3.0) and tag both repos.
+
+### ⚠️ Changed — drill-sample rows are lean; the values have their own homes
+- **A drill-sample row names its assay by id** (`assay_id`); the nested assay
+  record comes back only with **`expand=assay`** (or `merge=`). List rows also
+  drop the duplicated `project` / `drill_sample_set` objects — the ids
+  (`project_id`, `set_id`, `set_name`) stay; a record by id is unchanged.
+  Calculated custom fields and metal equivalents carry the same values lean or
+  expanded.
+- **`assay-results/` is the flat value table** — one row per sample × element ×
+  method. It now lists field-XRF readings beside laboratory results with each
+  row's **`source_type`**; new filter **`source_type=lab|field_xrf`** (omitted:
+  both — the default row set is unchanged). `qaqc_status` is always filled.
+- **New export model `assay_results`** (`POST /api/v2/exports/`, `export_link`,
+  the client's `export()`): the same table as a file, with its column dictionary
+  in the job notes; filters the export cannot honour are refused, never an
+  empty file.
+- **A merged `drill_samples` export says what it merged:** the job status
+  carries `notes` (and `see_guide`) whatever the format; Parquet files also
+  carry them in their `geodb` metadata.
+- `upper_limit` 0 reads `0` (it read `null`); values are stated as stored and
+  sent at 4 decimal places.
+
+### ⚠️ Changed — paging
+- **Over-cap `limit` is reported:** the envelope carries
+  **`limit_clamped: {asked, served}`** on every paginated list. The cap is 500,
+  **2,000** on `assay-results/` and on lean `drill-samples/` reads.
+- **`assay-results/` counts on its first page only;** later pages carry
+  `count: null` — follow `next`, or page by `offset` up to the first page's
+  `count`.
+
+### ⚠️ Changed — answers point at the guide
+- **`see_guide`** (topic, section, path, why) on the reads whose answer changes
+  how it should be read: assays, assay results, drill samples, methods, QC
+  samples, detection limits, drill intercepts, QAQC standards / verdicts, QC
+  configuration, and export job status. For grant callers it replaces the QAQC
+  note's prose pointer; Knox callers keep the note byte for byte.
+- **A guide topic returns whole** by default (every served section; `limit` /
+  `offset` still page). New **`GET /api/v2/guide/{topic_id}/{section_id}/`**
+  answers exactly as `?section=`; a section path with a different `section`
+  parameter is refused `invalid_parameter`. The index lists each topic's
+  sections as `{id, heading}`. New topic: `geostatistics`.
+
+### ⚠️ Changed — downhole positions
+- Drill-sample rows carry **`xyz_epsg`** and **`xyz_status`**
+  (`ok` · `no_trace` · `no_local_grid` · `not_requested` · `failed`): the x/y/z
+  positions are local-grid metres; `xyz_epsg` names their CRS (null for a custom
+  local grid).
+
+### Changed — writes
+- New reason code **`interval_invalid`**: a negative, zero-length or
+  upside-down interval is refused per row (dry run and write; the rest lands).
+- An upsert or update that would move an interval onto a neighbour is refused
+  `interval_overlap` (it used to slip through on update).
+- New warning codes: `beyond_total_depth`, `detection_limit_not_kept`,
+  `fuzzy_sample_match`, `method_detection_limit_missing`, `qc_type_missing`,
+  `sample_not_linked`, `value_rounded`, `value_unit_impossible`,
+  `value_unparseable`.
+- A dry run that raises any warning answers **`before_writing`** with each
+  raised code's remedy once.
+- Write and Undo summaries count **records and values** apart (e.g.
+  `created: 40, values: {created: 360}`; Undo: `undone`, `links`, `values`);
+  assay rows report `created` with their ids.
+
+### Changed — client
+- `geodb-client` 0.3.0: pages a list in parallel (stride from the server's
+  `next` link), `assay_results()` + `export("assay_results")`, job `notes` /
+  `see_guide`, and `limit_clamped` on the envelope. The install line is
+  `pip install "geodb-client>=0.3,<0.4"`.
+
+### Changed — teaching
+- AGENTS.md: ten traps (adds `see_guide` and downhole positions), where the
+  values are, the paging caps, the 0.3 write codes; the Skill and its
+  references regenerated from geoDB (new `references/geostatistics.md`).
+- The conformance mock serves 0.3 lean drill-sample rows (selftest 40/40 read,
+  22/22 write).
+
 ## [0.2.0] — prepared 2026-10-03 (published at the maintainer's go)
 
 Protocol **0.2.0** (`info.version`, the `X-GeoDB-Protocol-Version` header and
