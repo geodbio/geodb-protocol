@@ -355,6 +355,18 @@
       "remedy": "Use an operation from the operation map: GET /api/v2/ (on a connector, api_read path '') lists every operation a key may call, by task; GET /api/v2/grant-context/ lists the projects this credential can read (name one with project=<id>).",
       "retry": "no"
     },
+    "project_frozen": {
+      "http": 409,
+      "meaning": "(per row) The project is frozen: sealed and inaccessible, so nothing can be added or changed in it.",
+      "remedy": "Tell the person: an owner or manager of the company can unfreeze it on the geoDB Billing page.",
+      "retry": "maybe"
+    },
+    "project_holding": {
+      "http": 409,
+      "meaning": "(per row) The project is in Holding: its data can be read and exported and its claims kept up, but no geology data may be added, changed or removed. Nothing in this row was written.",
+      "remedy": "Tell the person: an owner or manager of the company can make the project Active again on the geoDB Billing page (it raises the monthly price). Resend once it is Active.",
+      "retry": "maybe"
+    },
     "project_not_in_scope": {
       "http": 403,
       "meaning": "(per row) This credential cannot write to the project the record names \u2014 it is outside the projects the key may write to, or does not exist.",

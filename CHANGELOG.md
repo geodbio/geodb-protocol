@@ -68,6 +68,10 @@ stay served as they were.
 ### Changed — writes
 - New reason code **`interval_invalid`**: a negative, zero-length or
   upside-down interval is refused per row (dry run and write; the rest lands).
+- New reason codes **`project_holding`** and **`project_frozen`** (409, per row):
+  a project in Holding can be read and exported but takes no geology writes;
+  a frozen project takes no writes at all. Each remedy sends the person to the
+  geoDB Billing page (an owner or manager changes the project's state).
 - An upsert or update that would move an interval onto a neighbour is refused
   `interval_overlap` (it used to slip through on update).
 - New warning codes: `beyond_total_depth`, `detection_limit_not_kept`,
