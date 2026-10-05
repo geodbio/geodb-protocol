@@ -284,6 +284,7 @@ def _make_collars(count=4):
             'date_completed': '2026-02-02',
             'total_depth': 253.3 + index,
             'total_depth_label': 'Final TD',
+            'total_depth_source': 'reported',
             'azimuth': 145.6,
             'dip': -62.4,
             'display_units': 'M',

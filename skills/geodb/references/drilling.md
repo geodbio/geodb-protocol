@@ -144,3 +144,10 @@ project's composites still sit in the DEFAULT pass — overlaps are counted PER 
 an unclassified composite pass reads as thousands of containment pairs; once the
 composites move, the residual is a handful of exact duplicates, which ARE a data
 question.
+
+**New catalog values need the user's yes.** A logged row that names a
+lithology, alteration, vein type or other catalog value the project does not
+have yet is refused, naming the value: ask the user whether it is a new
+entry or a misspelling of one the project has. Only once they say it is new,
+send the same rows with `"acknowledge": ["create_catalog_entries"]` (the
+entries are created with the write, and Undo removes them with it).

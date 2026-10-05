@@ -25,7 +25,7 @@ WRITE_TOKEN = 'gdbg_mock_conformance_WRITE_token'
 PROJECT = {'id': 2, 'name': 'Mock Write Twin', 'code': 'MOCKW2'}
 BATCH_LIMIT = 1000
 INTENTS = ('create', 'upsert', 'update', 'retract', 'restore', 'make_default_set',
-           'qaqc_verdict', 'qc_reconnect', 'undo')
+           'make_export_set', 'qaqc_verdict', 'qc_reconnect', 'undo')
 #: Intents bound to one record type: describe lists them only for it.
 MODEL_INTENTS = {'qaqc_verdict': 'Certificate', 'qc_reconnect': 'QCSample'}
 BODY_KEYS = {'model', 'intent', 'records', 'project', 'set', 'logging_set', 'sample_set',

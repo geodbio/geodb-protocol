@@ -145,6 +145,13 @@ shown to them first as a dry run, each undoable:
   certificate whose sample names another certificate now holds is refused,
   naming the samples: ask the user which certificate is right.
 
+The verdict write is one record per certificate on the certificate record
+type: `"certificate"` (its name or id), `"status"` (`approved`,
+`conditional`, `rejected` or `pending`), optionally `"notes"` and
+`"reassay_certificate"` (the name or id of the certificate that re-assayed
+it, or null to unlink). Its dry run returns the `"confirm"` value the real
+write sends.
+
 If you disagree with a verdict, say so and show why; the verdict stays
 geoDB's until the user changes it. Every change can be undone by its write
 id; say so when you report it.

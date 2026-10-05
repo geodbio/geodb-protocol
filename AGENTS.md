@@ -366,12 +366,17 @@ Every refusal carries `reason_code` + `remedy`: act on the remedy.
 **Every write** names its project and, for intervals and samples, its set; is dry-run first, then sent, then reported with its Undo handle (`write_id`). Never create a set, or offer a QAQC verdict change, the user did not ask for. A correction is an `update` (only the fields you send are judged). An interval's depths are its identity: moving them is `retract` + `create`, after the user's yes.
 
 **The guide, topic by topic** (the full text of each):
+- `assay-merge-settings` · Assay merge settings: how several assays of one element become one value — [`skills/geodb/references/assay-merge-settings.md`](skills/geodb/references/assay-merge-settings.md) · `GET /api/v2/guide/assay-merge-settings/`
+- `assay-ranges` · Assay range configurations: colouring and compositing one element's values — [`skills/geodb/references/assay-ranges.md`](skills/geodb/references/assay-ranges.md) · `GET /api/v2/guide/assay-ranges/`
 - `assay-values` · Assay values: below detection, over range, and laboratory statuses — [`skills/geodb/references/assay-values.md`](skills/geodb/references/assay-values.md) · `GET /api/v2/guide/assay-values/`
 - `claims` · Mining claims: corners, block layout, and stake status — [`skills/geodb/references/claims.md`](skills/geodb/references/claims.md) · `GET /api/v2/guide/claims/`
+- `column-config` · Column configuration: how a record type's columns are named, ordered and shown — [`skills/geodb/references/column-config.md`](skills/geodb/references/column-config.md) · `GET /api/v2/guide/column-config/`
 - `coordinates` · Coordinates: the native numbers, their CRS, and the derived WGS84 — [`skills/geodb/references/coordinates.md`](skills/geodb/references/coordinates.md) · `GET /api/v2/guide/coordinates/`
+- `custom-columns` · Custom columns: a project's own fields on its records — [`skills/geodb/references/custom-columns.md`](skills/geodb/references/custom-columns.md) · `GET /api/v2/guide/custom-columns/`
 - `drilling` · Drilling: the programme, drill intercepts, and sampling passes — [`skills/geodb/references/drilling.md`](skills/geodb/references/drilling.md) · `GET /api/v2/guide/drilling/`
 - `geochem` · Lithogeochemistry: indices, element-native screens, pathfinder suites — [`skills/geodb/references/geochem.md`](skills/geodb/references/geochem.md) · `GET /api/v2/guide/geochem/`
 - `geostatistics` · Geostatistics: compositing, declustering, capping and variography — [`skills/geodb/references/geostatistics.md`](skills/geodb/references/geostatistics.md) · `GET /api/v2/guide/geostatistics/`
+- `projects` · Projects: creating one, its coordinate system, its states, and the Trash — [`skills/geodb/references/projects.md`](skills/geodb/references/projects.md) · `GET /api/v2/guide/projects/`
 - `qaqc` · QAQC: reading geoDB's QC verdicts honestly — [`skills/geodb/references/qaqc.md`](skills/geodb/references/qaqc.md) · `GET /api/v2/guide/qaqc/`
 - `reports` · Reports: informal reports, sections, figures, and faithful numbers — [`skills/geodb/references/reports.md`](skills/geodb/references/reports.md) · `GET /api/v2/guide/reports/`
 - `sets` · Sets: several versions of the same downhole data, side by side — [`skills/geodb/references/sets.md`](skills/geodb/references/sets.md) · `GET /api/v2/guide/sets/`
@@ -402,7 +407,8 @@ write to any other path (`POST /api/v2/drill-collars/`, a `PATCH` or a
 their identifying fields or their geoDB `id`; never creates) · `retract` (to
 the Trash with everything that belongs to them; needs `"confirm":
 "retract"`) · `restore` (a removed batch back) · `make_default_set` (a
-person's own key only; what everyone on the project sees) · `qaqc_verdict`
+person's own key only; what everyone on the project sees) · `make_export_set`
+(the same, for the set exports read) · `qaqc_verdict`
 (model `Certificate`: approve, reject or link a re-assay — a person's own key
 only, and ONLY when the user asks; its dry run returns the `"confirm"` value)
 · `qc_reconnect` (model `QCSample`: reconnect a QC sample to a withdrawn
@@ -448,9 +454,13 @@ given (`set_not_owned`).
 values is `skipped` (`record_exists`) and every differing field is named with
 both values (`conflicts`); nothing is overwritten. If the sent values should
 win, ask the user, then send `upsert` (or `update`): only the fields you send
-change, and the old values are kept for Undo. The exception: values for an
-assay, standard or method that already exists are refused `undo_not_covered`
-(not skipped) — Undo cannot reach them yet; act on its remedy. **Nulls:** in an `update`,
+change, and the old values are kept for Undo. A long-form record's values
+(an assay's results, a method's limits, a standard's certified values):
+an `upsert` ADDS a value a stored record lacks (Undo removes exactly it);
+overwriting a stored assay or water result needs `"acknowledge":
+["replace_values"]`; correct one value with `update` (guide topic
+`assay-values`). A change Undo could not reverse is refused
+`undo_not_covered`. **Nulls:** in an `update`,
 `"field": null` empties that field (Undo restores it) — a field that must
 always hold a value is refused `null_not_allowed`; in `create` / `upsert` a
 null means "not given" and leaves the stored value alone. A field you leave
@@ -471,7 +481,9 @@ that changes existing records, or one that carries warnings, carries
 **8 · Correct and remove.** `update` changes the fields you send on the
 records each row names (by `id` as a read returns it, or the identifying
 fields). `retract` moves records to the Trash with everything that belongs
-to them (a hole takes its samples and intervals); a dry run lists exactly
+to them (a hole takes its samples and intervals; a lab, method or standard
+only while nothing uses it — `record_in_use`; a photo, a document or an
+EMPTY set by its `id`); a dry run lists exactly
 what goes (`cascade`), and the real request needs `"confirm": "retract"`,
 else `confirm_required`. `restore` (`{"intent": "restore", "write_id": …}`)
 brings a retract back. A record you read can be written back unchanged as a
@@ -516,6 +528,16 @@ asks (its dry run returns the `confirm` to send). Only a key acting for a
 person writes reports; a compliance report is signed and published by people
 in the web app.
 
+**Projects.** The same endpoint with `model` `Project`, one project per request
+(`describe/Project/`): `create` · `update` (name, description) ·
+`set_coordinate_system` · `set_state` · `retract` (to the Trash) · `restore`.
+Each is dry run first and its real request needs the `confirm` that dry run
+returned. A `create` needs `company`: always ask the user which company (a
+create without one lists them), even when only one is listed, and name it in
+what you show them. A change that raises what the company pays is refused
+`approval_required`: the user does it on the page it names. The guide topic
+`projects` explains coordinate systems and states.
+
 | Intent | What it does | Ask the user first |
 |---|---|---|
 | `create` | adds new records; an existing record is never overwritten | no |
@@ -524,6 +546,7 @@ in the web app.
 | `retract` | moves records, and everything that belongs to them, to the Trash; needs "confirm": "retract"; a dry run first shows exactly what goes | yes — dry-run, show, wait |
 | `restore` | brings a removed batch back from the Trash | yes — dry-run, show, wait |
 | `make_default_set` | makes a set the project default for its family — what everyone on the project sees; run it as a dry run first: that returns the "confirm" value the real request needs; only through the person's own key | yes — dry-run, show, wait |
+| `make_export_set` | makes a set the project's EXPORT set for its family — what exports and the ODBC tables read when no set is named; run it as a dry run first: that returns the "confirm" value the real request needs; only through the person's own key | yes — dry-run, show, wait |
 | `qaqc_verdict` | changes a certificate's QAQC review decision (approve, conditionally approve, reject, back to pending) or links its re-assay certificate — ONLY when the user explicitly asks; through the person's own key; its dry run returns the "confirm" value the real request needs; never on your own initiative | yes — dry-run, show, wait |
 | `qc_reconnect` | reconnects a QC sample to its withdrawn result (a result left in the Trash or unlinked by a certificate delete); never for a rejected certificate's results | yes — dry-run, show, wait |
 | `undo` | reverses one earlier write by its write_id (rows changed since are left as they are and named) | no |
@@ -736,7 +759,7 @@ to do. `offending` names the thing at fault when there is one. Branch on
 
 <!-- BEGIN:reason-codes (generated by scripts/emit_agents.py — do not edit) -->
 
-**89 codes.** Generated from [`errors.json`](errors.json), which is itself generated from the server, so this table cannot fall behind what you will actually be refused with. Match on `reason_code`, never on `detail` prose.
+**118 codes.** Generated from [`errors.json`](errors.json), which is itself generated from the server, so this table cannot fall behind what you will actually be refused with. Match on `reason_code`, never on `detail` prose.
 
 `retry` — **no**: retrying the identical request cannot succeed. **after**: retry once `Retry-After` has elapsed. **maybe**: transient or state-dependent, safe to retry later.
 
@@ -747,6 +770,9 @@ to do. `offending` names the thing at fault when there is one. Branch on
 | `choice_not_in_list` | 400 | no | (per row) A value is not in its field's list (a custom field's choices, or the project's list of lithologies, alterations, … for a reference). Lists never grow silently. | GET /api/v2/records/describe/<Model>/ lists the choices; map the value onto one of them, or — after asking the user — resend with "acknowledge": ["create_catalog_entries"] to add a new lithology/alteration/… name to the project's list. |
 | `company_required` | 400 | no | The read is about one company (a company-level table, or scope=company), the credential can read several companies, and the request names none. No read spans companies; `choices` lists them with their projects. | Add company=<id>, or project=<id> to read that project's company (GET /api/v2/grant-context/ lists both). |
 | `confirm_required` | 400 | no | A destructive intent (retract) needs an explicit confirmation in the body. | Confirm with the user, then resend with "confirm": "retract". |
+| `crs_geographic` | 400 | no | A geographic CRS (degrees, e.g. EPSG:4326) cannot be a project's working frame; the frame is a projected CRS in metres or feet. | Ask the user which projected CRS (a UTM zone or a State Plane) the project uses and send that EPSG code. |
+| `crs_implausible` | 400 | no | (per row) The coordinates look like degrees of latitude/longitude but the epsg is a projected system in metres or feet, so they would sit near that grid's origin (ruling R-6). The row was NOT stored. | Ask the user which system the coordinates are in. GPS degrees: resend with "epsg": 4326. Numbers that really are in that grid: resend the same row with "acknowledge": ["crs_implausible"] (stored as sent, with a warning). Validate first with "dry_run": true. |
+| `crs_unknown` | 400 | no | The EPSG code is not a known coordinate reference system. | Re-check the EPSG code with the user. |
 | `duplicate_in_batch` | 400 | no | (per row) An earlier row of the same request has the same identifying fields; the first one is kept. | Merge the duplicate rows into one, or correct the identifying fields of the second, and resend it. |
 | `idempotency_key_invalid` | 400 | no | The Idempotency-Key header is longer than 255 characters or contains control characters. | Send a printable key of at most 255 characters (a UUID is ideal). |
 | `intercept_cutoff_refused` | 400 | no | An intercept read named a grade cutoff or threshold. geoDB never chooses intercept boundaries: they are a geologist's judgement, and real intercepts open and close below their own average. | Read the hole's merged grades, propose boundaries and say why, then send them as interval=from:to. |
@@ -757,6 +783,7 @@ to do. `offending` names the thing at fault when there is one. Branch on
 | `landing_failed` | 400 | maybe | (per row) The server failed while writing this batch; nothing from it was kept. This is our fault, not the data's. | Retry the same request once (with the same Idempotency-Key); if it fails again, report it through POST /api/v2/feedback/ and tell the user. |
 | `missing_crs` | 400 | no | (per row) The record has coordinates but no "epsg". The coordinate system is never assumed (never WGS84 by default). | Add "epsg": <the EPSG code the coordinates are in> to the row (4326 for GPS latitude/longitude; the survey grid's code for eastings/northings) and resend it. Never pre-convert. |
 | `null_not_allowed` | 400 | no | (per row) An update sent null for a field that cannot be emptied (it must always hold a value, or one of its choices). Named in `offending.fields`. Nothing on the row was written. | Send a value (GET /api/v2/records/describe/<Model>/ lists the choices), or leave the field out to keep it as it is. |
+| `origin_outside_project` | 400 | no | The local-grid origin is far outside the project's own ground (its holes and land holdings). | Leave the origin out (it is derived from the data), or offer the user the origin in offending.proposed. |
 | `overlapping_samples` | 400 | no | Samples overlap inside the requested interval, so length-weighting would count the same ground twice — almost always two sampling passes read together. | Name ONE sampling pass with drill_sample_set= and read again. |
 | `parent_not_found` | 400 | no | (per row) The record refers to a parent that does not exist in this project (e.g. a sample's hole, an assay's certificate or method). Nothing is invented. | Write the parent first (its own model through this endpoint), or correct the reference to an existing one, then resend the row. |
 | `parse_error` | 400 | no | The request body was not valid for its Content-Type. | Send well-formed JSON with Content-Type: application/json. |
@@ -769,6 +796,7 @@ to do. `offending` names the thing at fault when there is one. Branch on
 | `unsupported_model` | 400 | no | The records endpoint does not accept this model. | Use one of the models listed in `offending.accepted_models`; GET /api/v2/records/describe/<Model>/ describes each. |
 | `validation_error` | 400 | no | The request body or parameters failed validation. | Correct the fields named in the response and resend. |
 | `authentication_failed` | 401 | no | No usable credential was presented. | Send `Authorization: Grant <token>` with a current grant. |
+| `beta_access_ended` | 401 | no | This connection was made during an early-access period for the user's company, and that early access has ended, so the connection cannot be used any more (checked on every call). | Tell the user their company's early access to AI connections has ended and nothing about their data changed; they can keep working in the geoDB web app, or ask geoDB about access. Do not retry. |
 | `connector_staff_only` | 401 | no | Connecting an AI assistant is open to geoDB staff accounts only for now, and the person this connection acts as is not one (checked on every call). | Tell the user that AI connections are not available on their account yet; nothing about their data changed. Do not retry. |
 | `grant_expired` | 401 | no | The grant passed its expiry date. | Ask the project owner to rotate or reissue it. |
 | `grant_holder_removed` | 401 | no | The person this grant acts as no longer holds a membership on any project in its scope. | Ask a project owner to restore the membership, then connect again (a new grant); this one will not recover. |
@@ -781,6 +809,10 @@ to do. `offending` names the thing at fault when there is one. Branch on
 | `oauth_token_expired` | 401 | no | The OAuth access token has expired or was revoked. | Refresh the access token with the refresh token (connectors do this automatically), or connect again. |
 | `session_key_api_only` | 401 | no | A session key is for the geoDB API, not for the connector endpoint; it cannot be used to mint further keys. | Send the session key to the API as `Authorization: Grant <key>` on /api/v2/…; connect to /mcp with the connection's own sign-in or key. |
 | `use_grant_scheme` | 401 | no | The credential was sent under the Bearer scheme; grants authenticate under the Grant scheme. | Send the same token as 'Authorization: Grant <token>'. |
+| `approval_required` | 403 | no | The change raises what the company pays, so the person approves it themselves in the browser; an AI never raises a bill. | Give the user the page in offending.approval_url to do it themselves. |
+| `billing_permission_required` | 403 | no | Moving a project between active, holding and frozen (or restoring one) changes what the company pays; only the company owner, a company manager or a billing manager may do it. | Ask the company owner or a company manager to make the change. |
+| `company_not_allowed` | 403 | no | The person this key acts for cannot create projects in the company named (they are not its owner, a confirmed manager or a member), or it does not exist. | Ask the user which of their companies to use: a create without "company" lists them in offending.companies. |
+| `company_not_in_beta` | 403 | no | AI connections are in early access for a few companies. The project this record names belongs to a company that is not in early access, so this connection may not read or change it, even though the user can on the web. | Work only with the projects GET /api/v2/grant-context/ lists (they are the early access ones); tell the user this project can be changed in the geoDB web app. Do not retry. |
 | `compliance_create_staff_only` | 403 | no | A compliance report (NI 43-101 / S-K 1300 / JORC) is started in the geoDB web app for now: through a key only geoDB staff may create one, since its sections are attested by Qualified People in the web app. | Create an informal report instead ("rigor": "informal"), or tell the user to start the compliance report in the geoDB web app. |
 | `export_link_expired` | 403 | no | This download link is older than 15 minutes. | Call export_link again for a fresh link. |
 | `grant_no_read_capability` | 403 | no | The view declares no read capability, so no grant may reach it. | Use an operation from the operation map: GET /api/v2/ (on a connector, api_read path '') lists every operation a key may call, by task; GET /api/v2/grant-context/ lists the projects this credential can read (name one with project=<id>). |
@@ -789,9 +821,12 @@ to do. `offending` names the thing at fault when there is one. Branch on
 | `grant_surface_forbidden` | 403 | no | The endpoint is not part of the grant-readable surface. | Use an operation from the operation map: GET /api/v2/ (on a connector, api_read path '') lists every operation a key may call, by task; GET /api/v2/grant-context/ lists the projects this credential can read (name one with project=<id>). |
 | `grant_write_forbidden` | 403 | no | A write method was attempted with a read-only grant. | Use a read operation. The one write a grant may make is creating an export job (POST /api/v2/exports/). |
 | `land_holdings_not_shared` | 403 | no | The project owner has not shared land holdings with API keys on this project. | Ask the project owner to share land holdings (outline or detailed) in Project Settings → Protocol / API Access, then retry. Nothing else about this key is wrong. |
+| `manager_required` | 403 | no | This change is a project manager's decision (for example the project's default set): it is made through a project manager's own connection, never a vendor key, and this connection's person does not manage the project. | Tell the user a project manager must do this with their own connection, or on the web (Project Settings). Reconnecting this key or asking for more write access does not help. |
 | `out_of_scope` | 403 | no | (per row) The record is shared by every project of the company (a laboratory, a lab method, a reference standard, a water method) and this key does not reach all of those projects. | This record is shared by every project in the company; ask a person with access to all of them, or make the change in the web app. |
 | `permission_denied` | 403 | no | The credential is valid but not permitted this operation. | Use an operation from the operation map: GET /api/v2/ (on a connector, api_read path '') lists every operation a key may call, by task; GET /api/v2/grant-context/ lists the projects this credential can read (name one with project=<id>). |
 | `project_not_in_scope` | 403 | no | (per row) This credential cannot write to the project the record names — it is outside the projects the key may write to, or does not exist. | GET /api/v2/grant-context/ lists the projects this key may use; name one of those (by id) in `project`, or drop the row. |
+| `project_settings_required` | 403 | no | Changing a project's setup (its name, coordinate system, or deleting it) needs project-settings access, which the person this key acts for does not hold on that project. | Ask a project manager or the company owner to make the change, or to give the user settings access on that project. |
+| `purchase_authority_required` | 403 | no | Creating a project is limited to the company's owner, a company manager with purchase authority, or geoDB staff (it can raise what the company pays); the person this key acts for is a member without it. | Tell the user: the company owner can turn on purchasing for them, or the owner or a purchasing manager can create the project. |
 | `set_not_owned` | 403 | no | (per row) A vendor key writes only into sets it created or sets the customer ticked for it; this set is neither. | Write into a set this key created or was given, or create a new set ("set": {"name": "<new name>", "create": true}); to write into this one, the project owner must tick it for the key. |
 | `set_not_writable_by_key` | 403 | no | (per row) The set takes no new rows through this key (it is archived). | Ask the user which active set to use, or create a new one. |
 | `use_records_endpoint` | 403 | no | A grant tried to write through a resource path. Records are written through ONE endpoint, POST /api/v2/records/. | POST /api/v2/records/ with {"model": "<Model>", "intent": "create" or "upsert", "records": [...]} — the exact call is in this refusal's `use` key. Validate first with "dry_run": true. |
@@ -803,32 +838,49 @@ to do. `offending` names the thing at fault when there is one. Branch on
 | `already_undone` | 409 | no | This write has already been undone. | Nothing to do; read the records to see their current state. |
 | `approved_certificate` | 409 | no | (per row) The values belong to a certificate whose QAQC review is approved; they change only with an explicit acknowledgement. | Confirm with the user, then resend with "acknowledge": ["approved_certificate"]. The certificate is named in `offending`. |
 | `certificate_unreject_conflict` | 409 | no | Un-rejecting this certificate would collide with sample names another certificate now holds (named in `offending`). | Ask the user which certificate is right; resolve the colliding names first, then retry the verdict change. |
+| `change_project_crs` | 409 | no | The project already has a coordinate system; changing it re-derives every project-frame copy of every point and recomputes every drill trace (records keep their own native coordinates). | Show the user the current system and the dry run; only after they say yes resend with "acknowledge": ["change_project_crs"]. |
 | `compliance_publish_web_only` | 409 | no | A compliance report (NI 43-101 / S-K 1300 / JORC) is published after every section's Qualified Person attests it — a person's act in the web app. An app publishes only informal reports. | Tell the user the report is published in the geoDB web app, from the report's page, once each section's Qualified Person has attested it. You may keep drafting sections no QP has accepted. |
+| `config_confirm_required` | 409 | no | (per row) The change would rewrite values already stored on records (a type change converts them; dropping a choice orphans or moves them). `detail` says exactly what; nothing was written. | Tell the user what `detail` says will happen to the stored values. Only after they agree, resend the same child change with the confirmation named in `offending.confirm_type` set: "confirm_type_change": true for type_change, "confirm_choices_removal": true for choices_removal (Undo still reverses it). |
+| `config_exists` | 409 | no | (per row) That configuration (or a child of it, e.g. a column with that field_name) already exists in the project; nothing was created. | Read it (GET the matching list, e.g. /api/v2/custom-field-schemas/), then change it with "intent": "update" and its "id" instead of creating it again. |
+| `config_in_use` | 409 | no | (per row) Other configuration uses this one (`offending.used_by` names each), so it was not removed. | Tell the user what uses it. Point those at another configuration (an "update" naming the replacement) or remove them first, then resend. |
+| `config_undeletable` | 409 | no | (per row) This is the project's built-in configuration; it is never removed. | Change its settings with "intent": "update" instead. |
 | `conflict` | 409 | no | The request conflicts with the current state of the record. | Read the record again, then resend the change against what is stored now. |
+| `custom_grid_project` | 409 | no | The project uses a custom mine grid (a calibration), not an EPSG code; its frame is set by the calibration tools. | Use the project's coordinate-system page on the web (calibration tools). |
 | `duplicate_external_id` | 409 | no | (per row) This external_id already names a DIFFERENT record for this key, or appears twice in one request. | Send each external_id once per request, and keep one external_id per record: to change a record send it with the same external_id and the same identifying fields. |
 | `export_failed` | 409 | maybe | The export behind this link failed on the server. | Call export_link again once; if it fails again, read the rows another way and tell the user. |
 | `export_not_ready` | 409 | after | The export behind this download link is still building. | Wait a few seconds (Retry-After) and download the same link again. |
+| `holding_not_offered` | 409 | no | Holding is not part of this company's plan (or not available yet). | Offer the user Active or Frozen instead. |
+| `idempotency_conflict` | 409 | no | This Idempotency-Key was already used for a different change. | Send a new Idempotency-Key for a new change. |
 | `idempotency_in_progress` | 409 | after | The first request with this Idempotency-Key is still running. | Wait a few seconds and retry the identical request with the same key: it returns the first response. |
 | `idempotency_key_reused` | 409 | no | This Idempotency-Key was already used by this key for a DIFFERENT request in the last 24 hours. | Use a new Idempotency-Key for a new request; reuse a key only to retry the identical request. |
 | `interval_overlap` | 409 | no | (per row) The interval overlaps another interval of the SAME set in the same hole; within one set intervals may not overlap. | Ask the user: correct the depths, or put these intervals in a different (or new) set — across sets anything goes. |
+| `last_project_in_connection` | 409 | no | This is the only project the connection can reach; deleting or freezing it would disconnect the app before it could check or undo the change. | Do it on the web, or connect the app to another project first. |
 | `name_taken` | 409 | no | (per row) The name (or another value that must be unique in the project) already belongs to another record of this model with different identifying fields (e.g. the same sample name on another hole). The row was not written. | Ask the user which record the name belongs to; correct the name or the identifying fields and resend the row. |
 | `not_undoable` | 409 | no | This write cannot be undone: it is itself an undo, or it recorded no row Undo can reach. | To bring back rows an undo removed, restore them: send {"intent": "restore", "audit_batch_id": <the undo's audit_batch_id>}. Otherwise read the records and correct them with an update. |
 | `parent_trashed` | 409 | no | (per row) The parent this record belongs to is in the Trash. | Restore the parent first (ask the user), then resend or restore this record. |
+| `project_crs_required` | 409 | no | The project has no coordinate system, so nothing can be placed on its local grid: positions along a hole (desurvey, trace, xyz at depth) and other derived positions need it. The stored native coordinates are untouched and readable. | Set the project's coordinate system first: read records/describe/Project/, then POST records/ with "model": "Project", "intent": "set_coordinate_system" as a dry run, show the user what it changes and send it on their word (or the user sets it on the web in Project Setup). Then retry this read. |
 | `project_frozen` | 409 | maybe | (per row) The project is frozen: sealed and inaccessible, so nothing can be added or changed in it. | Tell the person: an owner or manager of the company can unfreeze it on the geoDB Billing page. |
 | `project_holding` | 409 | maybe | (per row) The project is in Holding: its data can be read and exported and its claims kept up, but no geology data may be added, changed or removed. Nothing in this row was written. | Tell the person: an owner or manager of the company can make the project Active again on the geoDB Billing page (it raises the monthly price). Resend once it is Active. |
+| `project_limit_reached` | 409 | no | The company's plan allows no more active projects. | Freeze or delete a project, or upgrade the plan on the web billing page; tell the user which. |
+| `project_name_exists` | 409 | no | The company already has a live project with this name (names are compared without case). | Ask the user for another name; offending.suggested_name is one that is free. |
 | `qaqc_verdict_field` | 409 | no | (per row) The row tries to set a field that records a QAQC review decision (whether a certificate's results are withheld). It changes only through the certificate's verdict, never on a row. | Drop the field and resend. If the user explicitly asked for a certificate's verdict to change, use "intent": "qaqc_verdict" (dry run first; it returns the "confirm" value) — never on your own initiative. |
 | `record_exists` | 409 | no | (per row) A create found an existing record with the same identifying fields but different values. A create never overwrites: the row was SKIPPED. `conflicts` names each field with the stored and the sent value. | If the stored values are right, drop the row. If the sent values should replace them, ASK THE USER, then resend the row with "intent": "upsert" (only the fields you send change, and the old values are kept for undo). |
+| `record_in_use` | 409 | no | (per row) A record shared across the company (a laboratory, method, standard, water method) or a lab submittal is moved to the Trash only while nothing uses it; this one is still used, and `detail` names what uses it (assay values, certificates, QC samples, samples …). Nothing was removed. | Leave it, or ASK THE USER whether the records that use it should go first (retract those, then this one). Never remove other records just to make room. |
 | `rekey_refused` | 409 | no | (per row) The row would change an existing record's identifying fields. That is a different record, never an update. | Keep the identifying fields as stored and change only the other fields; to move a record, ask the user to remove it and write the new one. |
 | `report_not_ready` | 409 | no | The report cannot be published yet (`offending.errors` says why — for an informal report: it has no text yet). | Write the report's sections first, then publish again. |
 | `restore_conflict` | 409 | no | (per row) Restoring this record would collide with a live record that now holds its identifying fields. | Ask the user which record is right; remove or rename the live one first, or leave this one in the Trash. |
 | `sample_name_taken` | 409 | no | (per row) The sample name is already registered as a DIFFERENT kind of sample (a drill sample vs a QC or surface sample): two records would share one assay. | Ask the user which record is right; correct the name (or the existing record) and resend the row. Nothing is guessed. |
 | `section_conflict` | 409 | no | The report section changed since the revision you edited. | Re-read the section, merge your change into the current text, and resend with its current revision number. |
 | `section_locked` | 409 | no | This report section cannot change through an outside app: a Qualified Person has attested it, or (on a compliance report) has accepted it and owns its text. `offending.qp_state` says which. | Leave this section to its Qualified Person. Tell the user the QP edits or signs it in the geoDB web app; an app may draft only sections no QP has accepted or attested. |
+| `set_is_default` | 409 | no | (per row) This set is the project's default (or export) set for its family, which is never removed. Nothing was changed. | If the user wants it gone, first make another set the default with {"intent": "make_default_set", "model": <the family>, "set": <name>} (a person who manages the project, through their own key), then retract this one. |
+| `set_not_empty` | 409 | no | (per row) Only an EMPTY set is removed; this set still holds rows (`detail` gives the count). A set with rows is never removed or merged. Nothing was changed. | Leave the set where it is and tell the user it holds rows, so it stays. Do not offer to delete the rows to make room: only if the user, told what the rows are, EXPLICITLY asks for those rows to be deleted, retract them (dry run first), then the set. |
 | `stale_fk` | 409 | no | (per row) The record refers to another record by id, and that record no longer exists (deleted since the caller read it). | Re-read the referenced record (or refer to it by name), then resend the row. |
-| `undo_not_covered` | 409 | no | (per row) Undo cannot yet reverse this change: it would add values to, or replace values on, a record that already exists (a sample's assay results, a standard's or method's element rows). Every write through this endpoint must be undoable, so it is refused. | Send only records that do not exist yet (a new sample's results, a new standard or method). To add or change values on an existing record, ask the user to do it on the web, where the change is reviewed. |
+| `state_changed` | 409 | no | Someone else changed the project's state between the check and the change; nothing was written. | Read the project's state again and ask the user what they want now. |
+| `undo_not_covered` | 409 | no | (per row) Undo cannot yet reverse this change, and every write through this endpoint must be undoable, so it is refused. (Changing, adding or removing a long-form record's values is undoable and served.) | Read `detail` for what cannot be undone. Ask the user to make that change on the web for now, or send only the parts that are undoable. |
 | `undo_stale` | 409 | no | (per row) The record changed after the write being undone, so undoing it would overwrite the later change. | Show the user the later change; undo that write first, or leave this row as it is. |
+| `unit_label_shared` | 409 | no | (per row) A unit correction would move a unit LABEL that other values share: an assay value takes its unit from its method's element row, and `detail` names the other certificates whose values carry the same label. Nothing was changed. | ASK THE USER which is true. If only these values were reported in the other unit, resend with "acknowledge": ["convert_values"]: their NUMBERS are converted into the stored unit (dry run first: it shows before and after). If the method itself reports this element in the other unit, update the Method's element row ("units") instead, which relabels every value it carries. |
 | `export_concurrency` | 429 | after | This grant already holds the maximum number of export jobs that have not finished. | Do NOT resend the same export. Poll the status_url of the jobs you already started; when one reaches a terminal state a slot frees. `offending` carries in_flight and limit. |
-| `feedback_rate_limited` | 429 | after | This key, or the person it acts for, has filed 20 reports in the last 24 hours. | Wait for Retry-After seconds; meanwhile collect further requests into one report, and tell the user what was filed. |
+| `feedback_rate_limited` | 429 | after | This key, or the person it acts for, has filed 100 reports in the last 24 hours (the same summary again is never counted: it answers with the id already filed). | Wait for Retry-After seconds; meanwhile collect further requests into one report, and tell the user what was filed. |
 | `grant_auth_throttled` | 429 | after | Too many credentials that resolve to no grant have been presented from this address within the hour. | Stop retrying with a credential that is not working. Obtain a current grant from the project owner, then resend after the interval in Retry-After. |
 | `throttled` | 429 | after | The grant's request rate was exceeded. | Wait for the interval given in the Retry-After header, then resend. Prefer ?modified_since= incremental pulls over repeated full pulls. |
 

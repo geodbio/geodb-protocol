@@ -138,7 +138,11 @@ inputs; it runs no estimation. Read:
   coverage.
 - **Positions:** a hole's desurveyed trace (`drill-collars/<id>/trace/`) and
   the position at any depth (`drill-collars/<id>/xyz_at_depth/`), on the
-  project local grid in metres.
+  project local grid in metres. They need the project's coordinate system: a
+  project without one answers `project_crs_required` (the stored collar
+  coordinates are untouched). Tell the user and follow its remedy (they
+  confirm the coordinate system); never treat native coordinates as metres
+  instead.
 - **Detection limits per method and element:** `detection-limits/`.
 
 Declustering, capping, variography, block models, grade interpolation,

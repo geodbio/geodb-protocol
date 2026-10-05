@@ -109,7 +109,8 @@ write to any other path (`POST /api/v2/drill-collars/`, a `PATCH` or a
 their identifying fields or their geoDB `id`; never creates) · `retract` (to
 the Trash with everything that belongs to them; needs `"confirm":
 "retract"`) · `restore` (a removed batch back) · `make_default_set` (a
-person's own key only; what everyone on the project sees) · `qaqc_verdict`
+person's own key only; what everyone on the project sees) · `make_export_set`
+(the same, for the set exports read) · `qaqc_verdict`
 (model `Certificate`: approve, reject or link a re-assay — a person's own key
 only, and ONLY when the user asks; its dry run returns the `"confirm"` value)
 · `qc_reconnect` (model `QCSample`: reconnect a QC sample to a withdrawn
@@ -155,9 +156,13 @@ given (`set_not_owned`).
 values is `skipped` (`record_exists`) and every differing field is named with
 both values (`conflicts`); nothing is overwritten. If the sent values should
 win, ask the user, then send `upsert` (or `update`): only the fields you send
-change, and the old values are kept for Undo. The exception: values for an
-assay, standard or method that already exists are refused `undo_not_covered`
-(not skipped) — Undo cannot reach them yet; act on its remedy. **Nulls:** in an `update`,
+change, and the old values are kept for Undo. A long-form record's values
+(an assay's results, a method's limits, a standard's certified values):
+an `upsert` ADDS a value a stored record lacks (Undo removes exactly it);
+overwriting a stored assay or water result needs `"acknowledge":
+["replace_values"]`; correct one value with `update` (guide topic
+`assay-values`). A change Undo could not reverse is refused
+`undo_not_covered`. **Nulls:** in an `update`,
 `"field": null` empties that field (Undo restores it) — a field that must
 always hold a value is refused `null_not_allowed`; in `create` / `upsert` a
 null means "not given" and leaves the stored value alone. A field you leave
@@ -178,7 +183,9 @@ that changes existing records, or one that carries warnings, carries
 **8 · Correct and remove.** `update` changes the fields you send on the
 records each row names (by `id` as a read returns it, or the identifying
 fields). `retract` moves records to the Trash with everything that belongs
-to them (a hole takes its samples and intervals); a dry run lists exactly
+to them (a hole takes its samples and intervals; a lab, method or standard
+only while nothing uses it — `record_in_use`; a photo, a document or an
+EMPTY set by its `id`); a dry run lists exactly
 what goes (`cascade`), and the real request needs `"confirm": "retract"`,
 else `confirm_required`. `restore` (`{"intent": "restore", "write_id": …}`)
 brings a retract back. A record you read can be written back unchanged as a
@@ -223,6 +230,16 @@ asks (its dry run returns the `confirm` to send). Only a key acting for a
 person writes reports; a compliance report is signed and published by people
 in the web app.
 
+**Projects.** The same endpoint with `model` `Project`, one project per request
+(`describe/Project/`): `create` · `update` (name, description) ·
+`set_coordinate_system` · `set_state` · `retract` (to the Trash) · `restore`.
+Each is dry run first and its real request needs the `confirm` that dry run
+returned. A `create` needs `company`: always ask the user which company (a
+create without one lists them), even when only one is listed, and name it in
+what you show them. A change that raises what the company pays is refused
+`approval_required`: the user does it on the page it names. The guide topic
+`projects` explains coordinate systems and states.
+
 | Intent | What it does | Ask the user first |
 |---|---|---|
 | `create` | adds new records; an existing record is never overwritten | no |
@@ -231,6 +248,7 @@ in the web app.
 | `retract` | moves records, and everything that belongs to them, to the Trash; needs "confirm": "retract"; a dry run first shows exactly what goes | yes — dry-run, show, wait |
 | `restore` | brings a removed batch back from the Trash | yes — dry-run, show, wait |
 | `make_default_set` | makes a set the project default for its family — what everyone on the project sees; run it as a dry run first: that returns the "confirm" value the real request needs; only through the person's own key | yes — dry-run, show, wait |
+| `make_export_set` | makes a set the project's EXPORT set for its family — what exports and the ODBC tables read when no set is named; run it as a dry run first: that returns the "confirm" value the real request needs; only through the person's own key | yes — dry-run, show, wait |
 | `qaqc_verdict` | changes a certificate's QAQC review decision (approve, conditionally approve, reject, back to pending) or links its re-assay certificate — ONLY when the user explicitly asks; through the person's own key; its dry run returns the "confirm" value the real request needs; never on your own initiative | yes — dry-run, show, wait |
 | `qc_reconnect` | reconnects a QC sample to its withdrawn result (a result left in the Trash or unlinked by a certificate delete); never for a rejected certificate's results | yes — dry-run, show, wait |
 | `undo` | reverses one earlier write by its write_id (rows changed since are left as they are and named) | no |
@@ -243,12 +261,17 @@ The operations every conforming server answers are in `references/core-profile.m
 
 Read the topic before answering a question in its area; each is `references/<id>.md` (also served at `GET /api/v2/guide/<id>/`).
 
+- `assay-merge-settings` · Assay merge settings: how several assays of one element become one value
+- `assay-ranges` · Assay range configurations: colouring and compositing one element's values
 - `assay-values` · Assay values: below detection, over range, and laboratory statuses
 - `claims` · Mining claims: corners, block layout, and stake status
+- `column-config` · Column configuration: how a record type's columns are named, ordered and shown
 - `coordinates` · Coordinates: the native numbers, their CRS, and the derived WGS84
+- `custom-columns` · Custom columns: a project's own fields on its records
 - `drilling` · Drilling: the programme, drill intercepts, and sampling passes
 - `geochem` · Lithogeochemistry: indices, element-native screens, pathfinder suites
 - `geostatistics` · Geostatistics: compositing, declustering, capping and variography
+- `projects` · Projects: creating one, its coordinate system, its states, and the Trash
 - `qaqc` · QAQC: reading geoDB's QC verdicts honestly
 - `reports` · Reports: informal reports, sections, figures, and faithful numbers
 - `sets` · Sets: several versions of the same downhole data, side by side

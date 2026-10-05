@@ -74,3 +74,8 @@ Before any interval or sample write, ask which set if the user hasn't
 said, offering: add to an existing set · create a new one · correct rows in
 one. Derived interpretations go in a new set. Making a set the default needs
 the user's explicit yes.
+
+An EMPTY set the user no longer wants can be retracted, by its id or name,
+after a dry run they have seen; Undo brings it back. A set that still holds
+rows is never removed or merged (the refusal gives the count), the project's
+default set never goes, and a person removes only a set they created.

@@ -1,5 +1,53 @@
 # Changelog
 
+## [0.3.1] — prepared 2026-10-05 (published at the maintainer's go)
+
+Protocol **0.3.1** (`info.version`, the `X-GeoDB-Protocol-Version` header and
+`grant-context.protocol_version` all say `0.3.1`): geoDB's v0.4 build (value
+Undo, the project face, config faces, per-company early access, the Phase 1
+fixes). **Additive for every 0.3 client** — measured, not assumed: the
+published 0.3.0 spec was diffed against a regeneration from geoDB main
+`b67cee7ed` in the same flag shape (MCP + READS + WRITES + MCP_STAFF_ONLY on,
+agent keys off), and every change classified against how `geodb-client` 0.3
+parses responses. Nothing it reads was removed, renamed, retyped or
+re-statused, so the patch moves and the install line stays
+`pip install "geodb-client>=0.3,<0.4"`.
+
+### Release order
+1. **No client release.** `geodb-client` 0.3.0 speaks 0.3.1 (same
+   major.minor); nothing goes to PyPI first.
+2. Deploy geoDB.
+3. Push this repository and tag it.
+
+The exploration schemas publish at a new `$id`,
+`https://spec.geodb.io/exploration/v0.3.1/…` (they gain fields); the `v0.1.0`,
+`v0.2.0` and `v0.3.0` copies stay served exactly as published.
+
+### Classification (0.3.0 → 0.3.1)
+
+| Change | Kind | Why it does not break a 0.3 client |
+|---|---|---|
+| 17 new read paths: `assay-merge-settings/` (+ `get_full_config/`, `get_merge_config/`), `assay-range-configurations/`, `column-configurations/`, `submittals/` (+ `generate-name/`), `water-analyses/`, `water-quality-certificates/`, `water-quality-methods/` (list + by id) | ADDITIVE (new paths) | no existing path removed or changed (0 operations removed) |
+| `name` filter (exact, comma list) on `drill-collars/` and `point-samples/`; `limit` / `offset` on `sets/` and `drill-sample-sets/` | ADDITIVE (new optional params) | a request without them is answered as before |
+| New response fields: collar `total_depth_source`; certificate `notes`; QC-sample and assay-results rows `qc_type_name` + `qc_category`; assay-results `sample_status`; the assay-results page `flagged` summary; export job `set_used` / `set_reason`; every export poll keeps `id` / `model`; grant-context project rows `state` | ADDITIVE (new fields) | the client keeps rows as dicts and reads only `count` / `next` / `results`, export `state` / `empty` / `error_message` / `see_guide` / `notes`, and write `write_id` / `rows` / `summary` / `complete` |
+| `data_warnings` codes `crs_implausible` (degrees under a projected EPSG, now visible on read) and `sample_trashed` (an assay whose sample is in the Trash: kept, flagged, counted in `flagged`, never hidden) | ADDITIVE (new warning codes) | warnings are data; nothing branches on the list |
+| 29 new reason codes (incl. `project_crs_required`, `company_required` for a project create, `company_not_in_beta`, `beta_access_ended`, `manager_required`, `crs_implausible`, `record_in_use`, `set_not_empty`, `set_is_default`, `unit_label_shared`, `config_undeletable`, `approval_required`, `purchase_authority_required`) and 8 new write warning codes (`below_detection_limit_as_value`, `above_upper_limit_as_value`, `date_in_future`, `point_far_from_project`, `survey_dogleg`, `sample_link_changes`, `assays_left_unlinked`, `stored_values_changed`); none removed | ADDITIVE (new codes) | the client maps only `project_required` / `company_required` / `set_choice_required` to classes; every other code arrives on the generic exception with its `reason_code` + `remedy` |
+| `records/`: new intent `make_export_set`; new models (`Project`; the four config areas; `Photo` / `Document` retract + restore; the eight set families' empty-set retract); `update` / `replace_values` / `retract` on the long-form records (Assay, Method, Standard, WaterAnalysis, WaterQualityMethod) and a real row match for Laboratory / Certificate / Submittal; a unit correction; adds to a stored record (Undo removes exactly the value rows that write created); new body key `layer` (VectorLayer); new minerals through `"acknowledge": ["create_catalog_entries"]` | ADDITIVE (new intents; requests that used to refuse now succeed) | `records/` still answers 200 with per-row outcomes for every intent; the client's `write()` sends any intent / model |
+| A set-less export of a table whose project holds several sets reads the project's export set (else its default) and says so (`set_used`, `set_reason`) | ADDITIVE (used to refuse `set_choice_required`, now succeeds) | lists still ask |
+| `feedback/`: 100 a day per key and per person (was 20); the same key + kind + summary within 24 h answers **200** `duplicate_of` (the existing report) instead of a second 201; summary up to 1,000 characters | ADDITIVE | the client has no feedback method; any 2xx is success to its transport |
+| `trace/` and `xyz_at_depth/` on a project with no coordinate system: 409 `project_crs_required` with the remedy (was a 500) | CORRECTION (error → specific error) | was a server error; still an error |
+| Connector grants start at 5,000 calls/hour (vendor / organisation keys keep 1,000); an export poll that is still running carries `Retry-After` | ADDITIVE | the client's poll interval is its own; existing grants keep their stored rate |
+| `make_default_set` refused for a non-manager: `manager_required` (was `write_access_insufficient`); same 403 | CORRECTION (a more specific code) | the client does not branch on either code |
+| A Structure create's dry run says `created`, as its write does (was `accepted`) | CORRECTION (the dry run now agrees with the write) | the client's `refused` filter reads only `refused` / `skipped` |
+| The protocol export writes raw field names and always keeps `name` (the project's web column display config — hide / rename — no longer reaches a grant's file) | CORRECTION (the export now matches its column dictionary) | the client never reads export columns; files from projects with no display config are unchanged |
+| A write row whose coordinates look like degrees under a projected EPSG is refused `crs_implausible` per row unless `"acknowledge": ["crs_implausible"]` (ruling R-6; it used to land with a warning) | TIGHTENING (ruled), per row | per-row refusals were always part of the write contract; the client reports them in `refused` |
+| `TextureRead.type`: the generated enum component is named `TextureReadTypeEnum` (was `TypeEnum`; a second `type` enum appeared). Values identical | NAMING ONLY | the wire is byte-identical |
+| Domain guide: new topics `projects`, `custom-columns`, `column-config`, `assay-merge-settings`, `assay-ranges`; topic versions move where sections were added | ADDITIVE | `guide()` returns whatever the server serves |
+
+### Conformance
+- The mock serves the 0.3.1 collar row (`total_depth_source`) and lists
+  `make_export_set` in describe; `selftest`: read 40/40, write 22/22.
+
 ## [0.3.0] — prepared 2026-10-04 (published at the maintainer's go)
 
 Protocol **0.3.0** (`info.version`, the `X-GeoDB-Protocol-Version` header and

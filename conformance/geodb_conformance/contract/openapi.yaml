@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: geoDB Exploration Data API
-  version: 0.3.0
+  version: 0.3.1
   description: |
     Access to exploration projects' data — drill holes and what was logged down
     them, samples, laboratory results, quality control, surface geology, maps and
@@ -74,7 +74,7 @@ info:
     tool: drf-spectacular
     source: the geoDB reference implementation's serializers and the runtime grant
       gate
-    protocol_version: 0.3.0
+    protocol_version: 0.3.1
     warning: Generated file — do not edit by hand. Changes belong in the reference
       implementation; regenerate to publish them.
 paths:
@@ -406,6 +406,510 @@ paths:
               schema:
                 type: integer
       summary: Get one of the alteration vocabulary
+      x-geodb-extension: true
+  /api/v2/assay-merge-settings/:
+    get:
+      operationId: assay_merge_settings_list
+      description: |-
+        How a project resolves multiple results for one sample and element — which method wins, and in what order. These settings are what `include_assays` applies when it merges results into the sample endpoints and the bulk exports.
+
+        Paged. Pass `modified_since` to fetch only what changed, and read `deleted_ids` to learn what was removed — that feed is how deletions reach you, since deleted rows simply stop appearing.
+
+        ⚠️ `modified_since` is DAY-granular: it returns everything changed on that day or later, so a repeated pull re-sends the current day's rows. Deduplicate by `id` rather than assuming a strict watermark.
+      parameters:
+      - name: limit
+        required: false
+        in: query
+        description: 'Rows per page: default 100, at most 500 (2,000 on `assay-results/`
+          and on `drill-samples/` rows without `expand=assay`, for an access grant).
+          A larger value is served at the cap and the envelope says so (`limit_clamped`).'
+        schema:
+          type: integer
+      - name: offset
+        required: false
+        in: query
+        description: The initial index from which to return the results.
+        schema:
+          type: integer
+      - in: query
+        name: project_id
+        schema:
+          type: string
+        description: Narrow to one project this credential can read, by its id. An
+          id that names no readable project is refused with `invalid_parameter` —
+          never an empty list.
+      - in: query
+        name: project
+        schema:
+          type: string
+        description: 'Narrow to one project this credential can read, by its id or
+          its exact name (case does not matter). A value that names no readable project
+          is refused with `invalid_parameter` — never an empty list. The JSON natural
+          key some app endpoints take (`{"name": …, "company": …}`) is not a form
+          this parameter accepts: it is refused with `invalid_parameter` too — send
+          the id.'
+      - in: query
+        name: company_id
+        schema:
+          type: string
+        description: The company this read is about, by its id (see `company`).
+      - in: query
+        name: company
+        schema:
+          type: string
+        description: 'The company this read is about, by its id or its exact name
+          (case does not matter): a company-level table (laboratories, methods, standards,
+          QC types) answers that company; with `scope=company` a project-level list
+          answers every project of it this credential can read. A value that names
+          no company this credential can read is refused with `invalid_parameter`.'
+      - in: query
+        name: scope
+        schema:
+          type: string
+        description: 'scope=company: read every readable project of ONE company instead
+          of one project — `company=<id>` names it (a credential that reads one company
+          needs none; several companies and none named is `company_required`). Never
+          across companies. Each row carries `project_id`. Read-only.'
+      tags:
+      - Assays
+      security:
+      - knoxApiToken: []
+      - GrantAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedAssayMergeSettingsReadList'
+          description: ''
+        '400':
+          description: The request could not be understood (see `reason_code`).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 'No usable credential. `reason_code` distinguishes a revoked
+            grant from an expired, unknown or malformed one; the response carries
+            `WWW-Authenticate: Grant`.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: The credential is valid but not permitted this operation —
+            outside the grant surface, a write with a read-only grant, or outside
+            a room-pinned grant's room.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: No such resource inside this credential's scope. A row in another
+            project is indistinguishable from one that does not exist, by design.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: The grant's request rate was exceeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            Retry-After:
+              description: Seconds to wait before retrying. Sent on every throttled
+                response.
+              schema:
+                type: integer
+      summary: List assay merge settings
+      x-geodb-extension: true
+  /api/v2/assay-merge-settings/{id}/:
+    get:
+      operationId: assay_merge_settings_retrieve
+      description: How a project resolves multiple results for one sample and element
+        — which method wins, and in what order. These settings are what `include_assays`
+        applies when it merges results into the sample endpoints and the bulk exports.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Assay Merge Settings.
+        required: true
+      tags:
+      - Assays
+      security:
+      - knoxApiToken: []
+      - GrantAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssayMergeSettingsRead'
+          description: ''
+        '400':
+          description: The request could not be understood (see `reason_code`).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 'No usable credential. `reason_code` distinguishes a revoked
+            grant from an expired, unknown or malformed one; the response carries
+            `WWW-Authenticate: Grant`.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: The credential is valid but not permitted this operation —
+            outside the grant surface, a write with a read-only grant, or outside
+            a room-pinned grant's room.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: No such resource inside this credential's scope. A row in another
+            project is indistinguishable from one that does not exist, by design.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: The grant's request rate was exceeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            Retry-After:
+              description: Seconds to wait before retrying. Sent on every throttled
+                response.
+              schema:
+                type: integer
+      summary: Get one of the assay merge settings
+      x-geodb-extension: true
+  /api/v2/assay-merge-settings/{id}/get_full_config/:
+    get:
+      operationId: assay_merge_settings_get_full_config_retrieve
+      description: The project's merge rules including the complete method precedence
+        order.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Assay Merge Settings.
+        required: true
+      tags:
+      - Assays
+      security:
+      - knoxApiToken: []
+      - GrantAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssayMergeSettingsRead'
+          description: ''
+        '400':
+          description: The request could not be understood (see `reason_code`).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 'No usable credential. `reason_code` distinguishes a revoked
+            grant from an expired, unknown or malformed one; the response carries
+            `WWW-Authenticate: Grant`.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: The credential is valid but not permitted this operation —
+            outside the grant surface, a write with a read-only grant, or outside
+            a room-pinned grant's room.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: No such resource inside this credential's scope. A row in another
+            project is indistinguishable from one that does not exist, by design.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: The grant's request rate was exceeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            Retry-After:
+              description: Seconds to wait before retrying. Sent on every throttled
+                response.
+              schema:
+                type: integer
+      summary: Merge rules with the full method order
+      x-geodb-extension: true
+  /api/v2/assay-merge-settings/{id}/get_merge_config/:
+    get:
+      operationId: assay_merge_settings_get_merge_config_retrieve
+      description: How this project resolves multiple results for one sample and element.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Assay Merge Settings.
+        required: true
+      tags:
+      - Assays
+      security:
+      - knoxApiToken: []
+      - GrantAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssayMergeSettingsRead'
+          description: ''
+        '400':
+          description: The request could not be understood (see `reason_code`).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 'No usable credential. `reason_code` distinguishes a revoked
+            grant from an expired, unknown or malformed one; the response carries
+            `WWW-Authenticate: Grant`.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: The credential is valid but not permitted this operation —
+            outside the grant surface, a write with a read-only grant, or outside
+            a room-pinned grant's room.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: No such resource inside this credential's scope. A row in another
+            project is indistinguishable from one that does not exist, by design.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: The grant's request rate was exceeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            Retry-After:
+              description: Seconds to wait before retrying. Sent on every throttled
+                response.
+              schema:
+                type: integer
+      summary: Merge rules for a project
+      x-geodb-extension: true
+  /api/v2/assay-range-configurations/:
+    get:
+      operationId: assay_range_configurations_list
+      description: |-
+        The value ranges a project uses to colour and band its assay results. Presentation configuration, not measurement.
+
+        Paged. Pass `modified_since` to fetch only what changed, and read `deleted_ids` to learn what was removed — that feed is how deletions reach you, since deleted rows simply stop appearing.
+
+        ⚠️ `modified_since` is DAY-granular: it returns everything changed on that day or later, so a repeated pull re-sends the current day's rows. Deduplicate by `id` rather than assuming a strict watermark.
+      parameters:
+      - name: limit
+        required: false
+        in: query
+        description: 'Rows per page: default 100, at most 500 (2,000 on `assay-results/`
+          and on `drill-samples/` rows without `expand=assay`, for an access grant).
+          A larger value is served at the cap and the envelope says so (`limit_clamped`).'
+        schema:
+          type: integer
+      - name: offset
+        required: false
+        in: query
+        description: The initial index from which to return the results.
+        schema:
+          type: integer
+      - in: query
+        name: project_id
+        schema:
+          type: string
+        description: Narrow to one project this credential can read, by its id. An
+          id that names no readable project is refused with `invalid_parameter` —
+          never an empty list.
+      - in: query
+        name: project
+        schema:
+          type: string
+        description: 'Narrow to one project this credential can read, by its id or
+          its exact name (case does not matter). A value that names no readable project
+          is refused with `invalid_parameter` — never an empty list. The JSON natural
+          key some app endpoints take (`{"name": …, "company": …}`) is not a form
+          this parameter accepts: it is refused with `invalid_parameter` too — send
+          the id.'
+      - in: query
+        name: company_id
+        schema:
+          type: string
+        description: The company this read is about, by its id (see `company`).
+      - in: query
+        name: company
+        schema:
+          type: string
+        description: 'The company this read is about, by its id or its exact name
+          (case does not matter): a company-level table (laboratories, methods, standards,
+          QC types) answers that company; with `scope=company` a project-level list
+          answers every project of it this credential can read. A value that names
+          no company this credential can read is refused with `invalid_parameter`.'
+      - in: query
+        name: scope
+        schema:
+          type: string
+        description: 'scope=company: read every readable project of ONE company instead
+          of one project — `company=<id>` names it (a credential that reads one company
+          needs none; several companies and none named is `company_required`). Never
+          across companies. Each row carries `project_id`. Read-only.'
+      tags:
+      - Assays
+      security:
+      - knoxApiToken: []
+      - GrantAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedAssayRangeConfigurationReadList'
+          description: ''
+        '400':
+          description: The request could not be understood (see `reason_code`).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 'No usable credential. `reason_code` distinguishes a revoked
+            grant from an expired, unknown or malformed one; the response carries
+            `WWW-Authenticate: Grant`.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: The credential is valid but not permitted this operation —
+            outside the grant surface, a write with a read-only grant, or outside
+            a room-pinned grant's room.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: No such resource inside this credential's scope. A row in another
+            project is indistinguishable from one that does not exist, by design.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: The grant's request rate was exceeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            Retry-After:
+              description: Seconds to wait before retrying. Sent on every throttled
+                response.
+              schema:
+                type: integer
+      summary: List assay display ranges
+      x-geodb-extension: true
+  /api/v2/assay-range-configurations/{id}/:
+    get:
+      operationId: assay_range_configurations_retrieve
+      description: The value ranges a project uses to colour and band its assay results.
+        Presentation configuration, not measurement.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this assay range configuration.
+        required: true
+      tags:
+      - Assays
+      security:
+      - knoxApiToken: []
+      - GrantAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssayRangeConfigurationRead'
+          description: ''
+        '400':
+          description: The request could not be understood (see `reason_code`).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 'No usable credential. `reason_code` distinguishes a revoked
+            grant from an expired, unknown or malformed one; the response carries
+            `WWW-Authenticate: Grant`.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: The credential is valid but not permitted this operation —
+            outside the grant surface, a write with a read-only grant, or outside
+            a room-pinned grant's room.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: No such resource inside this credential's scope. A row in another
+            project is indistinguishable from one that does not exist, by design.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: The grant's request rate was exceeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            Retry-After:
+              description: Seconds to wait before retrying. Sent on every throttled
+                response.
+              schema:
+                type: integer
+      summary: Get one of the assay display ranges
       x-geodb-extension: true
   /api/v2/assay-results/:
     get:
@@ -1040,6 +1544,195 @@ paths:
                 type: integer
       summary: Get one of the laboratory certificates
       x-protocol-core: true
+  /api/v2/column-configurations/:
+    get:
+      operationId: column_configurations_list
+      description: |-
+        How each kind of record's columns are named, ordered and shown in this project's grids, exports and ODBC (`entries`, one configuration per `model_type`; a kind with none uses its default columns).
+
+        Change it through the records endpoint (model `ColumnConfiguration`); each configuration's `url` is its page on the web.
+
+        Paged. Pass `modified_since` to fetch only what changed, and read `deleted_ids` to learn what was removed — that feed is how deletions reach you, since deleted rows simply stop appearing.
+
+        ⚠️ `modified_since` is DAY-granular: it returns everything changed on that day or later, so a repeated pull re-sends the current day's rows. Deduplicate by `id` rather than assuming a strict watermark.
+      parameters:
+      - name: limit
+        required: false
+        in: query
+        description: 'Rows per page: default 100, at most 500 (2,000 on `assay-results/`
+          and on `drill-samples/` rows without `expand=assay`, for an access grant).
+          A larger value is served at the cap and the envelope says so (`limit_clamped`).'
+        schema:
+          type: integer
+      - name: offset
+        required: false
+        in: query
+        description: The initial index from which to return the results.
+        schema:
+          type: integer
+      - in: query
+        name: project_id
+        schema:
+          type: string
+        description: Narrow to one project this credential can read, by its id. An
+          id that names no readable project is refused with `invalid_parameter` —
+          never an empty list.
+      - in: query
+        name: project
+        schema:
+          type: string
+        description: 'Narrow to one project this credential can read, by its id or
+          its exact name (case does not matter). A value that names no readable project
+          is refused with `invalid_parameter` — never an empty list. The JSON natural
+          key some app endpoints take (`{"name": …, "company": …}`) is not a form
+          this parameter accepts: it is refused with `invalid_parameter` too — send
+          the id.'
+      - in: query
+        name: company_id
+        schema:
+          type: string
+        description: The company this read is about, by its id (see `company`).
+      - in: query
+        name: company
+        schema:
+          type: string
+        description: 'The company this read is about, by its id or its exact name
+          (case does not matter): a company-level table (laboratories, methods, standards,
+          QC types) answers that company; with `scope=company` a project-level list
+          answers every project of it this credential can read. A value that names
+          no company this credential can read is refused with `invalid_parameter`.'
+      - in: query
+        name: scope
+        schema:
+          type: string
+        description: 'scope=company: read every readable project of ONE company instead
+          of one project — `company=<id>` names it (a credential that reads one company
+          needs none; several companies and none named is `company_required`). Never
+          across companies. Each row carries `project_id`. Read-only.'
+      tags:
+      - Discovery
+      security:
+      - knoxApiToken: []
+      - GrantAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedColumnConfigurationReadList'
+          description: ''
+        '400':
+          description: The request could not be understood (see `reason_code`).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 'No usable credential. `reason_code` distinguishes a revoked
+            grant from an expired, unknown or malformed one; the response carries
+            `WWW-Authenticate: Grant`.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: The credential is valid but not permitted this operation —
+            outside the grant surface, a write with a read-only grant, or outside
+            a room-pinned grant's room.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: No such resource inside this credential's scope. A row in another
+            project is indistinguishable from one that does not exist, by design.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: The grant's request rate was exceeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            Retry-After:
+              description: Seconds to wait before retrying. Sent on every throttled
+                response.
+              schema:
+                type: integer
+      summary: List column presentation
+      x-geodb-extension: true
+  /api/v2/column-configurations/{id}/:
+    get:
+      operationId: column_configurations_retrieve
+      description: |-
+        How each kind of record's columns are named, ordered and shown in this project's grids, exports and ODBC (`entries`, one configuration per `model_type`; a kind with none uses its default columns).
+
+        Change it through the records endpoint (model `ColumnConfiguration`); each configuration's `url` is its page on the web.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Column Configuration.
+        required: true
+      tags:
+      - Discovery
+      security:
+      - knoxApiToken: []
+      - GrantAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ColumnConfigurationRead'
+          description: ''
+        '400':
+          description: The request could not be understood (see `reason_code`).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 'No usable credential. `reason_code` distinguishes a revoked
+            grant from an expired, unknown or malformed one; the response carries
+            `WWW-Authenticate: Grant`.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: The credential is valid but not permitted this operation —
+            outside the grant surface, a write with a read-only grant, or outside
+            a room-pinned grant's room.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: No such resource inside this credential's scope. A row in another
+            project is indistinguishable from one that does not exist, by design.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: The grant's request rate was exceeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            Retry-After:
+              description: Seconds to wait before retrying. Sent on every throttled
+                response.
+              schema:
+                type: integer
+      summary: Get one of the column presentation
+      x-geodb-extension: true
   /api/v2/custom-field-schemas/:
     get:
       operationId: custom_field_schemas_list
@@ -2468,6 +3161,12 @@ paths:
           QC types) answers that company; with `scope=company` a project-level list
           answers every project of it this credential can read. A value that names
           no company this credential can read is refused with `invalid_parameter`.'
+      - in: query
+        name: name
+        schema:
+          type: string
+        description: Exact record name (as stored, case-sensitive); several names
+          comma-separated. The quick way to find one record.
       tags:
       - Drill Holes
       security:
@@ -5209,6 +5908,16 @@ paths:
       summary: Sampling passes (drill-sample sets)
       parameters:
       - in: query
+        name: limit
+        schema:
+          type: integer
+        description: 'At most this many sets per family (default: all).'
+      - in: query
+        name: offset
+        schema:
+          type: integer
+        description: Skip this many sets per family (with `limit`).
+      - in: query
         name: project_id
         schema:
           type: integer
@@ -5548,7 +6257,7 @@ paths:
     get:
       operationId: drill_samples_composited_retrieve
       description: |-
-        Sample intervals recombined to a uniform length, length-weighted.
+        Sample intervals recombined to a uniform length, length-weighted. Needs `bhid` (the hole's id) and `assay_config_id` — the id of one of the project's assay range configurations with compositing on (`assay-range-configurations/`; each names the merge settings it uses, read at `assay-merge-settings/`).
 
         ⚠️ This is a COMPOSITE, not a selection: it does not apply a grade cutoff and does not choose which intervals are interesting.
       tags:
@@ -7392,9 +8101,9 @@ paths:
       description: |-
         Exports one table of ONE project as GeoParquet / Parquet / CSV.
 
-        The one POST on the read surface: it starts a READ (a read-only key may call it; nothing in the project is written). It takes the table's LIST parameters, in the query or the JSON body: `project` (needed when the credential reads several — else `project_required` with the choices), `company`, `scope=company` only when that company has one project, and `set` (id, name or `all`) for an interval or sample table whose project holds several sets (else `set_choice_required`). A parameter the export cannot honour is refused with a remedy, never answered with an empty file.
+        The one POST on the read surface: it starts a READ (a read-only key may call it; nothing in the project is written). It takes the table's LIST parameters, in the query or the JSON body: `project` (needed when the credential reads several — else `project_required` with the choices), `company`, `scope=company` only when that company has one project, and `set` (id, name or `all`) for an interval or sample table whose project holds several sets (left out: the project's export set, else its default set — named in `set_used`). A parameter the export cannot honour is refused with a remedy, never answered with an empty file.
 
-        The export is not a raw table dump: it inherits the project's assay-merge settings, its output CRS (`odbc_output_crs` — coordinates are NOT forced to WGS84), its column configuration, its `cf_*` custom fields and its depth units — the same engine that produces the project's own CSV/XLSX exports and its ODBC feed.
+        The export is not a raw table dump: it inherits the project's assay-merge settings, its output CRS (`odbc_output_crs` — coordinates are NOT forced to WGS84), its `cf_*` custom fields and its depth units — the same engine that produces the project's own CSV/XLSX exports and its ODBC feed. Columns keep their raw field names (the project's column display settings shape the web app, not this file).
 
         Returns 202 with a job id; poll `status_url`, then GET `/exports/{id}/download/` for a short-lived signed URL.
       summary: Create a bulk export job
@@ -7481,7 +8190,7 @@ paths:
       description: |-
         Poll an export job. **The status code is the signal:**
 
-        * `202` — still `queued` or `running`. Wait a few seconds and poll again; `progress_pct` / `rows_done` say how far it has got.
+        * `202` — still `queued` or `running`. Wait the `Retry-After` seconds the answer carries, then poll again — never in a tight loop (every poll counts against the key's hourly rate); `progress_pct` / `rows_done` say how far it has got.
         * `200` — `done`. GET `download_url` for a short-lived signed URL. `empty: true` means the export matched no rows and there is nothing to download.
         * `500` with `state: error` — the job failed. It will not recover; create the export again.
 
@@ -7626,11 +8335,13 @@ paths:
   /api/v2/feedback/:
     post:
       operationId: feedback_create
-      description: Tells the geoDB team about geoDB itself — never project data beyond
+      description: 'Tells the geoDB team about geoDB itself — never project data beyond
         what the user agreed to share. File a `feature_request` when you hit something
         geoDB cannot do, and tell the user you did; show the user a `bug_report` before
-        you send it. At most 20 per key, and per person, in 24 hours; past that the
-        answer is 429 `feedback_rate_limited` with `Retry-After`.
+        you send it. At most 100 per key, and per person, in 24 hours; past that the
+        answer is 429 `feedback_rate_limited` with `Retry-After`. The same kind and
+        summary again from the same key within 24 hours is not filed twice: the answer
+        is 200 with `status: duplicate` and `duplicate_of`, the id already filed.'
       summary: File a feature request or a bug report
       tags:
       - Feedback
@@ -7655,6 +8366,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/FeedbackFiled'
+          description: ''
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FeedbackDuplicate'
           description: ''
         '400':
           description: The request could not be understood (see `reason_code`).
@@ -10532,6 +11249,12 @@ paths:
           type: string
         description: 'Legacy: `true` merges with the project''s default merge settings.
           Prefer `assay_config_id`.'
+      - in: query
+        name: name
+        schema:
+          type: string
+        description: Exact record name (as stored, case-sensitive); several names
+          comma-separated. The quick way to find one record.
       tags:
       - Samples
       security:
@@ -12692,8 +13415,9 @@ paths:
         schema:
           type: string
         description: 'Only writes with this intent: `create`, `upsert`, `update`,
-          `retract`, `restore`, `make_default_set`, `qaqc_verdict`, `qc_reconnect`,
-          `undo`, `publish`. Any other value is refused with `invalid_parameter`.'
+          `retract`, `restore`, `make_default_set`, `make_export_set`, `qaqc_verdict`,
+          `qc_reconnect`, `undo`, `publish`, `set_coordinate_system`, `set_state`.
+          Any other value is refused with `invalid_parameter`.'
       - in: query
         name: limit
         schema:
@@ -13459,9 +14183,10 @@ paths:
         cannot write), `source` / `description` (how it was made), `created` and `created_by_role`
         (the creator''s role in the project — never an email). `samples` also names
         the project''s EXPORT sample set (the pass exports and the ODBC table read).
-        Never merge sets; say which set you read; before writing intervals or samples,
-        ask which set if the user has not said: add to an existing one, or create
-        a new one.'
+        `limit` / `offset` page each family''s list, which then carries `count` (its
+        sets in all). Never merge sets; say which set you read; before writing intervals
+        or samples, ask which set if the user has not said: add to an existing one,
+        or create a new one.'
       summary: The sets of a project, per family — what to offer before a write
       parameters:
       - in: query
@@ -13471,6 +14196,16 @@ paths:
           items:
             type: string
         description: 'One or more families (default: all).'
+      - in: query
+        name: limit
+        schema:
+          type: integer
+        description: 'At most this many sets per family (default: all).'
+      - in: query
+        name: offset
+        schema:
+          type: integer
+        description: Skip this many sets per family (with `limit`).
       - in: query
         name: project_id
         schema:
@@ -14730,6 +15465,253 @@ paths:
                 type: integer
       summary: Get one of the surface structural measurements
       x-geodb-extension: true
+  /api/v2/submittals/:
+    get:
+      operationId: submittals_list
+      description: |-
+        A batch of samples sent to a laboratory: the lab, the date sent, its status (`PE` pending, `SE` sent, `RE` received, `CO` complete), notes and how many samples it holds. Read-only here; a submittal is written through `records/`.
+
+        Paged. Pass `modified_since` to fetch only what changed, and read `deleted_ids` to learn what was removed — that feed is how deletions reach you, since deleted rows simply stop appearing.
+
+        ⚠️ `modified_since` is DAY-granular: it returns everything changed on that day or later, so a repeated pull re-sends the current day's rows. Deduplicate by `id` rather than assuming a strict watermark.
+      parameters:
+      - name: limit
+        required: false
+        in: query
+        description: 'Rows per page: default 100, at most 500 (2,000 on `assay-results/`
+          and on `drill-samples/` rows without `expand=assay`, for an access grant).
+          A larger value is served at the cap and the envelope says so (`limit_clamped`).'
+        schema:
+          type: integer
+      - name: offset
+        required: false
+        in: query
+        description: The initial index from which to return the results.
+        schema:
+          type: integer
+      - in: query
+        name: project_id
+        schema:
+          type: string
+        description: Narrow to one project this credential can read, by its id. An
+          id that names no readable project is refused with `invalid_parameter` —
+          never an empty list.
+      - in: query
+        name: project
+        schema:
+          type: string
+        description: 'Narrow to one project this credential can read, by its id or
+          its exact name (case does not matter). A value that names no readable project
+          is refused with `invalid_parameter` — never an empty list. The JSON natural
+          key some app endpoints take (`{"name": …, "company": …}`) is not a form
+          this parameter accepts: it is refused with `invalid_parameter` too — send
+          the id.'
+      - in: query
+        name: company_id
+        schema:
+          type: string
+        description: The company this read is about, by its id (see `company`).
+      - in: query
+        name: company
+        schema:
+          type: string
+        description: 'The company this read is about, by its id or its exact name
+          (case does not matter): a company-level table (laboratories, methods, standards,
+          QC types) answers that company; with `scope=company` a project-level list
+          answers every project of it this credential can read. A value that names
+          no company this credential can read is refused with `invalid_parameter`.'
+      - in: query
+        name: scope
+        schema:
+          type: string
+        description: 'scope=company: read every readable project of ONE company instead
+          of one project — `company=<id>` names it (a credential that reads one company
+          needs none; several companies and none named is `company_required`). Never
+          across companies. Each row carries `project_id`. Read-only.'
+      tags:
+      - Assays
+      security:
+      - knoxApiToken: []
+      - GrantAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedSubmittalReadList'
+          description: ''
+        '400':
+          description: The request could not be understood (see `reason_code`).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 'No usable credential. `reason_code` distinguishes a revoked
+            grant from an expired, unknown or malformed one; the response carries
+            `WWW-Authenticate: Grant`.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: The credential is valid but not permitted this operation —
+            outside the grant surface, a write with a read-only grant, or outside
+            a room-pinned grant's room.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: No such resource inside this credential's scope. A row in another
+            project is indistinguishable from one that does not exist, by design.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: The grant's request rate was exceeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            Retry-After:
+              description: Seconds to wait before retrying. Sent on every throttled
+                response.
+              schema:
+                type: integer
+      summary: List lab submittals
+      x-geodb-extension: true
+  /api/v2/submittals/{id}/:
+    get:
+      operationId: submittals_retrieve
+      description: 'A batch of samples sent to a laboratory: the lab, the date sent,
+        its status (`PE` pending, `SE` sent, `RE` received, `CO` complete), notes
+        and how many samples it holds. Read-only here; a submittal is written through
+        `records/`.'
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this submittal.
+        required: true
+      tags:
+      - Assays
+      security:
+      - knoxApiToken: []
+      - GrantAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubmittalRead'
+          description: ''
+        '400':
+          description: The request could not be understood (see `reason_code`).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 'No usable credential. `reason_code` distinguishes a revoked
+            grant from an expired, unknown or malformed one; the response carries
+            `WWW-Authenticate: Grant`.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: The credential is valid but not permitted this operation —
+            outside the grant surface, a write with a read-only grant, or outside
+            a room-pinned grant's room.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: No such resource inside this credential's scope. A row in another
+            project is indistinguishable from one that does not exist, by design.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: The grant's request rate was exceeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            Retry-After:
+              description: Seconds to wait before retrying. Sent on every throttled
+                response.
+              schema:
+                type: integer
+      summary: Get one of the lab submittals
+      x-geodb-extension: true
+  /api/v2/submittals/generate-name/:
+    get:
+      operationId: submittals_generate_name_retrieve
+      description: The next sequential submittal name for `project` (e.g. `SUB-2026-004`)
+        — what a new submittal would be called.
+      tags:
+      - Assays
+      security:
+      - knoxApiToken: []
+      - GrantAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubmittalWrite'
+          description: ''
+        '400':
+          description: The request could not be understood (see `reason_code`).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 'No usable credential. `reason_code` distinguishes a revoked
+            grant from an expired, unknown or malformed one; the response carries
+            `WWW-Authenticate: Grant`.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: The credential is valid but not permitted this operation —
+            outside the grant surface, a write with a read-only grant, or outside
+            a room-pinned grant's room.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: No such resource inside this credential's scope. A row in another
+            project is indistinguishable from one that does not exist, by design.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: The grant's request rate was exceeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            Retry-After:
+              description: Seconds to wait before retrying. Sent on every throttled
+                response.
+              schema:
+                type: integer
+      summary: The next submittal name
+      x-geodb-extension: true
   /api/v2/textures/:
     get:
       operationId: textures_list
@@ -15605,6 +16587,555 @@ paths:
                 type: integer
       summary: Get one of the vein type vocabulary
       x-geodb-extension: true
+  /api/v2/water-analyses/:
+    get:
+      operationId: water_analyses_list
+      description: |-
+        One water sample's laboratory results on a certificate: each parameter with its value, qualifier (`ND`, `J`, `U`, `E` or detected) and limits. Read-only; written through `records/`.
+
+        Paged. Pass `modified_since` to fetch only what changed, and read `deleted_ids` to learn what was removed — that feed is how deletions reach you, since deleted rows simply stop appearing.
+
+        ⚠️ `modified_since` is DAY-granular: it returns everything changed on that day or later, so a repeated pull re-sends the current day's rows. Deduplicate by `id` rather than assuming a strict watermark.
+      parameters:
+      - name: limit
+        required: false
+        in: query
+        description: 'Rows per page: default 100, at most 500 (2,000 on `assay-results/`
+          and on `drill-samples/` rows without `expand=assay`, for an access grant).
+          A larger value is served at the cap and the envelope says so (`limit_clamped`).'
+        schema:
+          type: integer
+      - name: offset
+        required: false
+        in: query
+        description: The initial index from which to return the results.
+        schema:
+          type: integer
+      - in: query
+        name: project_id
+        schema:
+          type: string
+        description: Narrow to one project this credential can read, by its id. An
+          id that names no readable project is refused with `invalid_parameter` —
+          never an empty list.
+      - in: query
+        name: project
+        schema:
+          type: string
+        description: 'Narrow to one project this credential can read, by its id or
+          its exact name (case does not matter). A value that names no readable project
+          is refused with `invalid_parameter` — never an empty list. The JSON natural
+          key some app endpoints take (`{"name": …, "company": …}`) is not a form
+          this parameter accepts: it is refused with `invalid_parameter` too — send
+          the id.'
+      - in: query
+        name: company_id
+        schema:
+          type: string
+        description: The company this read is about, by its id (see `company`).
+      - in: query
+        name: company
+        schema:
+          type: string
+        description: 'The company this read is about, by its id or its exact name
+          (case does not matter): a company-level table (laboratories, methods, standards,
+          QC types) answers that company; with `scope=company` a project-level list
+          answers every project of it this credential can read. A value that names
+          no company this credential can read is refused with `invalid_parameter`.'
+      - in: query
+        name: scope
+        schema:
+          type: string
+        description: 'scope=company: read every readable project of ONE company instead
+          of one project — `company=<id>` names it (a credential that reads one company
+          needs none; several companies and none named is `company_required`). Never
+          across companies. Each row carries `project_id`. Read-only.'
+      tags:
+      - Water
+      security:
+      - knoxApiToken: []
+      - GrantAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedWaterAnalysisReadList'
+          description: ''
+        '400':
+          description: The request could not be understood (see `reason_code`).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 'No usable credential. `reason_code` distinguishes a revoked
+            grant from an expired, unknown or malformed one; the response carries
+            `WWW-Authenticate: Grant`.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: The credential is valid but not permitted this operation —
+            outside the grant surface, a write with a read-only grant, or outside
+            a room-pinned grant's room.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: No such resource inside this credential's scope. A row in another
+            project is indistinguishable from one that does not exist, by design.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: The grant's request rate was exceeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            Retry-After:
+              description: Seconds to wait before retrying. Sent on every throttled
+                response.
+              schema:
+                type: integer
+      summary: List water lab results
+      x-geodb-extension: true
+  /api/v2/water-analyses/{id}/:
+    get:
+      operationId: water_analyses_retrieve
+      description: 'One water sample''s laboratory results on a certificate: each
+        parameter with its value, qualifier (`ND`, `J`, `U`, `E` or detected) and
+        limits. Read-only; written through `records/`.'
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Water Analysis.
+        required: true
+      tags:
+      - Water
+      security:
+      - knoxApiToken: []
+      - GrantAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WaterAnalysisRead'
+          description: ''
+        '400':
+          description: The request could not be understood (see `reason_code`).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 'No usable credential. `reason_code` distinguishes a revoked
+            grant from an expired, unknown or malformed one; the response carries
+            `WWW-Authenticate: Grant`.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: The credential is valid but not permitted this operation —
+            outside the grant surface, a write with a read-only grant, or outside
+            a room-pinned grant's room.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: No such resource inside this credential's scope. A row in another
+            project is indistinguishable from one that does not exist, by design.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: The grant's request rate was exceeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            Retry-After:
+              description: Seconds to wait before retrying. Sent on every throttled
+                response.
+              schema:
+                type: integer
+      summary: Get one of the water lab results
+      x-geodb-extension: true
+  /api/v2/water-quality-certificates/:
+    get:
+      operationId: water_quality_certificates_list
+      description: |-
+        A water-quality laboratory job: its laboratory, dates, batch and the methods it used. Read-only; written through `records/`.
+
+        Paged. Pass `modified_since` to fetch only what changed, and read `deleted_ids` to learn what was removed — that feed is how deletions reach you, since deleted rows simply stop appearing.
+
+        ⚠️ `modified_since` is DAY-granular: it returns everything changed on that day or later, so a repeated pull re-sends the current day's rows. Deduplicate by `id` rather than assuming a strict watermark.
+      parameters:
+      - name: limit
+        required: false
+        in: query
+        description: 'Rows per page: default 100, at most 500 (2,000 on `assay-results/`
+          and on `drill-samples/` rows without `expand=assay`, for an access grant).
+          A larger value is served at the cap and the envelope says so (`limit_clamped`).'
+        schema:
+          type: integer
+      - name: offset
+        required: false
+        in: query
+        description: The initial index from which to return the results.
+        schema:
+          type: integer
+      - in: query
+        name: project_id
+        schema:
+          type: string
+        description: Narrow to one project this credential can read, by its id. An
+          id that names no readable project is refused with `invalid_parameter` —
+          never an empty list.
+      - in: query
+        name: project
+        schema:
+          type: string
+        description: 'Narrow to one project this credential can read, by its id or
+          its exact name (case does not matter). A value that names no readable project
+          is refused with `invalid_parameter` — never an empty list. The JSON natural
+          key some app endpoints take (`{"name": …, "company": …}`) is not a form
+          this parameter accepts: it is refused with `invalid_parameter` too — send
+          the id.'
+      - in: query
+        name: company_id
+        schema:
+          type: string
+        description: The company this read is about, by its id (see `company`).
+      - in: query
+        name: company
+        schema:
+          type: string
+        description: 'The company this read is about, by its id or its exact name
+          (case does not matter): a company-level table (laboratories, methods, standards,
+          QC types) answers that company; with `scope=company` a project-level list
+          answers every project of it this credential can read. A value that names
+          no company this credential can read is refused with `invalid_parameter`.'
+      - in: query
+        name: scope
+        schema:
+          type: string
+        description: 'scope=company: read every readable project of ONE company instead
+          of one project — `company=<id>` names it (a credential that reads one company
+          needs none; several companies and none named is `company_required`). Never
+          across companies. Each row carries `project_id`. Read-only.'
+      tags:
+      - Water
+      security:
+      - knoxApiToken: []
+      - GrantAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedWaterQualityCertificateReadList'
+          description: ''
+        '400':
+          description: The request could not be understood (see `reason_code`).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 'No usable credential. `reason_code` distinguishes a revoked
+            grant from an expired, unknown or malformed one; the response carries
+            `WWW-Authenticate: Grant`.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: The credential is valid but not permitted this operation —
+            outside the grant surface, a write with a read-only grant, or outside
+            a room-pinned grant's room.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: No such resource inside this credential's scope. A row in another
+            project is indistinguishable from one that does not exist, by design.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: The grant's request rate was exceeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            Retry-After:
+              description: Seconds to wait before retrying. Sent on every throttled
+                response.
+              schema:
+                type: integer
+      summary: List water lab certificates
+      x-geodb-extension: true
+  /api/v2/water-quality-certificates/{id}/:
+    get:
+      operationId: water_quality_certificates_retrieve
+      description: 'A water-quality laboratory job: its laboratory, dates, batch and
+        the methods it used. Read-only; written through `records/`.'
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Water Quality Certificate.
+        required: true
+      tags:
+      - Water
+      security:
+      - knoxApiToken: []
+      - GrantAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WaterQualityCertificateRead'
+          description: ''
+        '400':
+          description: The request could not be understood (see `reason_code`).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 'No usable credential. `reason_code` distinguishes a revoked
+            grant from an expired, unknown or malformed one; the response carries
+            `WWW-Authenticate: Grant`.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: The credential is valid but not permitted this operation —
+            outside the grant surface, a write with a read-only grant, or outside
+            a room-pinned grant's room.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: No such resource inside this credential's scope. A row in another
+            project is indistinguishable from one that does not exist, by design.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: The grant's request rate was exceeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            Retry-After:
+              description: Seconds to wait before retrying. Sent on every throttled
+                response.
+              schema:
+                type: integer
+      summary: Get one of the water lab certificates
+      x-geodb-extension: true
+  /api/v2/water-quality-methods/:
+    get:
+      operationId: water_quality_methods_list
+      description: |-
+        A water-quality analytical method and the parameters it reports, each with its units, method detection limit (`mdl`) and practical reporting limit (`prl`). Company-wide.
+
+        Paged. Pass `modified_since` to fetch only what changed, and read `deleted_ids` to learn what was removed — that feed is how deletions reach you, since deleted rows simply stop appearing.
+
+        ⚠️ `modified_since` is DAY-granular: it returns everything changed on that day or later, so a repeated pull re-sends the current day's rows. Deduplicate by `id` rather than assuming a strict watermark.
+      parameters:
+      - name: limit
+        required: false
+        in: query
+        description: 'Rows per page: default 100, at most 500 (2,000 on `assay-results/`
+          and on `drill-samples/` rows without `expand=assay`, for an access grant).
+          A larger value is served at the cap and the envelope says so (`limit_clamped`).'
+        schema:
+          type: integer
+      - name: offset
+        required: false
+        in: query
+        description: The initial index from which to return the results.
+        schema:
+          type: integer
+      - in: query
+        name: project_id
+        schema:
+          type: string
+        description: Narrow to one project this credential can read, by its id. An
+          id that names no readable project is refused with `invalid_parameter` —
+          never an empty list.
+      - in: query
+        name: project
+        schema:
+          type: string
+        description: 'Narrow to one project this credential can read, by its id or
+          its exact name (case does not matter). A value that names no readable project
+          is refused with `invalid_parameter` — never an empty list. The JSON natural
+          key some app endpoints take (`{"name": …, "company": …}`) is not a form
+          this parameter accepts: it is refused with `invalid_parameter` too — send
+          the id.'
+      - in: query
+        name: company_id
+        schema:
+          type: string
+        description: The company this read is about, by its id (see `company`).
+      - in: query
+        name: company
+        schema:
+          type: string
+        description: 'The company this read is about, by its id or its exact name
+          (case does not matter): a company-level table (laboratories, methods, standards,
+          QC types) answers that company; with `scope=company` a project-level list
+          answers every project of it this credential can read. A value that names
+          no company this credential can read is refused with `invalid_parameter`.'
+      tags:
+      - Water
+      security:
+      - knoxApiToken: []
+      - GrantAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedWaterQualityMethodReadList'
+          description: ''
+        '400':
+          description: The request could not be understood (see `reason_code`).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 'No usable credential. `reason_code` distinguishes a revoked
+            grant from an expired, unknown or malformed one; the response carries
+            `WWW-Authenticate: Grant`.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: The credential is valid but not permitted this operation —
+            outside the grant surface, a write with a read-only grant, or outside
+            a room-pinned grant's room.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: No such resource inside this credential's scope. A row in another
+            project is indistinguishable from one that does not exist, by design.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: The grant's request rate was exceeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            Retry-After:
+              description: Seconds to wait before retrying. Sent on every throttled
+                response.
+              schema:
+                type: integer
+      summary: List water lab methods
+      x-geodb-extension: true
+  /api/v2/water-quality-methods/{id}/:
+    get:
+      operationId: water_quality_methods_retrieve
+      description: A water-quality analytical method and the parameters it reports,
+        each with its units, method detection limit (`mdl`) and practical reporting
+        limit (`prl`). Company-wide.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Water Quality Method.
+        required: true
+      tags:
+      - Water
+      security:
+      - knoxApiToken: []
+      - GrantAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WaterQualityMethodRead'
+          description: ''
+        '400':
+          description: The request could not be understood (see `reason_code`).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 'No usable credential. `reason_code` distinguishes a revoked
+            grant from an expired, unknown or malformed one; the response carries
+            `WWW-Authenticate: Grant`.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: The credential is valid but not permitted this operation —
+            outside the grant surface, a write with a read-only grant, or outside
+            a room-pinned grant's room.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: No such resource inside this credential's scope. A row in another
+            project is indistinguishable from one that does not exist, by design.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: The grant's request rate was exceeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            Retry-After:
+              description: Seconds to wait before retrying. Sent on every throttled
+                response.
+              schema:
+                type: integer
+      summary: Get one of the water lab methods
+      x-geodb-extension: true
   /api/v2/water-samples/:
     get:
       operationId: water_samples_list
@@ -16217,6 +17748,315 @@ components:
         * `loi` - Loss on ignition
         * `ratio` - Ratio / index
         * `other` - Other
+    AssayMergeSettingsRead:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          description: Name for this merge settings configuration
+          maxLength: 100
+        project:
+          type: integer
+          nullable: true
+          description: Project these settings apply to
+        project_name:
+          type: string
+          readOnly: true
+          nullable: true
+        company_name:
+          type: string
+          readOnly: true
+          nullable: true
+        default_strategy:
+          allOf:
+          - $ref: '#/components/schemas/DefaultStrategyEnum'
+          description: |-
+            Default merge strategy for all elements
+
+            * `high` - Highest Value
+            * `low` - Lowest Value
+            * `average` - Average
+        default_units:
+          allOf:
+          - $ref: '#/components/schemas/DefaultUnitsEnum'
+          description: |-
+            Default target units for all elements
+
+            * `ppm` - Parts Per Million (ppm)
+            * `ppb` - Parts Per Billion (ppb)
+            * `pct` - Percent (%)
+            * `opt` - Ounces Per Ton (oz/t)
+        convert_bdl:
+          type: boolean
+          description: Convert Below Detection Limit values to numeric estimates
+        bdl_multiplier:
+          type: number
+          format: double
+          description: Fraction of detection limit to use for BDL values (0.0-1.0)
+        element_overrides:
+          type: array
+          items:
+            $ref: '#/components/schemas/AssayMergeSettingsUnit'
+          readOnly: true
+        created_by_name:
+          type: string
+          readOnly: true
+          nullable: true
+        date_created:
+          type: string
+          format: date
+          readOnly: true
+          nullable: true
+        last_edited_by_name:
+          type: string
+          readOnly: true
+          nullable: true
+        last_edited:
+          type: string
+          format: date
+          readOnly: true
+          nullable: true
+        project_id:
+          type: integer
+          readOnly: true
+          description: The project this record is in (a credential may read several;
+            GET /api/v2/grant-context/ names them).
+        assay_configs:
+          type: array
+          readOnly: true
+          description: The assay range configurations that use these settings; each
+            `id` is an `assay_config_id` for the sample and composited reads.
+          items:
+            type: object
+            properties:
+              id:
+                type: integer
+              name:
+                type: string
+              element:
+                type: string
+      required:
+      - company_name
+      - created_by_name
+      - date_created
+      - element_overrides
+      - id
+      - last_edited
+      - last_edited_by_name
+      - project_name
+      additionalProperties: false
+    AssayMergeSettingsUnit:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        element:
+          type: string
+          description: Element symbol (e.g., Au, Cu, Ag)
+          maxLength: 10
+        target_units:
+          allOf:
+          - $ref: '#/components/schemas/TargetUnitsEnum'
+          description: |-
+            Target units for this element
+
+            * `ppb` - parts per billion
+            * `ppm` - parts per million
+            * `pct` - percent
+            * `opt` - ounces per ton
+        strategy:
+          allOf:
+          - $ref: '#/components/schemas/StrategyEnum'
+          description: |-
+            Merge strategy: high, low, or average
+
+            * `high` - Highest Value
+            * `low` - Lowest Value
+            * `average` - Average Value
+        method_type_filter:
+          nullable: true
+          description: |-
+            Legacy field - use digestion_filter/finish_filter instead
+
+            * `FA` - Fire Assay
+            * `AR` - Aqua Regia
+            * `MA` - Multi Acid
+            * `TI` - Titration
+            * `XRF` - X-ray fluorescence
+            * `PA` - Photon Assay
+            * `ICP` - ICP-MS/ICP-OES
+            * `IC` - Ion Chromatography
+            * `AA` - Atomic Absorption
+            * `SM` - Standard Methods
+            * `EPA` - EPA Methods
+            * `WQ` - Water Quality
+            * `OT` - Other
+          oneOf:
+          - $ref: '#/components/schemas/MethodTypeFilterEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+        digestion_filter:
+          type: integer
+          nullable: true
+          description: 'Optional: Only use assays from this digestion method'
+        finish_filter:
+          type: integer
+          nullable: true
+          description: 'Optional: Only use assays from this finish method'
+      required:
+      - element
+      - id
+      - strategy
+      - target_units
+      additionalProperties: false
+    AssayRangeConfigurationRead:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          description: Descriptive name for this configuration (e.g., 'Gold High Grade',
+            'Copper Exploration')
+          maxLength: 100
+        project:
+          type: object
+          nullable: true
+          additionalProperties: true
+          description: 'Natural key of the project: `{"name", "company"}`.'
+          readOnly: true
+        element:
+          type: string
+          description: Analyte symbol to visualize. Usually an element (Au, Cu) but
+            may be a compound species (CaF2, SiO2, Al2O3) or other analyte the project
+            assays. NOT restricted to a static element list — the form/tool layer
+            constrains the picker to analytes this project actually has assay data
+            for (Assay.project_analyte_symbols). Mirrors StandardUnit.element.
+          maxLength: 20
+        units:
+          type: string
+          readOnly: true
+          description: Units for this value (e.g. `ppm`, `ppb`, `pct`, `g/t`, `oz/ton`).
+            Per value — always read it beside the value rather than assuming a project-wide
+            unit.
+          nullable: true
+        assay_merge_settings:
+          type: integer
+          description: Merge settings for unit conversion and merge strategy. Required
+            for proper assay data handling.
+        description:
+          type: string
+          nullable: true
+          description: Optional description of this configuration
+        default_color:
+          type: string
+          description: 'Color for values outside defined ranges or null values (hex
+            format: #RRGGBB)'
+          maxLength: 7
+        is_active:
+          type: boolean
+          description: Whether this configuration is currently active for the project
+        enable_compositing:
+          type: boolean
+          description: Enable compositing of assay intervals before visualization
+        composite_interval:
+          type: number
+          format: double
+          minimum: 0.1
+          nullable: true
+          description: Length of composite intervals in meters (e.g., 5.0 for 5-meter
+            composites)
+        composite_alignment_offset:
+          type: number
+          format: double
+          minimum: 0.0
+          nullable: true
+          description: 'Optional: Offset for aligning composites to elevation grid.
+            E.g., 0 for 1000m/1005m/1010m, 2 for 1002m/1007m/1012m'
+        ranges:
+          type: array
+          items:
+            $ref: '#/components/schemas/AssayRangeItem'
+          readOnly: true
+        date_created:
+          type: string
+          format: date
+          readOnly: true
+          nullable: true
+        last_edited:
+          type: string
+          format: date
+          readOnly: true
+          nullable: true
+        project_id:
+          type: integer
+          readOnly: true
+          description: The project this record is in (a credential may read several;
+            GET /api/v2/grant-context/ names them).
+      required:
+      - assay_merge_settings
+      - date_created
+      - element
+      - id
+      - last_edited
+      - name
+      - project
+      - ranges
+      - units
+      additionalProperties: false
+    AssayRangeItem:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        from_value:
+          type: number
+          format: double
+          minimum: -1.0
+          description: Start of range (inclusive). Use -1 for below detection limit
+            values.
+        to_value:
+          type: number
+          format: double
+          minimum: -1.0
+          description: End of range (exclusive). Use -1 for below detection limit
+            values.
+        size:
+          type: integer
+          maximum: 2147483647
+          minimum: 1
+          description: Size/width for markers or lines in this range (pixels)
+        label:
+          type: string
+          description: Optional label for this range (e.g., 'Low Grade', 'High Grade')
+          maxLength: 50
+        order:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
+          description: Display order (lower numbers first)
+        date_created:
+          type: string
+          format: date
+          readOnly: true
+          nullable: true
+        last_edited:
+          type: string
+          format: date
+          readOnly: true
+          nullable: true
+      required:
+      - date_created
+      - from_value
+      - id
+      - last_edited
+      - to_value
+      additionalProperties: false
     AssayRead:
       type: object
       properties:
@@ -16521,6 +18361,24 @@ components:
           type: string
           description: The producing certificate's QAQC review (`none` when not reviewed,
             or the value has no certificate).
+        sample_status:
+          nullable: true
+          description: |-
+            `live`: the sample is current. `trashed`: the sample was moved to the trash; the assay is kept (assays are never deleted with their sample) and re-links when the sample is restored or re-imported. The row also carries a `sample_trashed` data warning, and the first page's `flagged.sample_trashed` counts them. Leave such values out of statistics unless the user says otherwise. null: no sample of that name.
+
+            * `live` - live
+            * `trashed` - trashed
+          allOf:
+          - $ref: '#/components/schemas/SampleStatusEnum'
+        qc_type_name:
+          type: string
+          nullable: true
+          description: 'QC rows: the QC type''s name (as qc-samples/ and the qc_samples
+            export say it); null otherwise.'
+        qc_category:
+          type: string
+          nullable: true
+          description: 'QC rows: the QC kind (`STD`, `BLN`, `DUP`…); null otherwise.'
         data_warnings:
           type: array
           readOnly: true
@@ -16547,8 +18405,11 @@ components:
       - method_id
       - project_id
       - qaqc_status
+      - qc_category
+      - qc_type_name
       - sample_id
       - sample_name
+      - sample_status
       - sample_type
       - source_type
       - units
@@ -16837,6 +18698,12 @@ components:
 
             * `lab` - Laboratory
             * `field_xrf` - Field XRF
+        notes:
+          type: string
+          readOnly: true
+          nullable: true
+          description: Free-text notes on this certificate (as written by the user
+            or through the records endpoint).
         date_created:
           type: string
           format: date
@@ -16863,6 +18730,7 @@ components:
       - last_edited
       - methods
       - name
+      - notes
       - project
       - qaqc_status
       - result_count
@@ -16922,6 +18790,60 @@ components:
         * `BAIL` - Bailer
         * `PUMP` - Pump
         * `OTHER` - Other
+    ColumnConfigurationRead:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        project:
+          type: integer
+          readOnly: true
+          description: Project this column configuration belongs to
+        model_type:
+          type: string
+          readOnly: true
+          nullable: true
+        description:
+          type: string
+          readOnly: true
+          nullable: true
+          description: Optional description of this column configuration
+        table_display_name:
+          type: string
+          readOnly: true
+          nullable: true
+          description: Custom table name for ODBC clients that expect a different
+            schema vocabulary (e.g. 'COLLAR' for Maptek Vulcan). NULL = expose under
+            the default lowercase table name only. Case-insensitive for lookups.
+        entries:
+          type: string
+          readOnly: true
+          nullable: true
+        url:
+          type: string
+          readOnly: true
+          nullable: true
+        last_edited:
+          type: string
+          format: date
+          readOnly: true
+          nullable: true
+        project_id:
+          type: integer
+          readOnly: true
+          description: The project this record is in (a credential may read several;
+            GET /api/v2/grant-context/ names them).
+      required:
+      - description
+      - entries
+      - id
+      - last_edited
+      - model_type
+      - project
+      - table_display_name
+      - url
+      additionalProperties: false
     ConfidenceEnum:
       enum:
       - 0
@@ -17324,6 +19246,28 @@ components:
         * `OPENTOPO_SRTMGL1` - OpenTopography: SRTM 30m (±60° latitude)
         * `OPENTOPO_AW3D30` - OpenTopography: ALOS World 3D 30m (Global)
         * `MANUAL_UPLOAD` - Manually Uploaded
+    DefaultStrategyEnum:
+      enum:
+      - high
+      - low
+      - average
+      type: string
+      description: |-
+        * `high` - Highest Value
+        * `low` - Lowest Value
+        * `average` - Average
+    DefaultUnitsEnum:
+      enum:
+      - ppm
+      - ppb
+      - pct
+      - opt
+      type: string
+      description: |-
+        * `ppm` - Parts Per Million (ppm)
+        * `ppb` - Parts Per Billion (ppb)
+        * `pct` - Percent (%)
+        * `opt` - Ounces Per Ton (oz/t)
     DesurveyMethodEnum:
       enum:
       - minimum_curvature
@@ -17684,6 +19628,24 @@ components:
           type: string
           readOnly: true
           nullable: true
+        total_depth_source:
+          allOf:
+          - $ref: '#/components/schemas/TotalDepthSourceEnum'
+          readOnly: true
+          description: |-
+            Where total_depth came from: `reported` (imported / entered), `inferred_<table>` (derived from the deepest row of that logged table, not surveyed), or `unknown`.
+
+            * `reported` - Reported / Imported
+            * `inferred_sample` - Inferred from deepest sample
+            * `inferred_lithology` - Inferred from deepest lithology
+            * `inferred_alteration` - Inferred from deepest alteration
+            * `inferred_mineralization` - Inferred from deepest mineralization
+            * `inferred_structure` - Inferred from deepest structure
+            * `inferred_survey` - Inferred from deepest survey
+            * `inferred_rqd` - Inferred from deepest RQD interval
+            * `inferred_vein` - Inferred from deepest vein
+            * `inferred_photo` - Inferred from deepest core photo
+            * `unknown` - Unknown
         azimuth:
           type: number
           format: double
@@ -17938,6 +19900,7 @@ components:
       - project
       - source_coordinate
       - total_depth_label
+      - total_depth_source
       - xy_units
       patternProperties:
         ^cf_[a-z0-9_]+$:
@@ -21216,9 +23179,10 @@ components:
           type: string
           minLength: 1
           description: 'For an interval or sample table: the set (id or exact name),
-            or `all`. Needed when the project holds several sets of it (else `set_choice_required`).
-            Tables whose export ships only the project''s export set refuse `all`
-            and other sets.'
+            or `all`. Left out when the project holds several sets of it, the export
+            reads the project''s export set for the table, else its default set, and
+            the answer names it (`set_used`, `set_reason`). Tables whose export ships
+            only the project''s export set refuse `all` and other sets.'
       required:
       - model
     ExportJobAccepted:
@@ -21251,6 +23215,21 @@ components:
             already existed — an identical re-POST is idempotent and does NOT start
             a second export. Not an error: the payload is the same one a fresh job
             would have produced.'
+        set_used:
+          type: object
+          additionalProperties: {}
+          description: 'Present when the table has several sets and the request named
+            none: the set this export reads ({id, name}) — the project''s export set
+            for the table, else its default set (see `set_reason`). Tell the user
+            which set the file holds; name `set` to read another, or `set=all`.'
+        set_reason:
+          allOf:
+          - $ref: '#/components/schemas/SetReasonEnum'
+          description: |-
+            Why `set_used` was read: the project's chosen export set, or (none chosen) its default set.
+
+            * `export_set` - export_set
+            * `default_set` - default_set
       required:
       - format
       - id
@@ -21262,6 +23241,12 @@ components:
     ExportJobDone:
       type: object
       properties:
+        id:
+          type: string
+          description: The job id (grant callers).
+        model:
+          type: string
+          description: The table (grant callers).
         state:
           type: string
           description: '`done`.'
@@ -21312,6 +23297,12 @@ components:
     ExportJobFailed:
       type: object
       properties:
+        id:
+          type: string
+          description: The job id (grant callers).
+        model:
+          type: string
+          description: The table (grant callers).
         state:
           type: string
           description: '`error`.'
@@ -21327,6 +23318,12 @@ components:
     ExportJobInFlight:
       type: object
       properties:
+        id:
+          type: string
+          description: The job id (grant callers).
+        model:
+          type: string
+          description: The table (grant callers).
         state:
           type: string
           description: '`queued` or `running`.'
@@ -21387,6 +23384,26 @@ components:
         * `CB` - Clast Supported Breccia
         * `CT` - Contact
         * `OT` - Other
+    FeedbackDuplicate:
+      type: object
+      properties:
+        status:
+          type: string
+        id:
+          type: integer
+        duplicate_of:
+          type: integer
+        kind:
+          type: string
+        remaining_today:
+          type: integer
+      required:
+      - duplicate_of
+      - id
+      - kind
+      - remaining_today
+      - status
+      additionalProperties: false
     FeedbackFiled:
       type: object
       properties:
@@ -22158,6 +24175,7 @@ components:
       - retract
       - restore
       - make_default_set
+      - make_export_set
       - qaqc_verdict
       - qc_reconnect
       - undo
@@ -22169,6 +24187,7 @@ components:
         * `retract` - retract
         * `restore` - restore
         * `make_default_set` - make_default_set
+        * `make_export_set` - make_export_set
         * `qaqc_verdict` - qaqc_verdict
         * `qc_reconnect` - qc_reconnect
         * `undo` - undo
@@ -22560,6 +24579,36 @@ components:
       - type
       - type_display
       additionalProperties: false
+    MethodTypeFilterEnum:
+      enum:
+      - FA
+      - AR
+      - MA
+      - TI
+      - XRF
+      - PA
+      - ICP
+      - IC
+      - AA
+      - SM
+      - EPA
+      - WQ
+      - OT
+      type: string
+      description: |-
+        * `FA` - Fire Assay
+        * `AR` - Aqua Regia
+        * `MA` - Multi Acid
+        * `TI` - Titration
+        * `XRF` - X-ray fluorescence
+        * `PA` - Photon Assay
+        * `ICP` - ICP-MS/ICP-OES
+        * `IC` - Ion Chromatography
+        * `AA` - Atomic Absorption
+        * `SM` - Standard Methods
+        * `EPA` - EPA Methods
+        * `WQ` - Water Quality
+        * `OT` - Other
     MethodUnitNested:
       type: object
       properties:
@@ -22879,7 +24928,7 @@ components:
         * `QCSample` — records served by `/api/v2/qc-samples/`
         * `WaterSite` — records served by `/api/v2/water-sites/`
         * `WaterSample` — records served by `/api/v2/water-samples/`
-        * `WaterAnalysis` — carries custom fields, but is not readable with an access grant
+        * `WaterAnalysis` — records served by `/api/v2/water-analyses/`
         * `GeophysicalSurvey` — records served by `/api/v2/geophysical-surveys/`
         * `GeophysicalSurveyLine` — carries custom fields, but is not readable with an access grant
         * `Road` — records served by `/api/v2/roads/`
@@ -22939,6 +24988,102 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/AlterationRead'
+        modified_since_applied:
+          type: string
+          nullable: true
+          description: Echo of the `modified_since` value applied. Present only when
+            the request sent `modified_since`.
+        limit_clamped:
+          type: object
+          description: 'Present only when the request asked for more rows per page
+            than this list serves: `asked` is the `limit` sent, `served` the page
+            size used (500; 2,000 on `assay-results/` and on `drill-samples/` rows
+            without `expand=assay`). Page on with `next`, or by `offset` in steps
+            of `served`.'
+          properties:
+            asked:
+              type: integer
+            served:
+              type: integer
+          required:
+          - asked
+          - served
+      additionalProperties: false
+    PaginatedAssayMergeSettingsReadList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+          nullable: true
+          description: Total rows the list answers. Null when the request sent `skip_count=1`,
+            and on `assay-results/` pages after the first (read the total from the
+            first page).
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?offset=400&limit=100
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?offset=200&limit=100
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/AssayMergeSettingsRead'
+        modified_since_applied:
+          type: string
+          nullable: true
+          description: Echo of the `modified_since` value applied. Present only when
+            the request sent `modified_since`.
+        limit_clamped:
+          type: object
+          description: 'Present only when the request asked for more rows per page
+            than this list serves: `asked` is the `limit` sent, `served` the page
+            size used (500; 2,000 on `assay-results/` and on `drill-samples/` rows
+            without `expand=assay`). Page on with `next`, or by `offset` in steps
+            of `served`.'
+          properties:
+            asked:
+              type: integer
+            served:
+              type: integer
+          required:
+          - asked
+          - served
+      additionalProperties: false
+    PaginatedAssayRangeConfigurationReadList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+          nullable: true
+          description: Total rows the list answers. Null when the request sent `skip_count=1`,
+            and on `assay-results/` pages after the first (read the total from the
+            first page).
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?offset=400&limit=100
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?offset=200&limit=100
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/AssayRangeConfigurationRead'
         modified_since_applied:
           type: string
           nullable: true
@@ -23144,6 +25289,20 @@ components:
               type: integer
           required:
           - soft_deleted
+        flagged:
+          type: object
+          nullable: true
+          additionalProperties:
+            type: integer
+          description: 'Rows this list DID return but marks, as counts over the whole
+            list (sent on the first page; later pages carry null). `sample_trashed`
+            (assay-results, counted in assay records): assays whose sample is in the
+            trash — each row says `sample_status: trashed` and carries a `sample_trashed`
+            data warning. Leave them out of statistics unless the user says otherwise,
+            and say how many you left out.'
+          properties:
+            sample_trashed:
+              type: integer
         see_guide:
           type: array
           description: The guide sections that change how this answer should be read
@@ -23256,6 +25415,54 @@ components:
               type: integer
           required:
           - soft_deleted
+      additionalProperties: false
+    PaginatedColumnConfigurationReadList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+          nullable: true
+          description: Total rows the list answers. Null when the request sent `skip_count=1`,
+            and on `assay-results/` pages after the first (read the total from the
+            first page).
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?offset=400&limit=100
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?offset=200&limit=100
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ColumnConfigurationRead'
+        modified_since_applied:
+          type: string
+          nullable: true
+          description: Echo of the `modified_since` value applied. Present only when
+            the request sent `modified_since`.
+        limit_clamped:
+          type: object
+          description: 'Present only when the request asked for more rows per page
+            than this list serves: `asked` is the `limit` sent, `served` the page
+            size used (500; 2,000 on `assay-results/` and on `drill-samples/` rows
+            without `expand=assay`). Page on with `next`, or by `offset` in steps
+            of `served`.'
+          properties:
+            asked:
+              type: integer
+            served:
+              type: integer
+          required:
+          - asked
+          - served
       additionalProperties: false
     PaginatedCustomFieldSchemaListList:
       type: object
@@ -26388,6 +28595,54 @@ components:
           required:
           - soft_deleted
       additionalProperties: false
+    PaginatedSubmittalReadList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+          nullable: true
+          description: Total rows the list answers. Null when the request sent `skip_count=1`,
+            and on `assay-results/` pages after the first (read the total from the
+            first page).
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?offset=400&limit=100
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?offset=200&limit=100
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/SubmittalRead'
+        modified_since_applied:
+          type: string
+          nullable: true
+          description: Echo of the `modified_since` value applied. Present only when
+            the request sent `modified_since`.
+        limit_clamped:
+          type: object
+          description: 'Present only when the request asked for more rows per page
+            than this list serves: `asked` is the `limit` sent, `served` the page
+            size used (500; 2,000 on `assay-results/` and on `drill-samples/` rows
+            without `expand=assay`). Page on with `next`, or by `offset` in steps
+            of `served`.'
+          properties:
+            asked:
+              type: integer
+            served:
+              type: integer
+          required:
+          - asked
+          - served
+      additionalProperties: false
     PaginatedTextureReadList:
       type: object
       required:
@@ -26559,6 +28814,150 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/VeinTypeRead'
+        modified_since_applied:
+          type: string
+          nullable: true
+          description: Echo of the `modified_since` value applied. Present only when
+            the request sent `modified_since`.
+        limit_clamped:
+          type: object
+          description: 'Present only when the request asked for more rows per page
+            than this list serves: `asked` is the `limit` sent, `served` the page
+            size used (500; 2,000 on `assay-results/` and on `drill-samples/` rows
+            without `expand=assay`). Page on with `next`, or by `offset` in steps
+            of `served`.'
+          properties:
+            asked:
+              type: integer
+            served:
+              type: integer
+          required:
+          - asked
+          - served
+      additionalProperties: false
+    PaginatedWaterAnalysisReadList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+          nullable: true
+          description: Total rows the list answers. Null when the request sent `skip_count=1`,
+            and on `assay-results/` pages after the first (read the total from the
+            first page).
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?offset=400&limit=100
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?offset=200&limit=100
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/WaterAnalysisRead'
+        modified_since_applied:
+          type: string
+          nullable: true
+          description: Echo of the `modified_since` value applied. Present only when
+            the request sent `modified_since`.
+        limit_clamped:
+          type: object
+          description: 'Present only when the request asked for more rows per page
+            than this list serves: `asked` is the `limit` sent, `served` the page
+            size used (500; 2,000 on `assay-results/` and on `drill-samples/` rows
+            without `expand=assay`). Page on with `next`, or by `offset` in steps
+            of `served`.'
+          properties:
+            asked:
+              type: integer
+            served:
+              type: integer
+          required:
+          - asked
+          - served
+      additionalProperties: false
+    PaginatedWaterQualityCertificateReadList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+          nullable: true
+          description: Total rows the list answers. Null when the request sent `skip_count=1`,
+            and on `assay-results/` pages after the first (read the total from the
+            first page).
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?offset=400&limit=100
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?offset=200&limit=100
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/WaterQualityCertificateRead'
+        modified_since_applied:
+          type: string
+          nullable: true
+          description: Echo of the `modified_since` value applied. Present only when
+            the request sent `modified_since`.
+        limit_clamped:
+          type: object
+          description: 'Present only when the request asked for more rows per page
+            than this list serves: `asked` is the `limit` sent, `served` the page
+            size used (500; 2,000 on `assay-results/` and on `drill-samples/` rows
+            without `expand=assay`). Page on with `next`, or by `offset` in steps
+            of `served`.'
+          properties:
+            asked:
+              type: integer
+            served:
+              type: integer
+          required:
+          - asked
+          - served
+      additionalProperties: false
+    PaginatedWaterQualityMethodReadList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+          nullable: true
+          description: Total rows the list answers. Null when the request sent `skip_count=1`,
+            and on `assay-results/` pages after the first (read the total from the
+            first page).
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?offset=400&limit=100
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?offset=200&limit=100
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/WaterQualityMethodRead'
         modified_since_applied:
           type: string
           nullable: true
@@ -27510,6 +29909,24 @@ components:
         * `margin` - Vein Margin
         * `throughout` - Throughout
         * `unknown` - Unknown
+    PreservationEnum:
+      enum:
+      - NONE
+      - H2SO4
+      - HNO3
+      - HCL
+      - NAOH
+      - ICE
+      - OTHER
+      type: string
+      description: |-
+        * `NONE` - None
+        * `H2SO4` - Sulfuric Acid
+        * `HNO3` - Nitric Acid
+        * `HCL` - Hydrochloric Acid
+        * `NAOH` - Sodium Hydroxide
+        * `ICE` - Ice/Refrigeration
+        * `OTHER` - Other
     ProjectCoordinateSystem:
       type: object
       properties:
@@ -27922,6 +30339,14 @@ components:
           type: string
           readOnly: true
           nullable: true
+        qc_type_name:
+          type: string
+          nullable: true
+          readOnly: true
+        qc_category:
+          type: string
+          nullable: true
+          readOnly: true
         weight:
           type: number
           format: double
@@ -28044,8 +30469,10 @@ components:
       - project
       - ps_duplicate
       - ps_duplicate_detail
+      - qc_category
       - qc_type
       - qc_type_detail
+      - qc_type_name
       - sample_package
       - sample_package_detail
       - sample_type
@@ -28403,7 +30830,7 @@ components:
           allOf:
           - $ref: '#/components/schemas/IntentEnum'
           description: |-
-            `create`: adds new records; an existing record is never overwritten; `upsert`: adds new records and overwrites exactly the fields sent on existing ones; `update`: changes fields on the user's EXISTING records (never creates); `retract`: moves records, and everything that belongs to them, to the Trash; needs "confirm": "retract"; a dry run first shows exactly what goes; `restore`: brings a removed batch back from the Trash; `make_default_set`: makes a set the project default for its family — what everyone on the project sees; run it as a dry run first: that returns the "confirm" value the real request needs; only through the person's own key; `qaqc_verdict`: changes a certificate's QAQC review decision (approve, conditionally approve, reject, back to pending) or links its re-assay certificate — ONLY when the user explicitly asks; through the person's own key; its dry run returns the "confirm" value the real request needs; never on your own initiative; `qc_reconnect`: reconnects a QC sample to its withdrawn result (a result left in the Trash or unlinked by a certificate delete); never for a rejected certificate's results; `undo`: reverses one earlier write by its write_id (rows changed since are left as they are and named)
+            `create`: adds new records; an existing record is never overwritten; `upsert`: adds new records and overwrites exactly the fields sent on existing ones; `update`: changes fields on the user's EXISTING records (never creates); `retract`: moves records, and everything that belongs to them, to the Trash; needs "confirm": "retract"; a dry run first shows exactly what goes; `restore`: brings a removed batch back from the Trash; `make_default_set`: makes a set the project default for its family — what everyone on the project sees; run it as a dry run first: that returns the "confirm" value the real request needs; only through the person's own key; `make_export_set`: makes a set the project's EXPORT set for its family — what exports and the ODBC tables read when no set is named; run it as a dry run first: that returns the "confirm" value the real request needs; only through the person's own key; `qaqc_verdict`: changes a certificate's QAQC review decision (approve, conditionally approve, reject, back to pending) or links its re-assay certificate — ONLY when the user explicitly asks; through the person's own key; its dry run returns the "confirm" value the real request needs; never on your own initiative; `qc_reconnect`: reconnects a QC sample to its withdrawn result (a result left in the Trash or unlinked by a certificate delete); never for a rejected certificate's results; `undo`: reverses one earlier write by its write_id (rows changed since are left as they are and named)
 
             * `create` - create
             * `upsert` - upsert
@@ -28411,6 +30838,7 @@ components:
             * `retract` - retract
             * `restore` - restore
             * `make_default_set` - make_default_set
+            * `make_export_set` - make_export_set
             * `qaqc_verdict` - qaqc_verdict
             * `qc_reconnect` - qc_reconnect
             * `undo` - undo
@@ -28438,7 +30866,9 @@ components:
           items:
             type: string
             minLength: 1
-          description: Consents the user gave, e.g. ["create_catalog_entries"].
+          description: Consents the user gave, e.g. ["create_catalog_entries"]; ["crs_implausible"]
+            stores degree-looking coordinates under a projected epsg (refused without
+            it).
         dry_run:
           type: boolean
           default: false
@@ -28457,6 +30887,9 @@ components:
           type: string
           format: uuid
           description: 'undo / restore: the write_id a write returned.'
+        layer:
+          description: 'VectorLayer only: the layer the records (its features) land
+            in, {"name": …, "kind": …} — see describe/VectorLayer/ `layer`.'
       required:
       - intent
     RecordsRowOutcome:
@@ -29020,11 +31453,27 @@ components:
       - project
       - results
       additionalProperties: false
+    SampleStatusEnum:
+      enum:
+      - live
+      - trashed
+      type: string
+      description: |-
+        * `live` - live
+        * `trashed` - trashed
     ScopeEnum:
       enum:
       - company
       type: string
       description: '* `company` - company'
+    SetReasonEnum:
+      enum:
+      - export_set
+      - default_set
+      type: string
+      description: |-
+        * `export_set` - export_set
+        * `default_set` - default_set
     Sets:
       type: object
       properties:
@@ -29537,6 +31986,16 @@ components:
         * `WV` - West Virginia
         * `WI` - Wisconsin
         * `WY` - Wyoming
+    StrategyEnum:
+      enum:
+      - high
+      - low
+      - average
+      type: string
+      description: |-
+        * `high` - Highest Value
+        * `low` - Lowest Value
+        * `average` - Average Value
     StrengthGradeEnum:
       enum:
       - R0
@@ -29832,6 +32291,188 @@ components:
             Values are whatever the customer stored (string, number, boolean or null).
             Calculated custom fields appear under the same prefix and are read-only.'
       additionalProperties: false
+    SubmittalPackage:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        submittal:
+          type: integer
+        submittal_name:
+          type: string
+          readOnly: true
+          nullable: true
+        name:
+          type: string
+          description: Package identifier (e.g., "1", "2", "A", "Box-1")
+          maxLength: 20
+        notes:
+          type: string
+          description: Optional notes about this package
+        sample_count:
+          type: integer
+          description: Number of records, excluding soft-deleted ones.
+          readOnly: true
+        date_created:
+          type: string
+          format: date
+          readOnly: true
+          nullable: true
+        last_edited:
+          type: string
+          format: date
+          readOnly: true
+          nullable: true
+      required:
+      - date_created
+      - id
+      - last_edited
+      - name
+      - sample_count
+      - submittal
+      - submittal_name
+      additionalProperties: false
+    SubmittalRead:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        project:
+          type: integer
+          readOnly: true
+        project_name:
+          type: string
+          readOnly: true
+          nullable: true
+        laboratory:
+          type: integer
+          readOnly: true
+          nullable: true
+          description: Laboratory receiving this submittal (required before sending)
+        laboratory_name:
+          type: string
+          readOnly: true
+          nullable: true
+        name:
+          type: string
+          readOnly: true
+          description: Submittal identifier (e.g., SUB-2026-001)
+          nullable: true
+        submitted_date:
+          type: string
+          format: date
+          readOnly: true
+          nullable: true
+          description: Date samples were sent to lab
+        status:
+          allOf:
+          - $ref: '#/components/schemas/SubmittalStatusEnum'
+          readOnly: true
+        notes:
+          type: string
+          readOnly: true
+          description: Additional notes about this submittal
+          nullable: true
+        sample_count:
+          type: integer
+          readOnly: true
+        packages:
+          type: array
+          items:
+            $ref: '#/components/schemas/SubmittalPackage'
+          readOnly: true
+        date_created:
+          type: string
+          format: date
+          readOnly: true
+          nullable: true
+        last_edited:
+          type: string
+          format: date
+          readOnly: true
+          nullable: true
+        project_id:
+          type: integer
+          readOnly: true
+          description: The project this record is in (a credential may read several;
+            GET /api/v2/grant-context/ names them).
+      required:
+      - date_created
+      - id
+      - laboratory
+      - laboratory_name
+      - last_edited
+      - name
+      - notes
+      - packages
+      - project
+      - project_name
+      - sample_count
+      - status
+      - submitted_date
+      additionalProperties: false
+    SubmittalStatusEnum:
+      enum:
+      - PE
+      - SE
+      - RE
+      - CO
+      type: string
+      description: |-
+        * `PE` - Pending
+        * `SE` - Sent
+        * `RE` - Received
+        * `CO` - Complete
+    SubmittalWrite:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        project:
+          type: integer
+        laboratory:
+          type: integer
+          nullable: true
+          description: Laboratory receiving this submittal (required before sending)
+        name:
+          type: string
+          description: Submittal identifier (e.g., SUB-2026-001)
+          maxLength: 50
+        submitted_date:
+          type: string
+          format: date
+          nullable: true
+          description: Date samples were sent to lab
+        status:
+          $ref: '#/components/schemas/SubmittalStatusEnum'
+        notes:
+          type: string
+          description: Additional notes about this submittal
+        project_id:
+          type: integer
+          readOnly: true
+          description: The project this record is in (a credential may read several;
+            GET /api/v2/grant-context/ names them).
+      required:
+      - id
+      - name
+      - project
+      additionalProperties: false
+    TargetUnitsEnum:
+      enum:
+      - ppb
+      - ppm
+      - pct
+      - opt
+      type: string
+      description: |-
+        * `ppb` - parts per billion
+        * `ppm` - parts per million
+        * `pct` - percent
+        * `opt` - ounces per ton
     TextureRead:
       type: object
       properties:
@@ -29849,7 +32490,7 @@ components:
           maxLength: 150
         type:
           allOf:
-          - $ref: '#/components/schemas/TypeEnum'
+          - $ref: '#/components/schemas/TextureReadTypeEnum'
           title: Type of Texture
         type_display:
           type: string
@@ -29895,7 +32536,7 @@ components:
             Values are whatever the customer stored (string, number, boolean or null).
             Calculated custom fields appear under the same prefix and are read-only.'
       additionalProperties: false
-    TypeEnum:
+    TextureReadTypeEnum:
       enum:
       - LI
       - AL
@@ -29907,6 +32548,32 @@ components:
         * `AL` - Alteration
         * `MI` - Mineral
         * `VN` - Vein
+    TotalDepthSourceEnum:
+      enum:
+      - reported
+      - inferred_sample
+      - inferred_lithology
+      - inferred_alteration
+      - inferred_mineralization
+      - inferred_structure
+      - inferred_survey
+      - inferred_rqd
+      - inferred_vein
+      - inferred_photo
+      - unknown
+      type: string
+      description: |-
+        * `reported` - Reported / Imported
+        * `inferred_sample` - Inferred from deepest sample
+        * `inferred_lithology` - Inferred from deepest lithology
+        * `inferred_alteration` - Inferred from deepest alteration
+        * `inferred_mineralization` - Inferred from deepest mineralization
+        * `inferred_structure` - Inferred from deepest structure
+        * `inferred_survey` - Inferred from deepest survey
+        * `inferred_rqd` - Inferred from deepest RQD interval
+        * `inferred_vein` - Inferred from deepest vein
+        * `inferred_photo` - Inferred from deepest core photo
+        * `unknown` - Unknown
     UserMinimal:
       type: object
       properties:
@@ -30241,6 +32908,229 @@ components:
         * `R4` - R4 - Strong (50-100 MPa)
         * `R5` - R5 - Very Strong (100-250 MPa)
         * `R6` - R6 - Extremely Strong (>250 MPa)
+    WaterAnalysisRead:
+      type: object
+      description: |-
+        One water sample's lab results (one row per analysis; its values
+        nested, one per parameter).
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          readOnly: true
+          description: Analysis ID (typically matches sample name)
+          nullable: true
+        project:
+          type: integer
+          readOnly: true
+        certificate:
+          allOf:
+          - $ref: '#/components/schemas/_Ref'
+          readOnly: true
+        sample_volume:
+          type: number
+          format: double
+          readOnly: true
+          nullable: true
+          description: Sample volume (mL)
+        dilution_factor:
+          type: number
+          format: double
+          readOnly: true
+          nullable: true
+        values:
+          type: string
+          readOnly: true
+          nullable: true
+        date_created:
+          type: string
+          format: date
+          readOnly: true
+          nullable: true
+        last_edited:
+          type: string
+          format: date
+          readOnly: true
+          nullable: true
+        project_id:
+          type: integer
+          readOnly: true
+          description: The project this record is in (a credential may read several;
+            GET /api/v2/grant-context/ names them).
+      required:
+      - certificate
+      - date_created
+      - dilution_factor
+      - id
+      - last_edited
+      - name
+      - project
+      - sample_volume
+      - values
+      additionalProperties: false
+    WaterQualityCertificateRead:
+      type: object
+      description: One water-quality lab job.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          readOnly: true
+          description: Certificate number (e.g., Lab Work Order number)
+          nullable: true
+        project:
+          type: integer
+          readOnly: true
+        laboratory:
+          allOf:
+          - $ref: '#/components/schemas/_Ref'
+          readOnly: true
+        date_received:
+          type: string
+          format: date
+          readOnly: true
+          nullable: true
+          description: Date samples received by lab
+        date_analyzed:
+          type: string
+          format: date
+          readOnly: true
+          nullable: true
+          description: Date analysis completed
+        date_reported:
+          type: string
+          format: date
+          readOnly: true
+          nullable: true
+          description: Date report issued
+        batch_number:
+          type: string
+          readOnly: true
+          nullable: true
+          description: Laboratory batch number for QC tracking
+        preservation:
+          readOnly: true
+          nullable: true
+          allOf:
+          - $ref: '#/components/schemas/PreservationEnum'
+        notes:
+          type: string
+          readOnly: true
+          nullable: true
+        methods:
+          type: string
+          readOnly: true
+          nullable: true
+        analysis_count:
+          type: integer
+          readOnly: true
+        date_created:
+          type: string
+          format: date
+          readOnly: true
+          nullable: true
+        last_edited:
+          type: string
+          format: date
+          readOnly: true
+          nullable: true
+        project_id:
+          type: integer
+          readOnly: true
+          description: The project this record is in (a credential may read several;
+            GET /api/v2/grant-context/ names them).
+      required:
+      - analysis_count
+      - batch_number
+      - date_analyzed
+      - date_created
+      - date_received
+      - date_reported
+      - id
+      - laboratory
+      - last_edited
+      - methods
+      - name
+      - notes
+      - preservation
+      - project
+      additionalProperties: false
+    WaterQualityMethodRead:
+      type: object
+      description: One water-quality method and the parameters it reports.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          readOnly: true
+          description: Method name (e.g., 'EPA 200.7', 'EPA 300.0', 'SM 2320B')
+          nullable: true
+        laboratory:
+          allOf:
+          - $ref: '#/components/schemas/_Ref'
+          readOnly: true
+        type:
+          readOnly: true
+          nullable: true
+          allOf:
+          - $ref: '#/components/schemas/WaterQualityMethodReadTypeEnum'
+        notes:
+          type: string
+          readOnly: true
+          nullable: true
+        parameters:
+          type: string
+          readOnly: true
+          nullable: true
+        date_created:
+          type: string
+          format: date
+          readOnly: true
+          nullable: true
+        last_edited:
+          type: string
+          format: date
+          readOnly: true
+          nullable: true
+        company_id:
+          type: integer
+          readOnly: true
+          description: The company this record is in (a credential may read several;
+            GET /api/v2/grant-context/ names them).
+      required:
+      - date_created
+      - id
+      - laboratory
+      - last_edited
+      - name
+      - notes
+      - parameters
+      - type
+      additionalProperties: false
+    WaterQualityMethodReadTypeEnum:
+      enum:
+      - ICP
+      - IC
+      - AA
+      - SM
+      - EPA
+      - WQ
+      - OT
+      type: string
+      description: |-
+        * `ICP` - ICP-MS
+        * `IC` - Ion Chromatography
+        * `AA` - Atomic Absorption
+        * `SM` - Standard Methods
+        * `EPA` - EPA Method
+        * `WQ` - Water Quality
+        * `OT` - Other
     WaterSampleRead:
       type: object
       properties:
@@ -30858,6 +33748,17 @@ components:
         * `DISK` - Disking
         * `LOST` - Lost Core
         * `SOIL` - Soil Like
+    _Ref:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+      required:
+      - id
+      - name
+      additionalProperties: false
     DataWarning:
       type: object
       description: What is wrong with a stored row. geoDB returns stored data as it
@@ -30868,21 +33769,29 @@ components:
           enum:
           - azimuth_out_of_range
           - coordinate_outside_crs
+          - crs_implausible
           - depth_past_hole
           - dip_out_of_range
           - interval_upside_down
           - invalid_geometry
           - missing_epsg
           - negative_value
+          - sample_trashed
           description: '`azimuth_out_of_range`: azimuth (or dip direction) is outside
             0..360 degrees.; `coordinate_outside_crs`: the coordinate cannot be in
             its epsg (degrees beyond ±90 latitude or ±180 longitude under EPSG:4326).;
-            `depth_past_hole`: the depth lies beyond the hole''s total depth.; `dip_out_of_range`:
-            dip is outside -90..90 degrees.; `interval_upside_down`: depth_from is
-            greater than depth_to (an upside-down interval).; `invalid_geometry`:
-            the stored geometry is not valid (for example a self-intersecting outline).;
-            `missing_epsg`: the record has coordinates but no epsg, so their CRS is
-            unknown.; `negative_value`: a depth, length or total depth is negative.'
+            `crs_implausible`: the coordinate looks like degrees of longitude/latitude
+            but its epsg is a projected system in metres or feet, so it sits near
+            that grid''s origin (often at the equator on a map).; `depth_past_hole`:
+            the depth lies beyond the hole''s total depth.; `dip_out_of_range`: dip
+            is outside -90..90 degrees.; `interval_upside_down`: depth_from is greater
+            than depth_to (an upside-down interval).; `invalid_geometry`: the stored
+            geometry is not valid (for example a self-intersecting outline).; `missing_epsg`:
+            the record has coordinates but no epsg, so their CRS is unknown.; `negative_value`:
+            a depth, length or total depth is negative.; `sample_trashed`: the assay''s
+            sample is in the trash; the assay is kept (never deleted with its sample)
+            and re-links if the sample is restored or re-imported — leave it out of
+            statistics unless told otherwise.'
         field:
           type: string
           description: The field the warning is about.

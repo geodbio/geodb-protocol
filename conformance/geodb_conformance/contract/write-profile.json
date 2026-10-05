@@ -32,6 +32,7 @@
     "confirm",
     "dry_run",
     "intent",
+    "layer",
     "logging_set",
     "model",
     "project",
@@ -108,6 +109,14 @@
         "unchanged"
       ]
     },
+    "make_export_set": {
+      "does": "makes a set the project's EXPORT set for its family — what exports and the ODBC tables read when no set is named; run it as a dry run first: that returns the \"confirm\" value the real request needs; only through the person's own key",
+      "confirm_with_user_first": true,
+      "row_statuses": [
+        "updated",
+        "unchanged"
+      ]
+    },
     "qaqc_verdict": {
       "does": "changes a certificate's QAQC review decision (approve, conditionally approve, reject, back to pending) or links its re-assay certificate — ONLY when the user explicitly asks; through the person's own key; its dry run returns the \"confirm\" value the real request needs; never on your own initiative",
       "confirm_with_user_first": true,
@@ -169,6 +178,12 @@
       "remedy": "Split the records into smaller batches, or write from your own sandbox with a session key, or upload the file in geoDB.",
       "retry": "no"
     },
+    "approval_required": {
+      "http": 403,
+      "meaning": "The change raises what the company pays, so the person approves it themselves in the browser; an AI never raises a bill.",
+      "remedy": "Give the user the page in offending.approval_url to do it themselves.",
+      "retry": "no"
+    },
     "approved_certificate": {
       "http": 409,
       "meaning": "(per row) The values belong to a certificate whose QAQC review is approved; they change only with an explicit acknowledgement.",
@@ -181,10 +196,22 @@
       "remedy": "Split the records into batches of at most the limit and send each batch as its own request.",
       "retry": "no"
     },
+    "billing_permission_required": {
+      "http": 403,
+      "meaning": "Moving a project between active, holding and frozen (or restoring one) changes what the company pays; only the company owner, a company manager or a billing manager may do it.",
+      "remedy": "Ask the company owner or a company manager to make the change.",
+      "retry": "no"
+    },
     "certificate_unreject_conflict": {
       "http": 409,
       "meaning": "Un-rejecting this certificate would collide with sample names another certificate now holds (named in `offending`).",
       "remedy": "Ask the user which certificate is right; resolve the colliding names first, then retry the verdict change.",
+      "retry": "no"
+    },
+    "change_project_crs": {
+      "http": 409,
+      "meaning": "The project already has a coordinate system; changing it re-derives every project-frame copy of every point and recomputes every drill trace (records keep their own native coordinates).",
+      "remedy": "Show the user the current system and the dry run; only after they say yes resend with \"acknowledge\": [\"change_project_crs\"].",
       "retry": "no"
     },
     "choice_not_in_list": {
@@ -193,10 +220,64 @@
       "remedy": "GET /api/v2/records/describe/<Model>/ lists the choices; map the value onto one of them, or — after asking the user — resend with \"acknowledge\": [\"create_catalog_entries\"] to add a new lithology/alteration/… name to the project's list.",
       "retry": "no"
     },
+    "company_not_allowed": {
+      "http": 403,
+      "meaning": "The person this key acts for cannot create projects in the company named (they are not its owner, a confirmed manager or a member), or it does not exist.",
+      "remedy": "Ask the user which of their companies to use: a create without \"company\" lists them in offending.companies.",
+      "retry": "no"
+    },
+    "config_confirm_required": {
+      "http": 409,
+      "meaning": "(per row) The change would rewrite values already stored on records (a type change converts them; dropping a choice orphans or moves them). `detail` says exactly what; nothing was written.",
+      "remedy": "Tell the user what `detail` says will happen to the stored values. Only after they agree, resend the same child change with the confirmation named in `offending.confirm_type` set: \"confirm_type_change\": true for type_change, \"confirm_choices_removal\": true for choices_removal (Undo still reverses it).",
+      "retry": "no"
+    },
+    "config_exists": {
+      "http": 409,
+      "meaning": "(per row) That configuration (or a child of it, e.g. a column with that field_name) already exists in the project; nothing was created.",
+      "remedy": "Read it (GET the matching list, e.g. /api/v2/custom-field-schemas/), then change it with \"intent\": \"update\" and its \"id\" instead of creating it again.",
+      "retry": "no"
+    },
+    "config_in_use": {
+      "http": 409,
+      "meaning": "(per row) Other configuration uses this one (`offending.used_by` names each), so it was not removed.",
+      "remedy": "Tell the user what uses it. Point those at another configuration (an \"update\" naming the replacement) or remove them first, then resend.",
+      "retry": "no"
+    },
+    "config_undeletable": {
+      "http": 409,
+      "meaning": "(per row) This is the project's built-in configuration; it is never removed.",
+      "remedy": "Change its settings with \"intent\": \"update\" instead.",
+      "retry": "no"
+    },
     "confirm_required": {
       "http": 400,
       "meaning": "A destructive intent (retract) needs an explicit confirmation in the body.",
       "remedy": "Confirm with the user, then resend with \"confirm\": \"retract\".",
+      "retry": "no"
+    },
+    "crs_geographic": {
+      "http": 400,
+      "meaning": "A geographic CRS (degrees, e.g. EPSG:4326) cannot be a project's working frame; the frame is a projected CRS in metres or feet.",
+      "remedy": "Ask the user which projected CRS (a UTM zone or a State Plane) the project uses and send that EPSG code.",
+      "retry": "no"
+    },
+    "crs_implausible": {
+      "http": 400,
+      "meaning": "(per row) The coordinates look like degrees of latitude/longitude but the epsg is a projected system in metres or feet, so they would sit near that grid's origin (ruling R-6). The row was NOT stored.",
+      "remedy": "Ask the user which system the coordinates are in. GPS degrees: resend with \"epsg\": 4326. Numbers that really are in that grid: resend the same row with \"acknowledge\": [\"crs_implausible\"] (stored as sent, with a warning). Validate first with \"dry_run\": true.",
+      "retry": "no"
+    },
+    "crs_unknown": {
+      "http": 400,
+      "meaning": "The EPSG code is not a known coordinate reference system.",
+      "remedy": "Re-check the EPSG code with the user.",
+      "retry": "no"
+    },
+    "custom_grid_project": {
+      "http": 409,
+      "meaning": "The project uses a custom mine grid (a calibration), not an EPSG code; its frame is set by the calibration tools.",
+      "remedy": "Use the project's coordinate-system page on the web (calibration tools).",
       "retry": "no"
     },
     "duplicate_external_id": {
@@ -213,9 +294,21 @@
     },
     "feedback_rate_limited": {
       "http": 429,
-      "meaning": "This key, or the person it acts for, has filed 20 reports in the last 24 hours.",
+      "meaning": "This key, or the person it acts for, has filed 100 reports in the last 24 hours (the same summary again is never counted: it answers with the id already filed).",
       "remedy": "Wait for Retry-After seconds; meanwhile collect further requests into one report, and tell the user what was filed.",
       "retry": "after"
+    },
+    "holding_not_offered": {
+      "http": 409,
+      "meaning": "Holding is not part of this company's plan (or not available yet).",
+      "remedy": "Offer the user Active or Frozen instead.",
+      "retry": "no"
+    },
+    "idempotency_conflict": {
+      "http": 409,
+      "meaning": "This Idempotency-Key was already used for a different change.",
+      "remedy": "Send a new Idempotency-Key for a new change.",
+      "retry": "no"
     },
     "idempotency_in_progress": {
       "http": 409,
@@ -265,6 +358,18 @@
       "remedy": "Retry the same request once (with the same Idempotency-Key); if it fails again, report it through POST /api/v2/feedback/ and tell the user.",
       "retry": "maybe"
     },
+    "last_project_in_connection": {
+      "http": 409,
+      "meaning": "This is the only project the connection can reach; deleting or freezing it would disconnect the app before it could check or undo the change.",
+      "remedy": "Do it on the web, or connect the app to another project first.",
+      "retry": "no"
+    },
+    "manager_required": {
+      "http": 403,
+      "meaning": "This change is a project manager's decision (for example the project's default set): it is made through a project manager's own connection, never a vendor key, and this connection's person does not manage the project.",
+      "remedy": "Tell the user a project manager must do this with their own connection, or on the web (Project Settings). Reconnecting this key or asking for more write access does not help.",
+      "retry": "no"
+    },
     "missing_crs": {
       "http": 400,
       "meaning": "(per row) The record has coordinates but no \"epsg\". The coordinate system is never assumed (never WGS84 by default).",
@@ -289,6 +394,12 @@
       "remedy": "Send a value (GET /api/v2/records/describe/<Model>/ lists the choices), or leave the field out to keep it as it is.",
       "retry": "no"
     },
+    "origin_outside_project": {
+      "http": 400,
+      "meaning": "The local-grid origin is far outside the project's own ground (its holes and land holdings).",
+      "remedy": "Leave the origin out (it is derived from the data), or offer the user the origin in offending.proposed.",
+      "retry": "no"
+    },
     "out_of_scope": {
       "http": 403,
       "meaning": "(per row) The record is shared by every project of the company (a laboratory, a lab method, a reference standard, a water method) and this key does not reach all of those projects.",
@@ -307,10 +418,34 @@
       "remedy": "Restore the parent first (ask the user), then resend or restore this record.",
       "retry": "no"
     },
+    "project_limit_reached": {
+      "http": 409,
+      "meaning": "The company's plan allows no more active projects.",
+      "remedy": "Freeze or delete a project, or upgrade the plan on the web billing page; tell the user which.",
+      "retry": "no"
+    },
+    "project_name_exists": {
+      "http": 409,
+      "meaning": "The company already has a live project with this name (names are compared without case).",
+      "remedy": "Ask the user for another name; offending.suggested_name is one that is free.",
+      "retry": "no"
+    },
     "project_not_in_scope": {
       "http": 403,
       "meaning": "(per row) This credential cannot write to the project the record names — it is outside the projects the key may write to, or does not exist.",
       "remedy": "GET /api/v2/grant-context/ lists the projects this key may use; name one of those (by id) in `project`, or drop the row.",
+      "retry": "no"
+    },
+    "project_settings_required": {
+      "http": 403,
+      "meaning": "Changing a project's setup (its name, coordinate system, or deleting it) needs project-settings access, which the person this key acts for does not hold on that project.",
+      "remedy": "Ask a project manager or the company owner to make the change, or to give the user settings access on that project.",
+      "retry": "no"
+    },
+    "purchase_authority_required": {
+      "http": 403,
+      "meaning": "Creating a project is limited to the company's owner, a company manager with purchase authority, or geoDB staff (it can raise what the company pays); the person this key acts for is a member without it.",
+      "remedy": "Tell the user: the company owner can turn on purchasing for them, or the owner or a purchasing manager can create the project.",
       "retry": "no"
     },
     "qaqc_verdict_field": {
@@ -323,6 +458,12 @@
       "http": 409,
       "meaning": "(per row) A create found an existing record with the same identifying fields but different values. A create never overwrites: the row was SKIPPED. `conflicts` names each field with the stored and the sent value.",
       "remedy": "If the stored values are right, drop the row. If the sent values should replace them, ASK THE USER, then resend the row with \"intent\": \"upsert\" (only the fields you send change, and the old values are kept for undo).",
+      "retry": "no"
+    },
+    "record_in_use": {
+      "http": 409,
+      "meaning": "(per row) A record shared across the company (a laboratory, method, standard, water method) or a lab submittal is moved to the Trash only while nothing uses it; this one is still used, and `detail` names what uses it (assay values, certificates, QC samples, samples …). Nothing was removed.",
+      "remedy": "Leave it, or ASK THE USER whether the records that use it should go first (retract those, then this one). Never remove other records just to make room.",
       "retry": "no"
     },
     "rekey_refused": {
@@ -355,6 +496,18 @@
       "remedy": "Re-read the section, merge your change into the current text, and resend with its current revision number.",
       "retry": "no"
     },
+    "set_is_default": {
+      "http": 409,
+      "meaning": "(per row) This set is the project's default (or export) set for its family, which is never removed. Nothing was changed.",
+      "remedy": "If the user wants it gone, first make another set the default with {\"intent\": \"make_default_set\", \"model\": <the family>, \"set\": <name>} (a person who manages the project, through their own key), then retract this one.",
+      "retry": "no"
+    },
+    "set_not_empty": {
+      "http": 409,
+      "meaning": "(per row) Only an EMPTY set is removed; this set still holds rows (`detail` gives the count). A set with rows is never removed or merged. Nothing was changed.",
+      "remedy": "Leave the set where it is and tell the user it holds rows, so it stays. Do not offer to delete the rows to make room: only if the user, told what the rows are, EXPLICITLY asks for those rows to be deleted, retract them (dry run first), then the set.",
+      "retry": "no"
+    },
     "set_not_owned": {
       "http": 403,
       "meaning": "(per row) A vendor key writes only into sets it created or sets the customer ticked for it; this set is neither.",
@@ -379,16 +532,28 @@
       "remedy": "Re-read the referenced record (or refer to it by name), then resend the row.",
       "retry": "no"
     },
+    "state_changed": {
+      "http": 409,
+      "meaning": "Someone else changed the project's state between the check and the change; nothing was written.",
+      "remedy": "Read the project's state again and ask the user what they want now.",
+      "retry": "no"
+    },
     "undo_not_covered": {
       "http": 409,
-      "meaning": "(per row) Undo cannot yet reverse this change: it would add values to, or replace values on, a record that already exists (a sample's assay results, a standard's or method's element rows). Every write through this endpoint must be undoable, so it is refused.",
-      "remedy": "Send only records that do not exist yet (a new sample's results, a new standard or method). To add or change values on an existing record, ask the user to do it on the web, where the change is reviewed.",
+      "meaning": "(per row) Undo cannot yet reverse this change, and every write through this endpoint must be undoable, so it is refused. (Changing, adding or removing a long-form record's values is undoable and served.)",
+      "remedy": "Read `detail` for what cannot be undone. Ask the user to make that change on the web for now, or send only the parts that are undoable.",
       "retry": "no"
     },
     "undo_stale": {
       "http": 409,
       "meaning": "(per row) The record changed after the write being undone, so undoing it would overwrite the later change.",
       "remedy": "Show the user the later change; undo that write first, or leave this row as it is.",
+      "retry": "no"
+    },
+    "unit_label_shared": {
+      "http": 409,
+      "meaning": "(per row) A unit correction would move a unit LABEL that other values share: an assay value takes its unit from its method's element row, and `detail` names the other certificates whose values carry the same label. Nothing was changed.",
+      "remedy": "ASK THE USER which is true. If only these values were reported in the other unit, resend with \"acknowledge\": [\"convert_values\"]: their NUMBERS are converted into the stored unit (dry run first: it shows before and after). If the method itself reports this element in the other unit, update the Method's element row (\"units\") instead, which relabels every value it carries.",
       "retry": "no"
     },
     "unknown_field": {
@@ -429,14 +594,34 @@
     }
   },
   "warning_codes": {
+    "above_upper_limit_as_value": {
+      "meaning": "(per-row warning, assays) A value was sent as a plain number above its method's upper limit — more than the method can measure (rulings R-5 / R-v4-1; judged only where the method has an upper limit). It is stored as sent.",
+      "remedy": "Check with the user: an over-range result is sent as \">\" + the upper limit (e.g. \">10000\") and the re-assay by an ore-grade method is its value; a units mix-up (ppb sent as ppm) is corrected before writing.",
+      "retry": "no"
+    },
+    "assays_left_unlinked": {
+      "meaning": "(batch warning, retract) Removing these samples (or the hole they belong to) leaves assay records with no live sample of their name. Assays are never removed with their sample: they are kept and re-link if the sample is restored or re-imported. `assays_left_unlinked` in the answer counts them; reads mark them `sample_status: trashed`.",
+      "remedy": "Tell the user how many assays will be left without a sample before sending the retract; to keep them linked, restore the sample later (intent \"restore\") or re-import it under the same name.",
+      "retry": "no"
+    },
+    "below_detection_limit_as_value": {
+      "meaning": "(per-row warning, assays) A value was sent as a plain number below its method's detection limit (ruling R-v4-1). It is stored as sent, as a measured value — not as below detection.",
+      "remedy": "Check with the user: if the lab reported it below detection, correct the row to \"<\" + the detection limit (e.g. \"<0.2\"); if the method's detection limit is wrong, the method needs correcting.",
+      "retry": "no"
+    },
     "beyond_total_depth": {
       "meaning": "(per-row warning) The interval runs past its hole's recorded total depth; the detail names the hole, its total depth and the depth.",
       "remedy": "Check the depth (and its unit) with the user; if the hole was drilled deeper than recorded, the hole's total depth needs correcting instead.",
       "retry": "no"
     },
     "crs_implausible": {
-      "meaning": "(per-row warning) The coordinates look like degrees but the epsg is a projected system (or the reverse) — the web import's plausibility rule. Stored exactly as sent.",
+      "meaning": "(per-row warning) The coordinates look like degrees but the epsg is a projected system, and the writer acknowledged it (\"acknowledge\": [\"crs_implausible\"]). Stored exactly as sent; reads mark the row with the same code in `data_warnings`.",
       "remedy": "Check the epsg with the user; if it was wrong, resend the row with the right one (intent \"upsert\").",
+      "retry": "no"
+    },
+    "date_in_future": {
+      "meaning": "(per-row warning) A date is more than a year in the future (ruling R-v4-2). Stored as sent.",
+      "remedy": "Check the date with the user (a typo in the year, or a planned date in a field meant for an actual one) and correct it with an update.",
       "retry": "no"
     },
     "depth_units_implausible": {
@@ -484,9 +669,19 @@
       "remedy": "If the lab reported detection limits, write them on the method first (model \"Method\", intent \"upsert\", with detection_limit and units), then the results. A method is shared by the whole company: a key that does not reach every project of it is refused out_of_scope, and then the user sets the limit on the web. Tell the user which pairs have none.",
       "retry": "no"
     },
+    "point_far_from_project": {
+      "meaning": "(per-row warning) The point is more than 100 km from the rest of the project's located data (ruling R-v4-2) — usually a wrong epsg, swapped coordinates or a missing digit. Stored as sent.",
+      "remedy": "Check the coordinates and their epsg with the user; correct the row with an update (send longitude, latitude and epsg together).",
+      "retry": "no"
+    },
     "qc_type_missing": {
       "meaning": "(per-row warning) The sample name looks like a lab QC marker (a standard, blank or duplicate) but the row carries no qc_type, so it lands as a routine sample and never reaches the QAQC checks.",
       "remedy": "Ask the user whether it is QC. If it is, resend the row with its qc_type (and the standard it is); if it is a real sample id, go on.",
+      "retry": "no"
+    },
+    "sample_link_changes": {
+      "meaning": "(per-row warning, assay rename) An assay is linked to its sample by name, so renaming it moves its results: `from` is the sample of the old name, `to` the sample of the new one (null: no sample has that name and the assay is unlinked).",
+      "remedy": "Tell the user which sample the results move to, or that they will be unlinked, before sending the rename; Undo puts the old name back.",
       "retry": "no"
     },
     "sample_not_linked": {
@@ -502,6 +697,16 @@
     "stored_differently": {
       "meaning": "(per-row warning) The row WAS written, but the stored values differ from what was sent (geoDB normalised them); `conflicts` lists each field with `stored` and `sent`. The row is not refused and Undo reaches it.",
       "remedy": "Read the record back and tell the user how it was stored; if the sent value must win, correct it with an update.",
+      "retry": "no"
+    },
+    "stored_values_changed": {
+      "meaning": "(per-row warning) The configuration change also rewrote values stored on records (a custom column's type conversion, or a choice renamed or replaced); `detail` says how many. Undo reverses them.",
+      "remedy": "Tell the user how many records changed; if that was not wanted, undo the write with its write_id.",
+      "retry": "no"
+    },
+    "survey_dogleg": {
+      "meaning": "(per-row warning) The survey station bends the hole more than 20° per 30 m from its nearest station (ruling R-v4-2) — usually a typo, or magnetic and grid azimuths mixed. Stored as sent.",
+      "remedy": "Check the azimuth and dip with the user; correct the station with an update.",
       "retry": "no"
     },
     "value_rounded": {

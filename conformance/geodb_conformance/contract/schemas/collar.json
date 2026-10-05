@@ -1,9 +1,9 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://spec.geodb.io/exploration/v0.3.0/collar.json",
+  "$id": "https://spec.geodb.io/exploration/v0.3.1/collar.json",
   "title": "Drill collar",
   "description": "The surface location and orientation of a drillhole — the anchor every downhole record references.\n\nGENERATED from the normative OpenAPI document (`spec/openapi.yaml`) — do not edit by hand; run `python scripts/regenerate.py`. The OpenAPI document is normative for the wire; this file is the same contract for one record type, readable on its own.",
-  "x-generated-by": "scripts/regenerate.py from spec/openapi.yaml (geoDB Open Exploration Protocol v0.3.0)",
+  "x-generated-by": "scripts/regenerate.py from spec/openapi.yaml (geoDB Open Exploration Protocol v0.3.1)",
   "x-openapi-component": "DrillCollarRead",
   "type": "object",
   "properties": {
@@ -94,6 +94,23 @@
         "string",
         "null"
       ]
+    },
+    "total_depth_source": {
+      "enum": [
+        "reported",
+        "inferred_sample",
+        "inferred_lithology",
+        "inferred_alteration",
+        "inferred_mineralization",
+        "inferred_structure",
+        "inferred_survey",
+        "inferred_rqd",
+        "inferred_vein",
+        "inferred_photo",
+        "unknown"
+      ],
+      "type": "string",
+      "description": "Where total_depth came from: `reported` (imported / entered), `inferred_<table>` (derived from the deepest row of that logged table, not surveyed), or `unknown`.\n\n* `reported` - Reported / Imported\n* `inferred_sample` - Inferred from deepest sample\n* `inferred_lithology` - Inferred from deepest lithology\n* `inferred_alteration` - Inferred from deepest alteration\n* `inferred_mineralization` - Inferred from deepest mineralization\n* `inferred_structure` - Inferred from deepest structure\n* `inferred_survey` - Inferred from deepest survey\n* `inferred_rqd` - Inferred from deepest RQD interval\n* `inferred_vein` - Inferred from deepest vein\n* `inferred_photo` - Inferred from deepest core photo\n* `unknown` - Unknown"
     },
     "azimuth": {
       "type": [
@@ -387,14 +404,16 @@
             "enum": [
               "azimuth_out_of_range",
               "coordinate_outside_crs",
+              "crs_implausible",
               "depth_past_hole",
               "dip_out_of_range",
               "interval_upside_down",
               "invalid_geometry",
               "missing_epsg",
-              "negative_value"
+              "negative_value",
+              "sample_trashed"
             ],
-            "description": "`azimuth_out_of_range`: azimuth (or dip direction) is outside 0..360 degrees.; `coordinate_outside_crs`: the coordinate cannot be in its epsg (degrees beyond ±90 latitude or ±180 longitude under EPSG:4326).; `depth_past_hole`: the depth lies beyond the hole's total depth.; `dip_out_of_range`: dip is outside -90..90 degrees.; `interval_upside_down`: depth_from is greater than depth_to (an upside-down interval).; `invalid_geometry`: the stored geometry is not valid (for example a self-intersecting outline).; `missing_epsg`: the record has coordinates but no epsg, so their CRS is unknown.; `negative_value`: a depth, length or total depth is negative."
+            "description": "`azimuth_out_of_range`: azimuth (or dip direction) is outside 0..360 degrees.; `coordinate_outside_crs`: the coordinate cannot be in its epsg (degrees beyond ±90 latitude or ±180 longitude under EPSG:4326).; `crs_implausible`: the coordinate looks like degrees of longitude/latitude but its epsg is a projected system in metres or feet, so it sits near that grid's origin (often at the equator on a map).; `depth_past_hole`: the depth lies beyond the hole's total depth.; `dip_out_of_range`: dip is outside -90..90 degrees.; `interval_upside_down`: depth_from is greater than depth_to (an upside-down interval).; `invalid_geometry`: the stored geometry is not valid (for example a self-intersecting outline).; `missing_epsg`: the record has coordinates but no epsg, so their CRS is unknown.; `negative_value`: a depth, length or total depth is negative.; `sample_trashed`: the assay's sample is in the trash; the assay is kept (never deleted with its sample) and re-links if the sample is restored or re-imported — leave it out of statistics unless told otherwise."
           },
           "field": {
             "type": "string",
@@ -456,6 +475,7 @@
     "project",
     "source_coordinate",
     "total_depth_label",
+    "total_depth_source",
     "xy_units"
   ],
   "additionalProperties": false

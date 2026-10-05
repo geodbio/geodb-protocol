@@ -157,14 +157,14 @@ Whole tables, built in the background, as GeoParquet / Parquet / CSV. One POST i
 | `exports_retrieve` | `GET /api/v2/exports/{job_id}/` | Poll an export job |
 | `exports_download_retrieve` | `GET /api/v2/exports/{job_id}/download/` | Download a finished export |
 
-## geoDB extensions — 123 operations
+## geoDB extensions — 140 operations
 
 Supported, project-scoped, and outside the contract. Read them freely against geoDB; do not expect them from another implementation.
 
 | Family | Operations | What it is |
 |---|---|---|
-| Assays | 7 | Analytical method definitions and the per-project rules for merging several results for one sample and element. |
-| Discovery | 10 | Custom-field definitions in their own right, and client-shaped rearrangements of the schema response. |
+| Assays | 16 | Analytical method definitions and the per-project rules for merging several results for one sample and element. |
+| Discovery | 12 | Custom-field definitions in their own right, and client-shaped rearrangements of the schema response. |
 | Drill Holes | 7 | Pads, computed traces and their GeoJSON form. |
 | Drill Intervals | 20 | The `*-sets` logging-run groupings and the interval-type lookups — a geoDB organisational concept, not a measurement. |
 | Feedback | 1 |  |
@@ -177,7 +177,7 @@ Supported, project-scoped, and outside the contract. Read them freely against ge
 | Quality Control | 10 | Certified reference materials, QC type lookups, and a project's QA/QC protocol and its status. |
 | Samples | 7 | Fixed-length compositing of drill samples, and the assigned-to-a-user work queue. |
 | Surface Geology | 22 | Geology mapped at surface, plus the lookup vocabulary behind it (lithologies, alterations, minerals, formations, textures, vein types, field notes). |
-| Water | 4 | Water monitoring sites and the samples taken at them. |
+| Water | 10 | Water monitoring sites and the samples taken at them. |
 | Writing | 4 |  |
 
 ## Notes on membership

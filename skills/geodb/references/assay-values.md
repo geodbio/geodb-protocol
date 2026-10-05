@@ -84,3 +84,27 @@ Never rescale, relabel or drop the values yourself, and never compute a
 statistic over the suspect rows as if they were right. The fix belongs to
 the user (correct the method's unit, or re-import), because a unit corrected
 in one answer is still wrong in every export and every other reader.
+
+### Correcting stored values
+
+Change a stored value only when the user asks, after a dry run they have
+seen. One value is an update naming the record (by its id or its name) and
+the value's `element` (a water result's `parameter`; its `method` too when
+the record holds that element by two methods), with the new `value`, or on
+a method or standard its `detection_limit`, `upper_limit`, `std_dev_1sd` and
+so on. Only what you send changes, and Undo puts it back. Renaming an assay
+by its id moves its results to the sample of the new name, or unlinks it
+when no sample has that name; tell the user which, as the dry run says.
+
+A unit error is ONE correction over every value it touches, not one change
+per sample: an update naming the `certificate`, the `element` and the
+values' true `unit`, and no sample. It converts nothing by itself. When only
+those values carry the unit label, the label moves and the numbers stay.
+When other certificates share the label, it is refused, naming them, and the
+user chooses: convert these numbers into the stored unit (an explicit
+acknowledgement the refusal names), or change the method's own unit, which
+relabels every value that method carries. The dry run shows how many values
+change, before and after for a few of them, and which QAQC verdicts the
+change reaches; those verdicts are not changed. A value a stored record does
+not hold yet (a new element on a stored sample) is added by sending its row
+again as an upsert; Undo removes exactly the values that write added.
