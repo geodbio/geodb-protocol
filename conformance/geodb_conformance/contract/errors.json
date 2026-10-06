@@ -309,8 +309,8 @@
     },
     "grant_write_forbidden": {
       "http": 403,
-      "meaning": "A write method was attempted with a read-only grant.",
-      "remedy": "Use a read operation. The one write a grant may make is creating an export job (POST /api/v2/exports/).",
+      "meaning": "A write was attempted that this grant may not make: it is read-only, or the write is not one a grant makes here.",
+      "remedy": "Use a read operation, or write through POST /api/v2/records/ with a grant the project owner allowed to write (GET /api/v2/grant-context/ says whether this one may). Any grant may create an export job (POST /api/v2/exports/).",
       "retry": "no"
     },
     "holding_not_offered": {

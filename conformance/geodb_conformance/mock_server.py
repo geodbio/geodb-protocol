@@ -487,9 +487,13 @@ ERROR_BODIES = {
         'grant_error': 'unknown'}),
     'grant_write_forbidden': (403, {
         'reason_code': 'grant_write_forbidden',
-        'detail': 'Access grants are read-only.',
-        'remedy': 'Use a read operation. The one write a grant may make is '
-                  'creating an export job (POST /api/v2/exports/).',
+        'detail': ('This grant may not make this write. A grant is read-only '
+                   'unless the project owner allows it to write, and every '
+                   'write goes through POST /api/v2/records/.'),
+        'remedy': ('Use a read operation, or write through POST /api/v2/records/ '
+                   'with a grant the project owner allowed to write (GET '
+                   '/api/v2/grant-context/ says whether this one may). Any grant '
+                   'may create an export job (POST /api/v2/exports/).'),
         'grant_error': 'grant_write_forbidden'}),
     'use_v2': (403, {
         'reason_code': 'use_v2',

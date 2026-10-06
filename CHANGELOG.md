@@ -1,5 +1,21 @@
 # Changelog
 
+## [Unreleased] — 2026-10-06 (docs + one refusal's wording; no wire change)
+
+- **`grant_write_forbidden` no longer says grants are read-only.** Its meaning and
+  remedy (here in `errors.json`, the AGENTS.md table and the conformance mock)
+  said a grant is read-only and its one possible write is an export job. Both
+  stopped being true when grants gained `write_access=records`. The served
+  refusal (geoDB `2ce28d807`, deployed 2026-10-06) now says: read-only unless the
+  owner allows writes, and every write goes through `POST /api/v2/records/`
+  (`GET /api/v2/grant-context/` says whether this grant may). Status, code and
+  shape are unchanged. Regenerated in the published flag shape: `spec/openapi.yaml`
+  is byte-identical; only this entry moved.
+- **README and `llms.txt` open with "reading … and writing changes back"**, not
+  "pulling … out of": the one sentence search engines and LLMs quote.
+- `geodb-client` **0.3.2** (docs-only) states the write half in its PyPI summary
+  and README opening.
+
 ## [0.3.2] — prepared 2026-10-06 (published at the maintainer's go)
 
 Protocol **0.3.2** (`info.version`, the `X-GeoDB-Protocol-Version` header and
