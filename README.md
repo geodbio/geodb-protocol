@@ -1,16 +1,17 @@
 # the geoDB Open Exploration Protocol
 
-**An open, machine-readable contract for pulling QA/QC'd mineral-exploration data
-out of a geoDB project — drill collars, samples, assays, surveys, geophysics,
-rasters, and documents — over a standard, authenticated REST + STAC surface.**
+**An open, machine-readable contract for reading QA/QC'd mineral-exploration data
+from a geoDB project — drill collars, samples, assays, surveys, geophysics,
+rasters, and documents — and writing changes back, over a standard,
+authenticated REST + STAC surface.**
 
 Mineral exploration data is trapped in bespoke databases with no public API. A
 junior's data lives in one system, their consultant works in another, and every
 AI-targeting or resource-modelling vendor re-solves the same
 collect-standardize-clean problem from scratch. This protocol makes a geoDB
-project's data **pullable as a feed**: adopt the standards the geospatial world
-already agreed on (STAC 1.1, COG, GeoParquet, OpenAPI 3), and contribute only the
-missing *exploration* vocabulary.
+project's data **pullable as a feed** and writable through one gated endpoint:
+adopt the standards the geospatial world already agreed on (STAC 1.1, COG,
+GeoParquet, OpenAPI 3), and contribute only the missing *exploration* vocabulary.
 
 > **[`spec/openapi.yaml`](spec/openapi.yaml) is NORMATIVE for the wire.** Where any
 > other file here disagrees with it, the OpenAPI document is right — and

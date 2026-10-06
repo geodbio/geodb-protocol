@@ -1,8 +1,9 @@
 # geoDB Open Exploration Protocol
 
-> An open, machine-readable contract for pulling QA/QC'd mineral-exploration
-> data out of a geoDB project — drill collars, downhole logging, samples,
-> assays with laboratory chain of custody, geophysics, rasters and documents —
+> An open, machine-readable contract for reading QA/QC'd mineral-exploration
+> data from a geoDB project, and writing changes back — drill collars,
+> downhole logging, samples, assays with laboratory chain of custody,
+> geophysics, rasters and documents —
 > over an authenticated, project-scoped REST + STAC surface, with one write
 > endpoint (dry run, per-row answers, undo). Version 0.3.2. A project owner
 > issues a revocable token scoped to the projects it was given, or a person
