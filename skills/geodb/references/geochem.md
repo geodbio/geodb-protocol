@@ -86,8 +86,8 @@ element as one population without saying so.
 **Field (portable) XRF is guidance, not a grade.** A reading taken on core or
 chips with a hand-held analyser is stored like an assay — a point down the
 hole with element values — under a reading session whose source is field XRF.
-geoDB keeps it OUT of lab-assay analytics, QC verdicts, intercepts, grade
-shells and merged reads by default. Use it for what it is good
+geoDB keeps it OUT of lab-assay analytics, QC verdicts, intercepts and grade
+shells, and it never enters a combined value. Use it for what it is good
 at — logging decisions, picking intervals to send to the lab, a downhole
 pathfinder profile — and always label it as field XRF. Never average it with
 lab results, never report it as a grade, and never use it in a resource
@@ -158,7 +158,8 @@ calcite, dolomite, epidote, pyrite.
 
 **C1 — Alteration box (the headline; Large et al. 2001).** X=AI, Y=CCPI, square axes,
 both 0-100. Colour the markers by a grade (log10 for a log colour) or a classification
-column — DROP rows whose grade is missing/BDL before colouring by it. The template:
+column — show below-detection grades as below detection (their own colour or symbol)
+and rows with no grade as missing; never silently remove them. The template:
 the least-altered box **AI 20-65, CCPI 15-85** (dashed), the four end-member corners
 (albite bottom-left, K-feldspar bottom-right, chlorite / pyrite top-right, epidote /
 calcite top-left), and a hydrothermal trend arrow from the box centre toward the

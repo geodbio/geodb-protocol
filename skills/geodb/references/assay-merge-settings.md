@@ -34,8 +34,11 @@ other settings.
 On the records endpoint these settings are the merge-settings model that
 grant-context lists under `writes.config_models`, with the intents create,
 update, retract and restore; read its describe contract first. Its
-per-element overrides are its `units`: on an update each carries an `action`
-(add, change or remove) and its `element`. Making settings the project default
+per-element overrides are its `element_overrides` — the same key a read
+returns them under: on an update each carries an `action` (add, change or
+remove) and is named by its `id` or its `element`, so a read override can be
+sent back with an action. A digestion or finish filter is accepted by id or by
+code; reads give both (`digestion_filter` and `digestion_filter_code`). Making settings the project default
 is an update with `is_project_default` true. Each read row lists, under
 `assay_configs`, the range configurations that use the settings; their ids are
 what a merged sample read takes as `assay_config_id`. Run every change as a dry

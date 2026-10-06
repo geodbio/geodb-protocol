@@ -4,8 +4,11 @@ How a below-detection result is stored (the `-1` sentinel) and why it is never a
 
 ### Below detection is a state, not a number
 
-A laboratory's "less than the detection limit" result (`<0.005`, ND, BDL) is
-stored as the numeric sentinel `-1`: not NULL, and not 0. It means the lab
+A laboratory's "less than the detection limit" result is stored as the
+numeric sentinel `-1`, whichever way the lab wrote it (`<0.005`, a negative
+number, BDL, ND, "not detected") and through every door: not NULL, and not 0.
+"N.D." or "N/D" is the exception: it can also mean "not determined", so it is
+never stored until the user says which the laboratory meant. It means the lab
 measured less than the method can resolve, so there is no measured value.
 Report it as "below detection", with the detection limit when one is known;
 never as a grade, never as zero, never as a negative number, and never
@@ -18,10 +21,21 @@ have a FIXED limit per element, on the method's per-element row (`element`,
 `detection_limit`, `upper_limit`, `units`), never on the assay row.
 A FLOATING-limit method (`is_floating_dl`, e.g. photon assay) reports the
 lab's "<X" threshold per sample instead, in the sample's
-`detection_limit_per_sample`. So the limit is the per-sample value when the
-method reports one, else the method's per-element limit; a read that carries
+`detection_limit_per_sample`. So the limit is the per-sample value for a
+floating-limit method's results, else the method's per-element limit (a
+limit a laboratory wrote in a "<x" is not stored per value: it is the
+method's, and an import says when a reported limit was kept nowhere); a read
+that carries
 `detection_limit` beside each value has already resolved this. Only when
 neither exists is the magnitude unknown: say so rather than guessing one.
+
+A missing detection limit is a conversation, not a guess. When a merged read,
+an export or the assay-results read names (method, element) pairs under
+`no_detection_limit`, those below-detection results have no limit on file:
+exports and intercept tables write them as 0 (they look like real zeros) while
+sample reads, composites, 3D and maps leave them out. Tell the user which
+pairs, and offer to set each limit on its method once they give you the
+laboratory's figure. Never invent one.
 
 ### Over range is a floor, not a measurement
 
@@ -42,12 +56,14 @@ the row. Never report those samples as missing results, and never fill them.
 
 The stored value of a below-detection result is always the sentinel, and a
 raw (unmerged) read returns it as such. Merged grade tables and exports apply
-the project's setting, which can differ per element: a fraction of the
-detection limit (half by default; a custom fraction when the project set one),
-the full detection limit, zero, or excluded (the value is left out, blank).
-When neither a per-sample nor a per-element limit exists, a fraction of the
-limit becomes 0: a merged 0 for such a sample is a stand-in, not a
-measurement. So a value you read from a merged table or an export has ALREADY
+the merge settings' one below-detection rule, the same for every element: a
+fraction of the detection limit (half by default; a custom fraction when the
+settings name one), the full detection limit, zero, or excluded (the value is
+left out, blank). When a below-detection result has no limit at all (neither
+a per-sample nor a per-element one), exports and intercept tables write it as
+0 (a stand-in, not a measurement) while sample reads, composites, 3D and maps
+leave it out; the answer names those method and element pairs. So a value you
+read from a merged table or an export has ALREADY
 been substituted, and is never substituted again. When you compute statistics
 from raw values, use the project's substitute rather than dropping
 below-detection samples (dropping them biases the low tail), unless the user

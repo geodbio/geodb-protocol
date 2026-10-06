@@ -1,9 +1,9 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://spec.geodb.io/exploration/v0.3.1/point-sample.json",
+  "$id": "https://spec.geodb.io/exploration/v0.3.2/point-sample.json",
   "title": "Point sample",
   "description": "A sample collected at a location on surface — soil, rock chip, stream sediment — and sent to a laboratory.\n\nGENERATED from the normative OpenAPI document (`spec/openapi.yaml`) — do not edit by hand; run `python scripts/regenerate.py`. The OpenAPI document is normative for the wire; this file is the same contract for one record type, readable on its own.",
-  "x-generated-by": "scripts/regenerate.py from spec/openapi.yaml (geoDB Open Exploration Protocol v0.3.1)",
+  "x-generated-by": "scripts/regenerate.py from spec/openapi.yaml (geoDB Open Exploration Protocol v0.3.2)",
   "x-openapi-component": "PointSampleRead",
   "type": "object",
   "properties": {
@@ -281,6 +281,14 @@
                 "string",
                 "null"
               ]
+            },
+            "sample_status": {
+              "type": "string",
+              "enum": [
+                "live",
+                "trashed"
+              ],
+              "description": "`trashed`: the assay's sample is in the Trash — the assay is kept and re-links on restore; a list leaves such assays out unless `include_trashed_samples=true`, a read by id returns it. Leave it out of statistics."
             },
             "excluded": {
               "type": "boolean",
@@ -799,7 +807,9 @@
           "code": {
             "type": "string",
             "enum": [
+              "above_upper_limit_as_value",
               "azimuth_out_of_range",
+              "below_detection_limit_as_value",
               "coordinate_outside_crs",
               "crs_implausible",
               "depth_past_hole",
@@ -810,7 +820,7 @@
               "negative_value",
               "sample_trashed"
             ],
-            "description": "`azimuth_out_of_range`: azimuth (or dip direction) is outside 0..360 degrees.; `coordinate_outside_crs`: the coordinate cannot be in its epsg (degrees beyond ±90 latitude or ±180 longitude under EPSG:4326).; `crs_implausible`: the coordinate looks like degrees of longitude/latitude but its epsg is a projected system in metres or feet, so it sits near that grid's origin (often at the equator on a map).; `depth_past_hole`: the depth lies beyond the hole's total depth.; `dip_out_of_range`: dip is outside -90..90 degrees.; `interval_upside_down`: depth_from is greater than depth_to (an upside-down interval).; `invalid_geometry`: the stored geometry is not valid (for example a self-intersecting outline).; `missing_epsg`: the record has coordinates but no epsg, so their CRS is unknown.; `negative_value`: a depth, length or total depth is negative.; `sample_trashed`: the assay's sample is in the trash; the assay is kept (never deleted with its sample) and re-links if the sample is restored or re-imported — leave it out of statistics unless told otherwise."
+            "description": "`above_upper_limit_as_value`: an assay value is above its method's upper limit but is stored as a plain number, not flagged over range (\">UL\"); the true value is unknown, at least the limit — look for a re-assay by an ore-grade method.; `azimuth_out_of_range`: azimuth (or dip direction) is outside 0..360 degrees.; `below_detection_limit_as_value`: an assay value is below its method's detection limit but is stored as a plain number, not as a below-detection result (\"<DL\"); treat it as below detection.; `coordinate_outside_crs`: the coordinate cannot be in its epsg (degrees beyond ±90 latitude or ±180 longitude under EPSG:4326).; `crs_implausible`: the coordinate looks like degrees of longitude/latitude but its epsg is a projected system in metres or feet, so it sits near that grid's origin (often at the equator on a map).; `depth_past_hole`: the depth lies beyond the hole's total depth.; `dip_out_of_range`: dip is outside -90..90 degrees.; `interval_upside_down`: depth_from is greater than depth_to (an upside-down interval).; `invalid_geometry`: the stored geometry is not valid (for example a self-intersecting outline).; `missing_epsg`: the record has coordinates but no epsg, so their CRS is unknown.; `negative_value`: a depth, length or total depth is negative.; `sample_trashed`: the assay's sample is in the trash; the assay is kept (never deleted with its sample) and re-links if the sample is restored or re-imported — leave it out of statistics unless told otherwise."
           },
           "field": {
             "type": "string",

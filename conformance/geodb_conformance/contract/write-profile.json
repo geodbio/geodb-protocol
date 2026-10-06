@@ -172,6 +172,12 @@
       "remedy": "Nothing to do; read the records to see their current state.",
       "retry": "no"
     },
+    "ambiguous_nd": {
+      "http": 400,
+      "meaning": "The result is \"N.D.\" (or \"N/D\"), which can mean not detected or not determined; nothing was stored for it.",
+      "remedy": "N.D. can mean not detected or not determined — ask the user: not detected → send BDL; not determined → leave the value out.",
+      "retry": "no"
+    },
     "api_write_too_large": {
       "http": 400,
       "meaning": "An api_write body is larger than 256 KB, the most a connector call carries.",
@@ -588,8 +594,8 @@
     },
     "writes_staff_only": {
       "http": 403,
-      "meaning": "Writing through the API is open to geoDB staff for now: a write is accepted only from a staff member's own AI connection. Every other key (an organisation or vendor key, a non-staff person's connection) reads but does not write, whatever write access it was given.",
-      "remedy": "Read with this key; make the change in the geoDB web app, or ask geoDB when API writing opens to your account.",
+      "meaning": "Writing through the API is open to the AI connections of geoDB staff and of members of companies in the geoDB protocol beta for now. Every other key (an organisation or vendor key, anyone else's connection) reads but does not write, whatever write access it was given.",
+      "remedy": "Read with this key, or make the change in the geoDB web app. To join the beta, contact geoDB: https://geodb.io/contact-us/.",
       "retry": "no"
     }
   },
@@ -607,6 +613,11 @@
     "below_detection_limit_as_value": {
       "meaning": "(per-row warning, assays) A value was sent as a plain number below its method's detection limit (ruling R-v4-1). It is stored as sent, as a measured value — not as below detection.",
       "remedy": "Check with the user: if the lab reported it below detection, correct the row to \"<\" + the detection limit (e.g. \"<0.2\"); if the method's detection limit is wrong, the method needs correcting.",
+      "retry": "no"
+    },
+    "below_detection_stored_otherwise": {
+      "meaning": "(per-row warning) Some values this write touches are stored as a negative number other than -1: below detection, stored before every writer used the -1 sentinel. They are left alone (never converted).",
+      "remedy": "Tell the user. If they want them stored as below detection, update each value to \"<x\" or \"BDL\" (model \"Assay\", intent \"update\", dry run first); otherwise nothing is needed.",
       "retry": "no"
     },
     "beyond_total_depth": {

@@ -34,6 +34,9 @@ dropping a choice that records use leaves those records' value in place (or
 moves them to a choice you name). Both of those rewrite stored values, so ask
 the user first.
 
+Every export carries every live custom column, empty where a record has no
+value, and never a removed one.
+
 ### Changing custom columns through the API
 
 The model is `CustomFieldSchema` on the records endpoint, with the intents

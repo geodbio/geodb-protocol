@@ -13,8 +13,10 @@ can also take a different table name (some modelling tools expect their own
 names, such as "COLLAR"). A record type with no configuration shows its
 default columns, all visible. Columns come from the record type itself and
 from the project's custom columns; a configuration renames, hides or orders
-them, it never invents one. Columns a record cannot be saved without cannot
-be hidden.
+them, it never invents one. Columns a record cannot be saved without, and the
+columns that identify a record (its name; a hole and its depths), cannot be
+hidden: they are in every read, export and ODBC table, whatever a stored
+configuration says.
 
 ### Who may change it
 

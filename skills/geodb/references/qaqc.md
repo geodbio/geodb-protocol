@@ -90,8 +90,9 @@ and report what the reads say before anything of your own:
 
 1. **The QC rules in force** (`qc-configuration/`) — the thresholds, the blank limits per element,
    the duplicate criteria, the elements left out of pass rates. A blank with
-   no limit for an element is judged `unknown` there: missing configuration,
-   not a clean blank.
+   no limit for an element is judged `unknown` there when it has a detected
+   value (missing configuration, not a clean blank); one the laboratory
+   reported below detection passes.
 2. **The verdicts per insertion**, per certificate. Each standards row says
    the method's detection limit, whether the reading was below it, and
    whether the CRM is certified at or below that limit — such a reading reads
@@ -354,7 +355,8 @@ written, the checkbox stays the user's, and the result lists every skipped
   linked certified blank's supplier `<` bound, (2) a per-element blank warning
   limit (element match case-robust, exact case wins), (3)
   the project's blank DL multiple × detection limit, **unset by default, and
-  unset means skip the rung**, (4) nothing ⇒ **`'unknown'`, never `'pass'`**;
+  unset means skip the rung**, (4) nothing ⇒ **`'unknown'`** for a detected
+  reading, **`'pass'`** for one reported below detection (`-1`: a clean blank);
   warn band still threshold × 1.5. Each row carries `threshold_source` +
   `threshold_reason` so the page can say which rung answered — and duplicate
   rows carry the same pair plus `duplicate_regime`, because two rows in one
@@ -376,7 +378,8 @@ written, the checkbox stays the user's, and the result lists every skipped
   *recommend* it (`qaqc_missing_certified_sd`).
 - **Blanks read the same everywhere.** Every surface runs the same blank
   ladder, so an unjudgeable blank is `'unknown'` and EXCLUDED from the
-  denominator everywhere. If blanks read all-`unknown`, that is missing
+  denominator everywhere — except a blank reported below detection (`-1`)
+  with no limit: that is a clean blank and PASSES. If blanks read all-`unknown`, that is missing
   configuration honestly reported — not clean blanks
   (`qaqc_blank_thresholds`).
 - **Rows and statistics.** Certified values are method-matched (digestion +
@@ -412,8 +415,9 @@ limits and duplicate RPD thresholds, the elements left out of pass rates, the
 QC protocol's insertion intervals, and whether results wait for QAQC approval
 before they are used. Read it before you explain a verdict or quote a limit,
 and quote the project's value, not a default it may have overridden. An
-element with no blank limit is judged `unknown` there: missing configuration,
-not a clean blank. These rules are changed by the user on the project's QAQC
+element with no blank limit is judged `unknown` there when the blank has a
+detected value (missing configuration, not a clean blank); a blank reported
+below detection passes. These rules are changed by the user on the project's QAQC
 settings pages, never by a data write.
 
 Your own analysis = **what the pages don't draw**. Frame every result as

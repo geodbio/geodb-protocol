@@ -1,9 +1,9 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://spec.geodb.io/exploration/v0.3.1/certificate.json",
+  "$id": "https://spec.geodb.io/exploration/v0.3.2/certificate.json",
   "title": "Assay certificate",
   "description": "A laboratory job: the batch of samples one lab analysed and reported together, under one certificate number, on one date. The chain-of-custody anchor a value traces back to.\n\nOne laboratory job: who analysed what, when, and in what state.\n\nGENERATED from the normative OpenAPI document (`spec/openapi.yaml`) — do not edit by hand; run `python scripts/regenerate.py`. The OpenAPI document is normative for the wire; this file is the same contract for one record type, readable on its own.",
-  "x-generated-by": "scripts/regenerate.py from spec/openapi.yaml (geoDB Open Exploration Protocol v0.3.1)",
+  "x-generated-by": "scripts/regenerate.py from spec/openapi.yaml (geoDB Open Exploration Protocol v0.3.2)",
   "x-openapi-component": "CertificateRead",
   "type": "object",
   "properties": {
@@ -158,7 +158,7 @@
         "field_xrf"
       ],
       "type": "string",
-      "description": "`lab` — a laboratory job. `field_xrf` — a portable-XRF reading session: field guidance, never a reportable grade. Field-XRF results are left out of geoDB's lab analytics, QC verdicts, intercepts and merged reads by default. Read them with `/api/v2/field-xrf/`.\n\n* `lab` - Laboratory\n* `field_xrf` - Field XRF"
+      "description": "`lab` — a laboratory job. `field_xrf` — a portable-XRF reading session: field guidance, never a reportable grade. Field-XRF results are left out of geoDB's lab analytics, QC verdicts and intercepts, and never enter a combined value. Read them with `/api/v2/field-xrf/`.\n\n* `lab` - Laboratory\n* `field_xrf` - Field XRF"
     },
     "notes": {
       "type": [

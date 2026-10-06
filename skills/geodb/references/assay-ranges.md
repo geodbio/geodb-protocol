@@ -27,7 +27,8 @@ range restorable.
 
 The model is `AssayRangeConfiguration` on the records endpoint, with the
 intents create, update, retract and restore; read its describe contract first.
-Its ranges are its `items`: on a create a list; on an update each carries an
-`action` (add, change or remove), and change or remove name the range by its
-`id`. Run every change as a dry run first, tell the user what it will change,
+Its ranges are its `ranges` — the same key a read returns them under: on a
+create a list; on an update each carries an `action` (add, change or remove),
+and change or remove name the range by its `id`, so a read range can be sent
+back with an action. Run every change as a dry run first, tell the user what it will change,
 and send it for real only after they agree. Every write can be undone.

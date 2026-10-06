@@ -24,10 +24,13 @@ intervals overlapping inside one set is an error the data will refuse.
 
 ### Default and active
 
-Each project has a **default set** per family: what maps, sections, exports
-and people see unless they choose otherwise. Each person has an **active set**
-per family that they view and log into; it starts at the project default.
-Samples also have a project **export set**, the pass exports use. Making a set
+Each project has a **default set** per family: what maps, sections and
+people see unless they choose otherwise. Each person has an **active set** per
+family that they view and log into; it starts at the project default. Samples
+and the logging families can also have a project **export set**: an API export
+reads the export set, else the default set; the ODBC sample table reads the
+export set, else the default; the ODBC logging tables (lithology, alteration,
+mineralization, veins, RQD) read the export set, else EVERY set. Making a set
 the project default changes what EVERYONE on the project sees.
 
 ### Who owns a set, and how it was made
@@ -78,4 +81,7 @@ the user's explicit yes.
 An EMPTY set the user no longer wants can be retracted, by its id or name,
 after a dry run they have seen; Undo brings it back. A set that still holds
 rows is never removed or merged (the refusal gives the count), the project's
-default set never goes, and a person removes only a set they created.
+default set never goes, and a person removes only a set they created. Rows in
+the Trash still belong to their set: the set reads count `rows_live` and
+`rows_in_trash`, and a set whose rows are ALL in the Trash is removed only
+after they are purged on the web (the refusal says so).

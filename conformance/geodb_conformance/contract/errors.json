@@ -13,6 +13,12 @@
       "remedy": "Nothing to do; read the records to see their current state.",
       "retry": "no"
     },
+    "ambiguous_nd": {
+      "http": 400,
+      "meaning": "The result is \"N.D.\" (or \"N/D\"), which can mean not detected or not determined; nothing was stored for it.",
+      "remedy": "N.D. can mean not detected or not determined \u2014 ask the user: not detected \u2192 send BDL; not determined \u2192 leave the value out.",
+      "retry": "no"
+    },
     "api_write_too_large": {
       "http": 400,
       "meaning": "An api_write body is larger than 256 KB, the most a connector call carries.",
@@ -29,6 +35,12 @@
       "http": 409,
       "meaning": "(per row) The values belong to a certificate whose QAQC review is approved; they change only with an explicit acknowledgement.",
       "remedy": "Confirm with the user, then resend with \"acknowledge\": [\"approved_certificate\"]. The certificate is named in `offending`.",
+      "retry": "no"
+    },
+    "assay_config_required": {
+      "http": 400,
+      "meaning": "A composite read needs the assay range configuration whose compositing interval and merge settings it applies (assay_config_id).",
+      "remedy": "List the project's configurations with GET /api/v2/assay-range-configurations/?project=<id> (each `id` is an assay_config_id; `enable_compositing` says which composite), then resend with assay_config_id=<id>.",
       "retry": "no"
     },
     "authentication_failed": {
@@ -71,6 +83,12 @@
       "http": 400,
       "meaning": "(per row) A value is not in its field's list (a custom field's choices, or the project's list of lithologies, alterations, \u2026 for a reference). Lists never grow silently.",
       "remedy": "GET /api/v2/records/describe/<Model>/ lists the choices; map the value onto one of them, or \u2014 after asking the user \u2014 resend with \"acknowledge\": [\"create_catalog_entries\"] to add a new lithology/alteration/\u2026 name to the project's list.",
+      "retry": "no"
+    },
+    "collar_position_required": {
+      "http": 409,
+      "meaning": "The drill hole cannot be placed on the project grid: its collar has no position (no coordinates), or its coordinates do not fit the coordinate system (epsg) they are stored under. Positions along the hole (trace, xyz at depth) need it. Nothing stored was changed.",
+      "remedy": "Give the collar its position: POST records/ with \"model\": \"DrillCollar\", \"intent\": \"update\", the hole's name, its native latitude / longitude (easting / northing under a projected epsg) AND the epsg they are in, as a dry run; show the user and send it on their word (or the user edits the collar on the web). Then retry this read.",
       "retry": "no"
     },
     "company_not_allowed": {
@@ -141,8 +159,8 @@
     },
     "connector_staff_only": {
       "http": 401,
-      "meaning": "Connecting an AI assistant is open to geoDB staff accounts only for now, and the person this connection acts as is not one (checked on every call).",
-      "remedy": "Tell the user that AI connections are not available on their account yet; nothing about their data changed. Do not retry.",
+      "meaning": "Connecting an AI assistant is open to geoDB staff and to members of companies in the geoDB protocol beta for now. The person this connection acts as is neither (checked on every call).",
+      "remedy": "Tell the user that AI connections are not open to their account yet; nothing about their data changed. To join the beta, contact geoDB: https://geodb.io/contact-us/. Do not retry.",
       "retry": "no"
     },
     "crs_geographic": {
@@ -179,6 +197,12 @@
       "http": 400,
       "meaning": "(per row) An earlier row of the same request has the same identifying fields; the first one is kept.",
       "remedy": "Merge the duplicate rows into one, or correct the identifying fields of the second, and resend it.",
+      "retry": "no"
+    },
+    "element_required": {
+      "http": 400,
+      "meaning": "The read answers for one element and none was named.",
+      "remedy": "Resend with element=<symbol> (e.g. element=Au); the answer is that element's override in these settings, else their defaults. get_full_config/ reads every element at once.",
       "retry": "no"
     },
     "export_concurrency": {
@@ -711,8 +735,8 @@
     },
     "writes_staff_only": {
       "http": 403,
-      "meaning": "Writing through the API is open to geoDB staff for now: a write is accepted only from a staff member's own AI connection. Every other key (an organisation or vendor key, a non-staff person's connection) reads but does not write, whatever write access it was given.",
-      "remedy": "Read with this key; make the change in the geoDB web app, or ask geoDB when API writing opens to your account.",
+      "meaning": "Writing through the API is open to the AI connections of geoDB staff and of members of companies in the geoDB protocol beta for now. Every other key (an organisation or vendor key, anyone else's connection) reads but does not write, whatever write access it was given.",
+      "remedy": "Read with this key, or make the change in the geoDB web app. To join the beta, contact geoDB: https://geodb.io/contact-us/.",
       "retry": "no"
     }
   },
@@ -730,6 +754,11 @@
     "below_detection_limit_as_value": {
       "meaning": "(per-row warning, assays) A value was sent as a plain number below its method's detection limit (ruling R-v4-1). It is stored as sent, as a measured value \u2014 not as below detection.",
       "remedy": "Check with the user: if the lab reported it below detection, correct the row to \"<\" + the detection limit (e.g. \"<0.2\"); if the method's detection limit is wrong, the method needs correcting.",
+      "retry": "no"
+    },
+    "below_detection_stored_otherwise": {
+      "meaning": "(per-row warning) Some values this write touches are stored as a negative number other than -1: below detection, stored before every writer used the -1 sentinel. They are left alone (never converted).",
+      "remedy": "Tell the user. If they want them stored as below detection, update each value to \"<x\" or \"BDL\" (model \"Assay\", intent \"update\", dry run first); otherwise nothing is needed.",
       "retry": "no"
     },
     "beyond_total_depth": {

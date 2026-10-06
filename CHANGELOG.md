@@ -1,5 +1,55 @@
 # Changelog
 
+## [0.3.2] — prepared 2026-10-06 (published at the maintainer's go)
+
+Protocol **0.3.2** (`info.version`, the `X-GeoDB-Protocol-Version` header and
+`grant-context.protocol_version` all say `0.3.2`): geoDB's v0.4.1 build (assay
+handling, settings faces for QC configuration / QAQC protocols / metal
+equivalents / ODBC, Undo by current values and labelled coordinate frames,
+below-detection results stored one way, the teaching). **Additive for every 0.3
+client** — measured, not assumed: the published 0.3.1 spec was diffed against a
+regeneration from geoDB main `2df745023` (+ the 0.3.2 constant) in the same flag
+shape (MCP + READS + WRITES + MCP_STAFF_ONLY on, agent keys off,
+`--publish-write-profile`), and every change classified against how
+`geodb-client` 0.3 parses responses. Nothing it reads was removed, renamed,
+retyped or re-statused, so the patch moves and the install line stays
+`pip install "geodb-client>=0.3,<0.4"`.
+
+### Release order
+1. **No client release required.** `geodb-client` 0.3.0 speaks 0.3.2 (it compares
+   the major.minor only); nothing goes to PyPI first. The prepared
+   `geodb-client` 0.3.1 (docstrings + `write(..., layer=)`,
+   `export(merge_settings_id=, include_trashed_samples=)`) can ship any time.
+2. Deploy geoDB.
+3. Push this repository and tag it.
+
+The exploration schemas publish at a new `$id`,
+`https://spec.geodb.io/exploration/v0.3.2/…`; the `v0.1.0`, `v0.2.0`, `v0.3.0`
+and `v0.3.1` copies stay served exactly as published.
+
+### Classification (0.3.1 → 0.3.2)
+
+| Change | Kind | Why it does not break a 0.3 client |
+|---|---|---|
+| 1 new read path: `odbc-settings/` (a project's ODBC output settings) | ADDITIVE (new path) | 0 operations removed or changed |
+| New optional params: `merge_settings_id` on `drill-samples/`, `point-samples/`, `drill-intercepts/` and the merged exports; `include_trashed_samples` on `assays/`, `assay-results/` and the `assay_results` export; `element` (one or a comma list) on `assay-results/` | ADDITIVE (new optional params) | a request without them is answered as before |
+| `get_merge_config/` now DECLARES its `element` parameter as required | DOCUMENTATION | it was already required (400 without it, before and after); a grant's 400 now names `element_required` |
+| `point-samples/` `scope`: the enum constraint (`company`) is now a plain string, as on `drill-samples/` | RELAXATION | `scope=company` is answered exactly as before |
+| New response fields: assay rows `sample_status` + `data_warnings`; merge-settings rows `merge_mode`, `qaqc_export_mode`, `is_project_default`, element overrides' `digestion_filter_code` / `finish_filter_code`; range items `color`; `trace/`, `xyz_at_depth/`, `drill-traces/{id}/` `coordinate_frames` (`local_grid` / `base_crs` / `wgs84`, each saying where its numbers sit); the merged list envelopes, `composited/`, the export 202 / poll / notes and intercepts state `merge_settings` (and `no_detection_limit` pairs); export jobs `rows_in_other_sets`; `qc-configuration/` `protocols`, `url`, `blank_warning_limits_url`; `metal-equivalents/` `url`, `assay_merge_settings`; `sets/` `rows_live`, `rows_in_trash`, `all_rows_in_trash`; grant-context project rows `set_names`; composites `coverage`; a VectorLayer write answers `layer` | ADDITIVE (new fields) | the client keeps rows as dicts and reads only the envelope / export / write keys listed under 0.3.1 |
+| `data_warnings` codes `below_detection_limit_as_value`, `above_upper_limit_as_value` on read; `set_reason` values `requested`, `only_set` | ADDITIVE (new enum values) | warnings and reasons are data; nothing branches on them |
+| 4 new reason codes (`ambiguous_nd`, `assay_config_required`, `collar_position_required`, `element_required`) and 1 new write warning (`below_detection_stored_otherwise`); none removed, no status moved on an existing code. `connector_staff_only` / `writes_staff_only` say the beta is open to member companies | ADDITIVE (new codes, text) | the client maps only `project_required` / `company_required` / `set_choice_required` to classes |
+| `records/`: settings faces for QC configuration, QAQC protocols, metal equivalents and ODBC settings (dry run, Undo); catalog entries (pads, custom interval types, styled catalogs) retract + restore while unused; a project create applies `crs` in the same write; a bare `BDL` / `ND` / "not detected" result now LANDS as below detection (-1) | ADDITIVE (new models / requests that used to refuse now succeed) | `records/` still answers 200 with per-row outcomes for every intent |
+| Assays whose sample is in the Trash: left out of `assays/` / `assay-results/` lists and the `assay_results` export by default, counted in `withheld.sample_trashed` (`include_trashed_samples=true` returns them flagged); `assays/{id}` returns one flagged | CORRECTION (ruled R41-1: a trashed sample's results are not live data) | the rows are counted, never silently lost; the opt-in returns them |
+| Merged values' `units` say the merge settings' real units (were labelled `ppm`); merged export column headers name each element's actual units + strategy | CORRECTION (the label now matches the number; values unchanged) | the client never reads `units` or export headers |
+| Grant `assay-merge-settings/` rows no longer carry `created_by_name` / `last_edited_by_name` (people's names or emails) | CORRECTION (privacy) | the client never reads them |
+| `water-analyses/` values: `value` is a decimal string (the assay convention), `above_det_limit` means OVER RANGE (qualifier `E`, the assay meaning), new `detected` carries water's detected sense | CORRECTION (ruled: one meaning for `above_det_limit` across assays and water) | the client never parses nested water values; the 0.3.1 spec typed `values` as an untyped string |
+| Config-face write results answer `element_overrides` / `ranges` (the read's keys; were `units` / `items`, still accepted as input) | CORRECTION (a read row writes back) | the client reads only `write_id` / `rows` / `summary` / `complete` |
+| `trace/` + `xyz_at_depth/` on a hole with no position: 409 `collar_position_required` (was a 500); a `project` naming a frozen project of the key's own scope: 409 `project_frozen` (was 400 `invalid_parameter`); `composited/` without `assay_config_id`: 400 `assay_config_required` | CORRECTION (error → specific error) | still an error; the client raises it with the server's `reason_code` + `remedy` |
+| `trace/` grant bodies: the misleading `trace_data.crs` is dropped and the repeated depth-0 point collapses; every base-CRS / WGS84 number is computed from the served local points | CORRECTION (a true label) | the client has no trace method |
+| Blank QC verdict: no limit + a reported below-detection reading is `pass` (was `unknown`) | CORRECTION (ruled R41-5) | verdicts are data |
+| Per-row tightenings: "N.D." / "N/D" is refused `ambiguous_nd` (ask the user: not detected → `BDL`, not determined → leave it out); a bare `<`, `<abc`, or `<x unit` in another unit is refused | TIGHTENING (ruled R41-16), per row | per-row refusals are part of the write contract; the client reports them in `refused` |
+| Domain guide: new topics `assays`, `qc-configuration`, `qaqc-protocols`, `metal-equivalents`, `odbc-settings`; AGENTS.md opens with the connect instructions | ADDITIVE | `guide()` returns whatever the server serves |
+
 ## [0.3.1] — prepared 2026-10-05 (published at the maintainer's go)
 
 Protocol **0.3.1** (`info.version`, the `X-GeoDB-Protocol-Version` header and

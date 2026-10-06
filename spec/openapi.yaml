@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: geoDB Exploration Data API
-  version: 0.3.1
+  version: 0.3.2
   description: |
     Access to exploration projects' data — drill holes and what was logged down
     them, samples, laboratory results, quality control, surface geology, maps and
@@ -59,8 +59,9 @@ info:
        `superseded_by` and `supersedes` say what its review decided. Never report
        a flagged row as a result — use it to explain why a sample is missing.
     8. **Below detection is a flag beside a sentinel.** A value the laboratory
-       reported below its detection limit is stored as `-1.0000` with
-       `below_detection: true`; the threshold is the value's `detection_limit`.
+       reported below its detection limit is returned on reads as the sentinel
+       `-1.0000` with `below_detection: true`; the threshold is the value's
+       `detection_limit`.
        The sentinel is a marker, never a grade, and merged reads have already
        substituted it once — do not substitute it again.
 
@@ -74,7 +75,7 @@ info:
     tool: drf-spectacular
     source: the geoDB reference implementation's serializers and the runtime grant
       gate
-    protocol_version: 0.3.1
+    protocol_version: 0.3.2
     warning: Generated file — do not edit by hand. Changes belong in the reference
       implementation; regenerate to publish them.
 paths:
@@ -411,7 +412,7 @@ paths:
     get:
       operationId: assay_merge_settings_list
       description: |-
-        How a project resolves multiple results for one sample and element — which method wins, and in what order. These settings are what `include_assays` applies when it merges results into the sample endpoints and the bulk exports.
+        How a project combines several results for one sample and element into one value: the strategy (the highest, the lowest or the average result), the units every result is converted to, what a below-detection result becomes, and per-element overrides (which may also restrict an element to one digestion or finish). There is no method ranking: the strategy alone decides between laboratories, methods and repeats. One set is the project default; merged sample reads, exports and ODBC tables apply it unless a read names other settings (`merge_settings_id`), and a merged answer to a grant read states the settings it applied (`merge_settings`). `assay_configs` lists the colour schemes that use each set.
 
         Paged. Pass `modified_since` to fetch only what changed, and read `deleted_ids` to learn what was removed — that feed is how deletions reach you, since deleted rows simply stop appearing.
 
@@ -528,9 +529,16 @@ paths:
   /api/v2/assay-merge-settings/{id}/:
     get:
       operationId: assay_merge_settings_retrieve
-      description: How a project resolves multiple results for one sample and element
-        — which method wins, and in what order. These settings are what `include_assays`
-        applies when it merges results into the sample endpoints and the bulk exports.
+      description: 'How a project combines several results for one sample and element
+        into one value: the strategy (the highest, the lowest or the average result),
+        the units every result is converted to, what a below-detection result becomes,
+        and per-element overrides (which may also restrict an element to one digestion
+        or finish). There is no method ranking: the strategy alone decides between
+        laboratories, methods and repeats. One set is the project default; merged
+        sample reads, exports and ODBC tables apply it unless a read names other settings
+        (`merge_settings_id`), and a merged answer to a grant read states the settings
+        it applied (`merge_settings`). `assay_configs` lists the colour schemes that
+        use each set.'
       parameters:
       - in: path
         name: id
@@ -596,8 +604,8 @@ paths:
   /api/v2/assay-merge-settings/{id}/get_full_config/:
     get:
       operationId: assay_merge_settings_get_full_config_retrieve
-      description: The project's merge rules including the complete method precedence
-        order.
+      description: 'The settings'' merge rules in full: the defaults and every per-element
+        override (strategy, target units, digestion or finish filter).'
       parameters:
       - in: path
         name: id
@@ -658,13 +666,22 @@ paths:
                 response.
               schema:
                 type: integer
-      summary: Merge rules with the full method order
+      summary: Merge rules in full
       x-geodb-extension: true
   /api/v2/assay-merge-settings/{id}/get_merge_config/:
     get:
       operationId: assay_merge_settings_get_merge_config_retrieve
-      description: How this project resolves multiple results for one sample and element.
+      description: 'How these merge settings resolve several results of ONE element
+        (`element`, required — e.g. `element=Au`) for one sample: the element''s override
+        if it has one, else the settings'' defaults.'
       parameters:
+      - in: query
+        name: element
+        schema:
+          type: string
+        description: The element symbol whose effective rule to read (e.g. `Au`) —
+          its override in these settings if it has one, else the settings' defaults.
+        required: true
       - in: path
         name: id
         schema:
@@ -724,7 +741,7 @@ paths:
                 response.
               schema:
                 type: integer
-      summary: Merge rules for a project
+      summary: Merge rule for one element
       x-geodb-extension: true
   /api/v2/assay-range-configurations/:
     get:
@@ -927,6 +944,22 @@ paths:
         — follow `next`, or page by `offset` up to the first page''s `count`.'
       summary: Assay results as one flat table
       parameters:
+      - in: query
+        name: element
+        schema:
+          type: string
+        description: 'Read one element''s values, or several (comma-separated, e.g.
+          `Au,Ag`). Matched without regard to case, as the element is stored (`Au`,
+          `Cu`, `CaF2`…). Omitted: every element.'
+      - in: query
+        name: include_trashed_samples
+        schema:
+          type: boolean
+        description: 'Assays whose sample is in the Trash (the assay is kept — assays
+          are never deleted with their sample — and re-links when the sample is restored
+          or re-imported). Left out by default and counted in `withheld.sample_trashed`.
+          `true`: return them, each flagged `sample_status: "trashed"` with a `sample_trashed`
+          data warning; leave them out of statistics unless the user says otherwise.'
       - name: limit
         required: false
         in: query
@@ -1095,6 +1128,15 @@ paths:
           `false`: leave them out, and the envelope''s `withheld.qaqc_excluded` says
           how many were left out. Never use a flagged row as a result: it is shown
           so you can explain its absence.'
+      - in: query
+        name: include_trashed_samples
+        schema:
+          type: boolean
+        description: 'Assays whose sample is in the Trash (the assay is kept — assays
+          are never deleted with their sample — and re-links when the sample is restored
+          or re-imported). Left out by default and counted in `withheld.sample_trashed`.
+          `true`: return them, each flagged `sample_status: "trashed"` with a `sample_trashed`
+          data warning; leave them out of statistics unless the user says otherwise.'
       - name: limit
         required: false
         in: query
@@ -3296,8 +3338,13 @@ paths:
   /api/v2/drill-collars/{id}/trace/:
     get:
       operationId: drill_collars_trace_retrieve
-      description: The desurveyed path of this hole through space, computed from its
-        collar and survey stations. Coordinates are on the project local grid in metres.
+      description: 'The desurveyed path of this hole through space, computed from
+        its collar and survey stations, served in LABELLED frames: `coordinate_frames`
+        names each one and where its numbers sit (`served_as`) — `local_grid` (offsets
+        from the project grid''s origin, with its base EPSG, origin, rotation and
+        direction, and its unit), `base_crs` (the same points in the grid''s base
+        EPSG) and `wgs84` (longitude, latitude, elevation in metres). Never plot one
+        frame against another. A hole with no collar position is refused `collar_position_required`.'
       parameters:
       - in: path
         name: id
@@ -3363,8 +3410,10 @@ paths:
   /api/v2/drill-collars/{id}/xyz_at_depth/:
     get:
       operationId: drill_collars_xyz_at_depth_retrieve
-      description: The desurveyed position at a given depth in this hole, interpolated
-        between survey stations. Coordinates are on the project local grid in metres.
+      description: 'The desurveyed position at a given depth in this hole, interpolated
+        between survey stations, in the same LABELLED frames as the trace (`positions.<frame>`,
+        described by `coordinate_frames`: `local_grid`, `base_crs`, `wgs84`). A hole
+        with no collar position is refused `collar_position_required`.'
       parameters:
       - in: path
         name: id
@@ -3873,7 +3922,7 @@ paths:
 
         ⛔ **There is no cutoff.** Where an intercept starts and stops is a geologist's judgement — real intercepts open and close below their own average and carry internal waste — so the server never chooses boundaries, and a request that names a cutoff or threshold is refused. Propose boundaries and say why; the geologist rules.
 
-        Each interval carries `coverage` (assayed length / span): below 1.0 means gaps or unassayed ground — say so when you report it. Below-detection values were already substituted by the project's merge settings (`merge.bdl_handling`); never substitute them again. Downhole length is not true width.
+        Each interval carries `coverage` (assayed length / span): below 1.0 means gaps or unassayed ground — say so when you report it. Below-detection values were already substituted by the merge settings (the project's default, or `merge_settings_id`); `merge` states the settings applied (`merge.below_detection`) — never substitute them again. Downhole length is not true width.
       summary: Length-weighted intervals over boundaries you choose
       parameters:
       - in: query
@@ -3910,6 +3959,12 @@ paths:
           the hole name, `incl.` for a sub-interval of the row above, `and` for a
           further intercept). Repeat for a nested table. Depths in the project's depth
           units.
+      - in: query
+        name: merge_settings_id
+        schema:
+          type: integer
+        description: Merge with these merge settings (an id from `assay-merge-settings/`)
+          instead of the project's default; `merge` states the settings applied.
       - in: query
         name: project_id
         schema:
@@ -5984,7 +6039,7 @@ paths:
       description: |-
         A sample cut from an interval of core or cuttings. It belongs to a hole via `bhid` and covers `depth_from` to `depth_to`.
 
-        Assay results can be merged in (`include_assays`), which applies the project's own merge rules for a sample with results from more than one laboratory.
+        Assay results are merged in when the read asks for them: `merge_settings_id` (merge settings by id, `assay-merge-settings/`), `assay_config_id` (one of the project's colour schemes, `assay-range-configurations/`; its merge settings apply) or `merge_assays=true` (the project's default merge settings). A merged value is COMBINED: one per element, chosen by the settings' strategy (highest, lowest or average), converted to their units (each value labelled with them), below detection already substituted, flags gone; the answer's `merge_settings` states what was applied. The laboratory's own results, every value with its method, certificate and flags, are `assay-results/`.
 
         Paged. Pass `modified_since` to fetch only what changed, and read `deleted_ids` to learn what was removed — that feed is how deletions reach you, since deleted rows simply stop appearing.
 
@@ -6124,11 +6179,20 @@ paths:
           intervals where the configuration composites. An id naming no configuration
           this credential can read is refused with `not_found`.'
       - in: query
+        name: merge_settings_id
+        schema:
+          type: string
+        description: 'Merge each sample''s assay values with these merge settings
+          (an id from `assay-merge-settings/`), chosen directly: one merged value
+          per element, by the settings'' strategy, units and below-detection substitution.
+          Beside `assay_config_id` these settings merge and the configuration supplies
+          its compositing. The response states the settings it applied (`merge_settings`).'
+      - in: query
         name: merge_assays
         schema:
           type: string
         description: 'Legacy: `true` merges with the project''s default merge settings.
-          Prefer `assay_config_id`.'
+          Prefer `merge_settings_id` or `assay_config_id`.'
       tags:
       - Samples
       security:
@@ -6190,7 +6254,7 @@ paths:
       description: |-
         A sample cut from an interval of core or cuttings. It belongs to a hole via `bhid` and covers `depth_from` to `depth_to`.
 
-        Assay results can be merged in (`include_assays`), which applies the project's own merge rules for a sample with results from more than one laboratory.
+        Assay results are merged in when the read asks for them: `merge_settings_id` (merge settings by id, `assay-merge-settings/`), `assay_config_id` (one of the project's colour schemes, `assay-range-configurations/`; its merge settings apply) or `merge_assays=true` (the project's default merge settings). A merged value is COMBINED: one per element, chosen by the settings' strategy (highest, lowest or average), converted to their units (each value labelled with them), below detection already substituted, flags gone; the answer's `merge_settings` states what was applied. The laboratory's own results, every value with its method, certificate and flags, are `assay-results/`.
       parameters:
       - in: path
         name: id
@@ -6257,7 +6321,7 @@ paths:
     get:
       operationId: drill_samples_composited_retrieve
       description: |-
-        Sample intervals recombined to a uniform length, length-weighted. Needs `bhid` (the hole's id) and `assay_config_id` — the id of one of the project's assay range configurations with compositing on (`assay-range-configurations/`; each names the merge settings it uses, read at `assay-merge-settings/`).
+        Sample intervals recombined to a uniform length, length-weighted. Needs `bhid` (the hole's id) and `assay_config_id` — the id of one of the project's assay range configurations with compositing on (`assay-range-configurations/`; each names the merge settings it uses, read at `assay-merge-settings/`). `merge_settings_id` merges with other settings. The answer states the settings it applied (`merge_settings`, with the values' `units`), and each composite's `coverage` — the share of its length that carried a value (0–1).
 
         ⚠️ This is a COMPOSITE, not a selection: it does not apply a grade cutoff and does not choose which intervals are interesting.
       tags:
@@ -8101,7 +8165,7 @@ paths:
       description: |-
         Exports one table of ONE project as GeoParquet / Parquet / CSV.
 
-        The one POST on the read surface: it starts a READ (a read-only key may call it; nothing in the project is written). It takes the table's LIST parameters, in the query or the JSON body: `project` (needed when the credential reads several — else `project_required` with the choices), `company`, `scope=company` only when that company has one project, and `set` (id, name or `all`) for an interval or sample table whose project holds several sets (left out: the project's export set, else its default set — named in `set_used`). A parameter the export cannot honour is refused with a remedy, never answered with an empty file.
+        The one POST on the read surface: it starts a READ (a read-only key may call it; nothing in the project is written). It takes the table's LIST parameters, in the query or the JSON body: `project` (needed when the credential reads several — else `project_required` with the choices), `company`, `scope=company` only when that company has one project, and `set` (id, name or `all`) for an interval or sample table (left out: the project's export set, else its default set — the set the file holds is always named in `set_used`). A parameter the export cannot honour is refused with a remedy, never answered with an empty file.
 
         The export is not a raw table dump: it inherits the project's assay-merge settings, its output CRS (`odbc_output_crs` — coordinates are NOT forced to WGS84), its `cf_*` custom fields and its depth units — the same engine that produces the project's own CSV/XLSX exports and its ODBC feed. Columns keep their raw field names (the project's column display settings shape the web app, not this file).
 
@@ -8648,9 +8712,9 @@ paths:
         flag and the instrument / mode that produced it, and the reading session(s)
         (certificates whose `source_type` is `field_xrf`). ⚠️ Field XRF is semi-quantitative
         guidance for logging — never a reportable grade, never an input to a resource
-        estimate. geoDB leaves it out of lab assays analytics, QC verdicts, intercepts
-        and merged reads by default; present it beside lab results, labelled, never
-        merged into them. Ordered by hole, then depth.'
+        estimate. geoDB leaves it out of lab-assay analytics, QC verdicts and intercepts,
+        and it never enters a combined value; present it beside lab results, labelled,
+        never merged into them. Ordered by hole, then depth.'
       summary: Field (portable) XRF readings
       parameters:
       - in: query
@@ -10149,7 +10213,9 @@ paths:
         Sample reads already carry the computed value under the deck''s column key
         (e.g. `AuEq ppm`) with `metal_equivalent_config` naming the deck — read that
         number; do not recompute it. A deck that is `complete: false` renders blanks,
-        and `missing` says why (an unstated recovery is never assumed to be 100%).'
+        and `missing` says why (an unstated recovery is never assumed to be 100%).
+        Each deck carries `url` (its page on the web); decks are changed through the
+        records gate (model `MetalEquivalentConfig`).'
       summary: Metal-equivalent price decks (the configured formula)
       parameters:
       - in: query
@@ -10936,6 +11002,81 @@ paths:
                 type: integer
       summary: Field definitions, desktop-GIS shaped
       x-geodb-extension: true
+  /api/v2/odbc-settings/:
+    get:
+      operationId: odbc_settings_retrieve
+      description: 'What an ODBC client (a modelling or GIS package) receives: the
+        output coordinate frame (`odbc_output_crs`: wgs84, utm, local_grid, custom
+        + `odbc_custom_epsg`, or original = each record in its own imported CRS),
+        whether coordinates are transformed straight from each record''s own CRS (`odbc_direct_conversion`),
+        and the length units of depths and elevations. `output_frame.epsg` is the
+        EPSG the coordinate columns resolve to now (0 = the local grid; null = original).
+        Stored coordinates never change with these settings — only the output frame
+        does. Changed through the records gate (model `ODBCSettings`); `url` is the
+        settings card on the web.'
+      summary: The frame and units ODBC clients read the project in
+      parameters:
+      - in: query
+        name: project_id
+        schema:
+          type: integer
+        description: The project to read. Defaults to the project this credential
+          is pinned to; any other must be one it can read — an id naming no readable
+          project is refused with `invalid_parameter`, as on the lists.
+      tags:
+      - Discovery
+      security:
+      - knoxApiToken: []
+      - GrantAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OdbcSettings'
+          description: ''
+        '400':
+          description: The request could not be understood (see `reason_code`).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 'No usable credential. `reason_code` distinguishes a revoked
+            grant from an expired, unknown or malformed one; the response carries
+            `WWW-Authenticate: Grant`.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: The credential is valid but not permitted this operation —
+            outside the grant surface, a write with a read-only grant, or outside
+            a room-pinned grant's room.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: No such resource inside this credential's scope. A row in another
+            project is indistinguishable from one that does not exist, by design.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: The grant's request rate was exceeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            Retry-After:
+              description: Seconds to wait before retrying. Sent on every throttled
+                response.
+              schema:
+                type: integer
+      x-geodb-extension: true
   /api/v2/photos/:
     get:
       operationId: photos_list
@@ -11149,16 +11290,6 @@ paths:
         schema:
           type: integer
       - in: query
-        name: scope
-        schema:
-          type: string
-          enum:
-          - company
-        description: 'scope=company: read every readable project of ONE company instead
-          of one project — `company=<id>` names it (a credential that reads one company
-          needs none; several companies and none named is `company_required`). Never
-          across companies. Each row carries `project_id`. Read-only.'
-      - in: query
         name: modified_since
         schema:
           type: string
@@ -11228,6 +11359,14 @@ paths:
           answers every project of it this credential can read. A value that names
           no company this credential can read is refused with `invalid_parameter`.'
       - in: query
+        name: scope
+        schema:
+          type: string
+        description: 'scope=company: read every readable project of ONE company instead
+          of one project — `company=<id>` names it (a credential that reads one company
+          needs none; several companies and none named is `company_required`). Never
+          across companies. Each row carries `project_id`. Read-only.'
+      - in: query
         name: status
         schema:
           type: string
@@ -11244,11 +11383,20 @@ paths:
           intervals where the configuration composites. An id naming no configuration
           this credential can read is refused with `not_found`.'
       - in: query
+        name: merge_settings_id
+        schema:
+          type: string
+        description: 'Merge each sample''s assay values with these merge settings
+          (an id from `assay-merge-settings/`), chosen directly: one merged value
+          per element, by the settings'' strategy, units and below-detection substitution.
+          Beside `assay_config_id` these settings merge and the configuration supplies
+          its compositing. The response states the settings it applied (`merge_settings`).'
+      - in: query
         name: merge_assays
         schema:
           type: string
         description: 'Legacy: `true` merges with the project''s default merge settings.
-          Prefer `assay_config_id`.'
+          Prefer `merge_settings_id` or `assay_config_id`.'
       - in: query
         name: name
         schema:
@@ -12729,7 +12877,11 @@ paths:
         QC protocol (insertion targets), per-element blank warning limits, per-element
         duplicate RPD thresholds, the elements left out of pass rates, and whether
         results wait for QAQC approval before they are used. Read this before explaining
-        a verdict; never assume an industry default the project has overridden.'
+        a verdict; never assume an industry default the project has overridden. `protocols`
+        lists every QC protocol with its id, insertion plan and acceptance criteria
+        (`judges_qc` marks the default — the one verdicts use); each limit and protocol
+        carries `url`, its page on the web. These settings are changed through the
+        records gate (models `QCConfiguration`, `QAQCProtocol`).'
       summary: The QC rules in force on a project
       parameters:
       - in: query
@@ -13253,8 +13405,7 @@ paths:
         Send an `Idempotency-Key` header to make a retry replay the first answer.
         Every write that changed something returns a `write_id`; `{"intent": "undo",
         "write_id": …}` reverses it. Hard delete and purge never cross the API.'
-      summary: 'Write records: create, upsert, update, retract, restore, make_default_set,
-        undo'
+      summary: Write data, projects, reports and settings (every intent, undo included)
       tags:
       - Writing
       requestBody:
@@ -17801,17 +17952,9 @@ components:
           items:
             $ref: '#/components/schemas/AssayMergeSettingsUnit'
           readOnly: true
-        created_by_name:
-          type: string
-          readOnly: true
-          nullable: true
         date_created:
           type: string
           format: date
-          readOnly: true
-          nullable: true
-        last_edited_by_name:
-          type: string
           readOnly: true
           nullable: true
         last_edited:
@@ -17838,14 +17981,35 @@ components:
                 type: string
               element:
                 type: string
+        merge_mode:
+          type: string
+          readOnly: true
+          enum:
+          - merged
+          - unmerged
+          - both
+          description: 'Which assay columns an export of drill samples carries: merged,
+            unmerged, or both.'
+        qaqc_export_mode:
+          type: string
+          readOnly: true
+          enum:
+          - exclude
+          - include_with_status
+          - include_all
+          description: How exports treat QAQC-withheld results.
+        is_project_default:
+          type: boolean
+          readOnly: true
+          nullable: true
+          description: True on the project's default merge settings (exports, ODBC
+            and merged reads with no other choice use them).
       required:
       - company_name
-      - created_by_name
       - date_created
       - element_overrides
       - id
       - last_edited
-      - last_edited_by_name
       - project_name
       additionalProperties: false
     AssayMergeSettingsUnit:
@@ -17906,6 +18070,18 @@ components:
           type: integer
           nullable: true
           description: 'Optional: Only use assays from this finish method'
+        digestion_filter_code:
+          type: string
+          readOnly: true
+          nullable: true
+          description: The digestion filter's code (`digestion_filter` is its id);
+            a write takes either.
+        finish_filter_code:
+          type: string
+          readOnly: true
+          nullable: true
+          description: The finish filter's code (`finish_filter` is its id); a write
+            takes either.
       required:
       - element
       - id
@@ -18049,6 +18225,11 @@ components:
           type: string
           format: date
           readOnly: true
+          nullable: true
+        color:
+          type: string
+          readOnly: true
+          description: '#RRGGBB for values in this range.'
           nullable: true
       required:
       - date_created
@@ -18224,6 +18405,16 @@ components:
           type: integer
           readOnly: true
           nullable: true
+        sample_status:
+          type: string
+          readOnly: true
+          enum:
+          - live
+          - trashed
+          description: '`trashed`: the assay''s sample is in the Trash — the assay
+            is kept and re-links on restore; a list leaves such assays out unless
+            `include_trashed_samples=true`, a read by id returns it. Leave it out
+            of statistics.'
         laboratory:
           type: object
           nullable: true
@@ -18234,6 +18425,15 @@ components:
               type: integer
             name:
               type: string
+        data_warnings:
+          type: array
+          readOnly: true
+          items:
+            $ref: '#/components/schemas/DataWarning'
+          description: Present only when this stored row has a problem geoDB can recognise
+            (an upside-down interval, a dip past 90°, coordinates with no CRS…). The
+            row is returned exactly as stored — never fixed or hidden; correct it
+            with an update.
       required:
       - analyte_mass_g
       - date_created
@@ -18319,8 +18519,9 @@ components:
           format: double
           nullable: true
           description: Lower detection limit for the method that produced this value,
-            in the same units. A result below it is stored and sent as the sentinel
-            `-1.0000` (never a grade), not as a number at or below this limit.
+            in the same units. A result below it is returned on reads as the below-detection
+            sentinel `-1.0000` (never a grade, flagged `below_detection`), not as
+            a number at or below this limit.
         upper_limit:
           type: number
           format: double
@@ -18364,7 +18565,7 @@ components:
         sample_status:
           nullable: true
           description: |-
-            `live`: the sample is current. `trashed`: the sample was moved to the trash; the assay is kept (assays are never deleted with their sample) and re-links when the sample is restored or re-imported. The row also carries a `sample_trashed` data warning, and the first page's `flagged.sample_trashed` counts them. Leave such values out of statistics unless the user says otherwise. null: no sample of that name.
+            `live`: the sample is current. `trashed`: the sample was moved to the trash; the assay is kept (assays are never deleted with their sample) and re-links when the sample is restored or re-imported. Such rows are withheld by default (the first page's `withheld.sample_trashed` counts them) and returned only with `include_trashed_samples=true`, each with a `sample_trashed` data warning. Leave such values out of statistics unless the user says otherwise. null: no sample of that name.
 
             * `live` - live
             * `trashed` - trashed
@@ -18542,6 +18743,15 @@ components:
           type: integer
           readOnly: true
           nullable: true
+        data_warnings:
+          type: array
+          readOnly: true
+          items:
+            $ref: '#/components/schemas/DataWarning'
+          description: Present only when this stored row has a problem geoDB can recognise
+            (an upside-down interval, a dip past 90°, coordinates with no CRS…). The
+            row is returned exactly as stored — never fixed or hidden; correct it
+            with an update.
       required:
       - above_det_limit
       - below_detection
@@ -18694,7 +18904,7 @@ components:
           - $ref: '#/components/schemas/CertificateReadSourceTypeEnum'
           readOnly: true
           description: |-
-            `lab` — a laboratory job. `field_xrf` — a portable-XRF reading session: field guidance, never a reportable grade. Field-XRF results are left out of geoDB's lab analytics, QC verdicts, intercepts and merged reads by default. Read them with `/api/v2/field-xrf/`.
+            `lab` — a laboratory job. `field_xrf` — a portable-XRF reading session: field guidance, never a reportable grade. Field-XRF results are left out of geoDB's lab analytics, QC verdicts and intercepts, and never enter a combined value. Read them with `/api/v2/field-xrf/`.
 
             * `lab` - Laboratory
             * `field_xrf` - Field XRF
@@ -21503,8 +21713,8 @@ components:
           description: 'The assay on this sample, or null when it has not been assayed.
             An object: the assay record by default, or merged per-element values when
             the request names an assay configuration (`merged: true`). Sent only with
-            `expand=assay` (or a read sending `assay_config_id` / `merge_assays`);
-            otherwise `assay_id` names it.'
+            `expand=assay` (or a read sending `assay_config_id` / `merge_settings_id`
+            / `merge_assays`); otherwise `assay_id` names it.'
           oneOf:
           - type: object
             additionalProperties: false
@@ -21610,6 +21820,16 @@ components:
               lab_status_code:
                 type: string
                 nullable: true
+              sample_status:
+                type: string
+                readOnly: true
+                enum:
+                - live
+                - trashed
+                description: '`trashed`: the assay''s sample is in the Trash — the
+                  assay is kept and re-links on restore; a list leaves such assays
+                  out unless `include_trashed_samples=true`, a read by id returns
+                  it. Leave it out of statistics.'
               excluded:
                 type: boolean
                 description: 'True when a QAQC review WITHHOLDS this row from results
@@ -22592,6 +22812,14 @@ components:
         needs_recalculation:
           type: boolean
           readOnly: true
+        coordinate_frames:
+          type: object
+          description: 'The frame of each coordinate array, keyed by frame name, each
+            naming where its numbers sit (`served_as`): `local_grid` (`trace_data.coords`
+            — offsets from the grid origin, not coordinates in `base_epsg`) and `wgs84`
+            (`geometry_wgs84`, EPSG:4326, elevation in metres, computed from the served
+            points).'
+          readOnly: true
         project_id:
           type: integer
           readOnly: true
@@ -22601,6 +22829,7 @@ components:
       - bhid
       - collar_name
       - company_name
+      - coordinate_frames
       - geometry_wgs84
       - id
       - last_calculated
@@ -23175,14 +23404,18 @@ components:
             `company` with `company`: honoured when that company has ONE readable project (an export is one project's table).
 
             * `company` - company
+        merge_settings_id:
+          type: integer
+          description: 'For a merged table (drill_samples, point_samples, qc_samples
+            with `include_assays`): merge with these settings (an id from `assay-merge-settings/`,
+            the project''s own) instead of the project default.'
+        include_trashed_samples:
+          type: boolean
+          description: '`assay_results`: also ship the values of assays whose sample
+            is in the Trash (left out by default; `sample_status` flags them).'
         set:
           type: string
           minLength: 1
-          description: 'For an interval or sample table: the set (id or exact name),
-            or `all`. Left out when the project holds several sets of it, the export
-            reads the project''s export set for the table, else its default set, and
-            the answer names it (`set_used`, `set_reason`). Tables whose export ships
-            only the project''s export set refuse `all` and other sets.'
       required:
       - model
     ExportJobAccepted:
@@ -23218,18 +23451,36 @@ components:
         set_used:
           type: object
           additionalProperties: {}
-          description: 'Present when the table has several sets and the request named
-            none: the set this export reads ({id, name}) — the project''s export set
-            for the table, else its default set (see `set_reason`). Tell the user
-            which set the file holds; name `set` to read another, or `set=all`.'
+          description: 'Present whenever an interval or sample table''s export reads
+            ONE set: the set the file holds ({id, name}). With no `set` named it is
+            the project''s export set for the table, else its default set — never
+            another set just because it is the only one holding rows (see `set_reason`).
+            Tell the user which set the file holds; name `set` to read another, or
+            `set=all`.'
+        rows_in_other_sets:
+          type: object
+          additionalProperties: {}
+          description: 'Present when the set the server read (`set_used`, none named)
+            holds NO rows while other sets do: `rows` (how many sit elsewhere), `sets`
+            ([{id, name, rows}]) and `detail` (the sentence to tell the user). The
+            file is empty by the set rule; export again naming `set`, or `set=all`.'
+        merge_settings:
+          type: object
+          additionalProperties: {}
+          description: 'A merged table (drill_samples, point_samples, qc_samples with
+            include_assays): the merge settings the file applies — id, name, strategy,
+            units, below-detection substitution, over-range handling (the finished
+            job''s `notes.merge_settings` repeats it). Name other settings with `merge_settings_id`.'
         set_reason:
           allOf:
           - $ref: '#/components/schemas/SetReasonEnum'
           description: |-
-            Why `set_used` was read: the project's chosen export set, or (none chosen) its default set.
+            Why `set_used` was read: `export_set` (the project's chosen export set), `default_set` (none chosen: its default set), `requested` (the set you named), `only_set` (the project has no export or default set and its rows sit in one set).
 
             * `export_set` - export_set
             * `default_set` - default_set
+            * `requested` - requested
+            * `only_set` - only_set
       required:
       - format
       - id
@@ -23270,6 +23521,12 @@ components:
           description: What this table's file merged or left unflagged, or how to
             read its columns (the same text is in a parquet file's `geodb` metadata).
             Present for the tables that have notes.
+        rows_in_other_sets:
+          type: object
+          additionalProperties: {}
+          description: 'As the create answer said it: the set the server read holds
+            no rows while other sets do — `rows`, `sets` [{id, name, rows}], `detail`.
+            Export again naming `set`, or `set=all`.'
         see_guide:
           type: array
           description: The guide sections that change how this answer should be read
@@ -23343,6 +23600,12 @@ components:
           description: What this table's file merged or left unflagged, or how to
             read its columns (the same text is in a parquet file's `geodb` metadata).
             Present for the tables that have notes.
+        rows_in_other_sets:
+          type: object
+          additionalProperties: {}
+          description: 'As the create answer said it: the set the server read holds
+            no rows while other sets do — `rows`, `sets` [{id, name, rows}], `detail`.
+            Export again naming `set`, or `set=all`.'
         see_guide:
           type: array
           items:
@@ -24620,8 +24883,9 @@ components:
           format: decimal
           pattern: ^-?\d{0,6}(?:\.\d{0,4})?$
           description: Lower detection limit for the method that produced this value,
-            in the same units. A result below it is stored and sent as the sentinel
-            `-1.0000` (never a grade), not as a number at or below this limit.
+            in the same units. A result below it is returned on reads as the below-detection
+            sentinel `-1.0000` (never a grade, flagged `below_detection`), not as
+            a number at or below this limit.
         upper_limit:
           type: string
           format: decimal
@@ -24932,6 +25196,36 @@ components:
         * `GeophysicalSurvey` — records served by `/api/v2/geophysical-surveys/`
         * `GeophysicalSurveyLine` — carries custom fields, but is not readable with an access grant
         * `Road` — records served by `/api/v2/roads/`
+    OdbcSettings:
+      type: object
+      properties:
+        project:
+          type: object
+          additionalProperties: {}
+        odbc_output_crs:
+          type: string
+        odbc_custom_epsg:
+          type: integer
+          nullable: true
+        odbc_direct_conversion:
+          type: boolean
+        odbc_output_length_units:
+          type: string
+        output_frame:
+          type: object
+          additionalProperties: {}
+        url:
+          type: string
+          nullable: true
+      required:
+      - odbc_custom_epsg
+      - odbc_direct_conversion
+      - odbc_output_crs
+      - odbc_output_length_units
+      - output_frame
+      - project
+      - url
+      additionalProperties: false
     OperationMap:
       type: object
       properties:
@@ -25184,14 +25478,23 @@ components:
             approval where the project requires it; present only when this response
             left them out (ask again with `include_excluded=true` to see them, each
             flagged with why). `planned` (QC samples): planned bags not yet collected,
-            held back unless you filter by `lab_status`. Mention these when you summarise:
-            a count or a pass rate over this list is a count over what is here.'
+            held back unless you filter by `lab_status`. `sample_trashed` (assays,
+            assay-results — in assay records): assays whose sample is in the Trash
+            (kept, re-linked on restore); ask again with `include_trashed_samples=true`
+            to see them, flagged. `qaqc_excluded_and_sample_trashed`: assays withheld
+            for BOTH reasons, counted here once and in neither bucket above (the buckets
+            add up to what the list left out). Mention these when you summarise: a
+            count or a pass rate over this list is a count over what is here.'
           properties:
             soft_deleted:
               type: integer
             qaqc_excluded:
               type: integer
             planned:
+              type: integer
+            sample_trashed:
+              type: integer
+            qaqc_excluded_and_sample_trashed:
               type: integer
           required:
           - soft_deleted
@@ -25278,14 +25581,23 @@ components:
             approval where the project requires it; present only when this response
             left them out (ask again with `include_excluded=true` to see them, each
             flagged with why). `planned` (QC samples): planned bags not yet collected,
-            held back unless you filter by `lab_status`. Mention these when you summarise:
-            a count or a pass rate over this list is a count over what is here.'
+            held back unless you filter by `lab_status`. `sample_trashed` (assays,
+            assay-results — in assay records): assays whose sample is in the Trash
+            (kept, re-linked on restore); ask again with `include_trashed_samples=true`
+            to see them, flagged. `qaqc_excluded_and_sample_trashed`: assays withheld
+            for BOTH reasons, counted here once and in neither bucket above (the buckets
+            add up to what the list left out). Mention these when you summarise: a
+            count or a pass rate over this list is a count over what is here.'
           properties:
             soft_deleted:
               type: integer
             qaqc_excluded:
               type: integer
             planned:
+              type: integer
+            sample_trashed:
+              type: integer
+            qaqc_excluded_and_sample_trashed:
               type: integer
           required:
           - soft_deleted
@@ -25297,12 +25609,50 @@ components:
           description: 'Rows this list DID return but marks, as counts over the whole
             list (sent on the first page; later pages carry null). `sample_trashed`
             (assay-results, counted in assay records): assays whose sample is in the
-            trash — each row says `sample_status: trashed` and carries a `sample_trashed`
-            data warning. Leave them out of statistics unless the user says otherwise,
-            and say how many you left out.'
+            trash, returned because the read sent `include_trashed_samples=true` (0
+            otherwise: they are withheld) — each row says `sample_status: trashed`
+            and carries a `sample_trashed` data warning. Leave them out of statistics
+            unless the user says otherwise, and say how many you left out.'
           properties:
             sample_trashed:
               type: integer
+        no_detection_limit:
+          type: object
+          nullable: true
+          description: 'null when every below-detection result has a detection limit
+            to resolve. Otherwise the (method, element) PAIRS (not rows) whose below-detection
+            results have none: exports and intercept tables write them as 0 (they
+            look like real zeros); sample reads, composites, 3D and maps leave them
+            out. Tell the user the pairs and offer to set the limits (`remedy`); never
+            guess a detection limit.'
+          properties:
+            code:
+              type: string
+              enum:
+              - no_detection_limit
+            pairs:
+              type: array
+              items:
+                type: object
+                properties:
+                  method_id:
+                    type: integer
+                    nullable: true
+                  method:
+                    type: string
+                    nullable: true
+                  element:
+                    type: string
+                  values:
+                    type: integer
+                    description: How many below-detection results the pair has.
+            pairs_total:
+              type: integer
+              description: All such pairs (`pairs` lists the first 25).
+            detail:
+              type: string
+            remedy:
+              type: string
         see_guide:
           type: array
           description: The guide sections that change how this answer should be read
@@ -25404,14 +25754,23 @@ components:
             approval where the project requires it; present only when this response
             left them out (ask again with `include_excluded=true` to see them, each
             flagged with why). `planned` (QC samples): planned bags not yet collected,
-            held back unless you filter by `lab_status`. Mention these when you summarise:
-            a count or a pass rate over this list is a count over what is here.'
+            held back unless you filter by `lab_status`. `sample_trashed` (assays,
+            assay-results — in assay records): assays whose sample is in the Trash
+            (kept, re-linked on restore); ask again with `include_trashed_samples=true`
+            to see them, flagged. `qaqc_excluded_and_sample_trashed`: assays withheld
+            for BOTH reasons, counted here once and in neither bucket above (the buckets
+            add up to what the list left out). Mention these when you summarise: a
+            count or a pass rate over this list is a count over what is here.'
           properties:
             soft_deleted:
               type: integer
             qaqc_excluded:
               type: integer
             planned:
+              type: integer
+            sample_trashed:
+              type: integer
+            qaqc_excluded_and_sample_trashed:
               type: integer
           required:
           - soft_deleted
@@ -25687,14 +26046,23 @@ components:
             approval where the project requires it; present only when this response
             left them out (ask again with `include_excluded=true` to see them, each
             flagged with why). `planned` (QC samples): planned bags not yet collected,
-            held back unless you filter by `lab_status`. Mention these when you summarise:
-            a count or a pass rate over this list is a count over what is here.'
+            held back unless you filter by `lab_status`. `sample_trashed` (assays,
+            assay-results — in assay records): assays whose sample is in the Trash
+            (kept, re-linked on restore); ask again with `include_trashed_samples=true`
+            to see them, flagged. `qaqc_excluded_and_sample_trashed`: assays withheld
+            for BOTH reasons, counted here once and in neither bucket above (the buckets
+            add up to what the list left out). Mention these when you summarise: a
+            count or a pass rate over this list is a count over what is here.'
           properties:
             soft_deleted:
               type: integer
             qaqc_excluded:
               type: integer
             planned:
+              type: integer
+            sample_trashed:
+              type: integer
+            qaqc_excluded_and_sample_trashed:
               type: integer
           required:
           - soft_deleted
@@ -25826,14 +26194,23 @@ components:
             approval where the project requires it; present only when this response
             left them out (ask again with `include_excluded=true` to see them, each
             flagged with why). `planned` (QC samples): planned bags not yet collected,
-            held back unless you filter by `lab_status`. Mention these when you summarise:
-            a count or a pass rate over this list is a count over what is here.'
+            held back unless you filter by `lab_status`. `sample_trashed` (assays,
+            assay-results — in assay records): assays whose sample is in the Trash
+            (kept, re-linked on restore); ask again with `include_trashed_samples=true`
+            to see them, flagged. `qaqc_excluded_and_sample_trashed`: assays withheld
+            for BOTH reasons, counted here once and in neither bucket above (the buckets
+            add up to what the list left out). Mention these when you summarise: a
+            count or a pass rate over this list is a count over what is here.'
           properties:
             soft_deleted:
               type: integer
             qaqc_excluded:
               type: integer
             planned:
+              type: integer
+            sample_trashed:
+              type: integer
+            qaqc_excluded_and_sample_trashed:
               type: integer
           required:
           - soft_deleted
@@ -25917,14 +26294,23 @@ components:
             approval where the project requires it; present only when this response
             left them out (ask again with `include_excluded=true` to see them, each
             flagged with why). `planned` (QC samples): planned bags not yet collected,
-            held back unless you filter by `lab_status`. Mention these when you summarise:
-            a count or a pass rate over this list is a count over what is here.'
+            held back unless you filter by `lab_status`. `sample_trashed` (assays,
+            assay-results — in assay records): assays whose sample is in the Trash
+            (kept, re-linked on restore); ask again with `include_trashed_samples=true`
+            to see them, flagged. `qaqc_excluded_and_sample_trashed`: assays withheld
+            for BOTH reasons, counted here once and in neither bucket above (the buckets
+            add up to what the list left out). Mention these when you summarise: a
+            count or a pass rate over this list is a count over what is here.'
           properties:
             soft_deleted:
               type: integer
             qaqc_excluded:
               type: integer
             planned:
+              type: integer
+            sample_trashed:
+              type: integer
+            qaqc_excluded_and_sample_trashed:
               type: integer
           required:
           - soft_deleted
@@ -26056,14 +26442,23 @@ components:
             approval where the project requires it; present only when this response
             left them out (ask again with `include_excluded=true` to see them, each
             flagged with why). `planned` (QC samples): planned bags not yet collected,
-            held back unless you filter by `lab_status`. Mention these when you summarise:
-            a count or a pass rate over this list is a count over what is here.'
+            held back unless you filter by `lab_status`. `sample_trashed` (assays,
+            assay-results — in assay records): assays whose sample is in the Trash
+            (kept, re-linked on restore); ask again with `include_trashed_samples=true`
+            to see them, flagged. `qaqc_excluded_and_sample_trashed`: assays withheld
+            for BOTH reasons, counted here once and in neither bucket above (the buckets
+            add up to what the list left out). Mention these when you summarise: a
+            count or a pass rate over this list is a count over what is here.'
           properties:
             soft_deleted:
               type: integer
             qaqc_excluded:
               type: integer
             planned:
+              type: integer
+            sample_trashed:
+              type: integer
+            qaqc_excluded_and_sample_trashed:
               type: integer
           required:
           - soft_deleted
@@ -26195,14 +26590,23 @@ components:
             approval where the project requires it; present only when this response
             left them out (ask again with `include_excluded=true` to see them, each
             flagged with why). `planned` (QC samples): planned bags not yet collected,
-            held back unless you filter by `lab_status`. Mention these when you summarise:
-            a count or a pass rate over this list is a count over what is here.'
+            held back unless you filter by `lab_status`. `sample_trashed` (assays,
+            assay-results — in assay records): assays whose sample is in the Trash
+            (kept, re-linked on restore); ask again with `include_trashed_samples=true`
+            to see them, flagged. `qaqc_excluded_and_sample_trashed`: assays withheld
+            for BOTH reasons, counted here once and in neither bucket above (the buckets
+            add up to what the list left out). Mention these when you summarise: a
+            count or a pass rate over this list is a count over what is here.'
           properties:
             soft_deleted:
               type: integer
             qaqc_excluded:
               type: integer
             planned:
+              type: integer
+            sample_trashed:
+              type: integer
+            qaqc_excluded_and_sample_trashed:
               type: integer
           required:
           - soft_deleted
@@ -26382,14 +26786,23 @@ components:
             approval where the project requires it; present only when this response
             left them out (ask again with `include_excluded=true` to see them, each
             flagged with why). `planned` (QC samples): planned bags not yet collected,
-            held back unless you filter by `lab_status`. Mention these when you summarise:
-            a count or a pass rate over this list is a count over what is here.'
+            held back unless you filter by `lab_status`. `sample_trashed` (assays,
+            assay-results — in assay records): assays whose sample is in the Trash
+            (kept, re-linked on restore); ask again with `include_trashed_samples=true`
+            to see them, flagged. `qaqc_excluded_and_sample_trashed`: assays withheld
+            for BOTH reasons, counted here once and in neither bucket above (the buckets
+            add up to what the list left out). Mention these when you summarise: a
+            count or a pass rate over this list is a count over what is here.'
           properties:
             soft_deleted:
               type: integer
             qaqc_excluded:
               type: integer
             planned:
+              type: integer
+            sample_trashed:
+              type: integer
+            qaqc_excluded_and_sample_trashed:
               type: integer
           required:
           - soft_deleted
@@ -26473,14 +26886,23 @@ components:
             approval where the project requires it; present only when this response
             left them out (ask again with `include_excluded=true` to see them, each
             flagged with why). `planned` (QC samples): planned bags not yet collected,
-            held back unless you filter by `lab_status`. Mention these when you summarise:
-            a count or a pass rate over this list is a count over what is here.'
+            held back unless you filter by `lab_status`. `sample_trashed` (assays,
+            assay-results — in assay records): assays whose sample is in the Trash
+            (kept, re-linked on restore); ask again with `include_trashed_samples=true`
+            to see them, flagged. `qaqc_excluded_and_sample_trashed`: assays withheld
+            for BOTH reasons, counted here once and in neither bucket above (the buckets
+            add up to what the list left out). Mention these when you summarise: a
+            count or a pass rate over this list is a count over what is here.'
           properties:
             soft_deleted:
               type: integer
             qaqc_excluded:
               type: integer
             planned:
+              type: integer
+            sample_trashed:
+              type: integer
+            qaqc_excluded_and_sample_trashed:
               type: integer
           required:
           - soft_deleted
@@ -26612,8 +27034,13 @@ components:
             approval where the project requires it; present only when this response
             left them out (ask again with `include_excluded=true` to see them, each
             flagged with why). `planned` (QC samples): planned bags not yet collected,
-            held back unless you filter by `lab_status`. Mention these when you summarise:
-            a count or a pass rate over this list is a count over what is here.'
+            held back unless you filter by `lab_status`. `sample_trashed` (assays,
+            assay-results — in assay records): assays whose sample is in the Trash
+            (kept, re-linked on restore); ask again with `include_trashed_samples=true`
+            to see them, flagged. `qaqc_excluded_and_sample_trashed`: assays withheld
+            for BOTH reasons, counted here once and in neither bucket above (the buckets
+            add up to what the list left out). Mention these when you summarise: a
+            count or a pass rate over this list is a count over what is here.'
           properties:
             soft_deleted:
               type: integer
@@ -26621,8 +27048,143 @@ components:
               type: integer
             planned:
               type: integer
+            sample_trashed:
+              type: integer
+            qaqc_excluded_and_sample_trashed:
+              type: integer
           required:
           - soft_deleted
+        merge_settings:
+          type: object
+          nullable: true
+          description: 'The merge settings this response APPLIED to turn several assay
+            values of one element into one: present only when the read merged. `id`
+            / `name` (null id: the built-in default — the project has none on file),
+            `strategy` (high | low | average), `units` (what every value was converted
+            to; an element override may name its own), `below_detection` (how a below-detection
+            result was substituted), `over_range` (an over-range result is used at
+            its limit, unflagged), `element_overrides`. Choose other settings with
+            `merge_settings_id`; read raw values at `assay-results/`.'
+          properties:
+            id:
+              type: integer
+              nullable: true
+            name:
+              type: string
+            is_project_default:
+              type: boolean
+              nullable: true
+            read:
+              type: string
+              enum:
+              - sample
+              - export
+              - intercepts
+              description: 'Which merge this describes: `sample` (sample lists and
+                composites — always one merged value per element), `export` (shaped
+                by `merge_mode`), `intercepts`.'
+            merge_mode:
+              type: string
+              enum:
+              - merged
+              - unmerged
+              - both
+              description: The settings' export shape (applies to exports only).
+            applies_as:
+              type: string
+            strategy:
+              type: string
+              nullable: true
+              description: null when nothing is merged (an unmerged export).
+            strategy_detail:
+              type: string
+            units:
+              type: string
+              nullable: true
+            unit_conversion:
+              type: string
+            columns:
+              type: object
+              description: 'Exports: the column name patterns (`{element}`, `{units}`,
+                `{strategy}`, `{method}`).'
+              properties:
+                patterns:
+                  type: array
+                  items:
+                    type: string
+            below_detection:
+              type: object
+              properties:
+                handling:
+                  type: string
+                  enum:
+                  - half_detection_limit
+                  - detection_limit
+                  - custom
+                  - zero
+                  - 'null'
+                multiplier:
+                  type: number
+                detail:
+                  type: string
+                no_detection_limit:
+                  type: string
+            no_detection_limit:
+              type: object
+              nullable: true
+              description: 'null when every below-detection result has a detection
+                limit to resolve. Otherwise the (method, element) PAIRS (not rows)
+                whose below-detection results have none: exports and intercept tables
+                write them as 0 (they look like real zeros); sample reads, composites,
+                3D and maps leave them out. Tell the user the pairs and offer to set
+                the limits (`remedy`); never guess a detection limit.'
+              properties:
+                code:
+                  type: string
+                  enum:
+                  - no_detection_limit
+                pairs:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      method_id:
+                        type: integer
+                        nullable: true
+                      method:
+                        type: string
+                        nullable: true
+                      element:
+                        type: string
+                      values:
+                        type: integer
+                        description: How many below-detection results the pair has.
+                pairs_total:
+                  type: integer
+                  description: All such pairs (`pairs` lists the first 25).
+                detail:
+                  type: string
+                remedy:
+                  type: string
+            over_range:
+              type: string
+            element_overrides:
+              type: array
+              items:
+                type: object
+                properties:
+                  element:
+                    type: string
+                  strategy:
+                    type: string
+                  units:
+                    type: string
+                  digestion_filter:
+                    type: integer
+                    nullable: true
+                  finish_filter:
+                    type: integer
+                    nullable: true
         see_guide:
           type: array
           description: The guide sections that change how this answer should be read
@@ -26724,14 +27286,23 @@ components:
             approval where the project requires it; present only when this response
             left them out (ask again with `include_excluded=true` to see them, each
             flagged with why). `planned` (QC samples): planned bags not yet collected,
-            held back unless you filter by `lab_status`. Mention these when you summarise:
-            a count or a pass rate over this list is a count over what is here.'
+            held back unless you filter by `lab_status`. `sample_trashed` (assays,
+            assay-results — in assay records): assays whose sample is in the Trash
+            (kept, re-linked on restore); ask again with `include_trashed_samples=true`
+            to see them, flagged. `qaqc_excluded_and_sample_trashed`: assays withheld
+            for BOTH reasons, counted here once and in neither bucket above (the buckets
+            add up to what the list left out). Mention these when you summarise: a
+            count or a pass rate over this list is a count over what is here.'
           properties:
             soft_deleted:
               type: integer
             qaqc_excluded:
               type: integer
             planned:
+              type: integer
+            sample_trashed:
+              type: integer
+            qaqc_excluded_and_sample_trashed:
               type: integer
           required:
           - soft_deleted
@@ -26911,14 +27482,23 @@ components:
             approval where the project requires it; present only when this response
             left them out (ask again with `include_excluded=true` to see them, each
             flagged with why). `planned` (QC samples): planned bags not yet collected,
-            held back unless you filter by `lab_status`. Mention these when you summarise:
-            a count or a pass rate over this list is a count over what is here.'
+            held back unless you filter by `lab_status`. `sample_trashed` (assays,
+            assay-results — in assay records): assays whose sample is in the Trash
+            (kept, re-linked on restore); ask again with `include_trashed_samples=true`
+            to see them, flagged. `qaqc_excluded_and_sample_trashed`: assays withheld
+            for BOTH reasons, counted here once and in neither bucket above (the buckets
+            add up to what the list left out). Mention these when you summarise: a
+            count or a pass rate over this list is a count over what is here.'
           properties:
             soft_deleted:
               type: integer
             qaqc_excluded:
               type: integer
             planned:
+              type: integer
+            sample_trashed:
+              type: integer
+            qaqc_excluded_and_sample_trashed:
               type: integer
           required:
           - soft_deleted
@@ -27002,14 +27582,23 @@ components:
             approval where the project requires it; present only when this response
             left them out (ask again with `include_excluded=true` to see them, each
             flagged with why). `planned` (QC samples): planned bags not yet collected,
-            held back unless you filter by `lab_status`. Mention these when you summarise:
-            a count or a pass rate over this list is a count over what is here.'
+            held back unless you filter by `lab_status`. `sample_trashed` (assays,
+            assay-results — in assay records): assays whose sample is in the Trash
+            (kept, re-linked on restore); ask again with `include_trashed_samples=true`
+            to see them, flagged. `qaqc_excluded_and_sample_trashed`: assays withheld
+            for BOTH reasons, counted here once and in neither bucket above (the buckets
+            add up to what the list left out). Mention these when you summarise: a
+            count or a pass rate over this list is a count over what is here.'
           properties:
             soft_deleted:
               type: integer
             qaqc_excluded:
               type: integer
             planned:
+              type: integer
+            sample_trashed:
+              type: integer
+            qaqc_excluded_and_sample_trashed:
               type: integer
           required:
           - soft_deleted
@@ -27141,14 +27730,23 @@ components:
             approval where the project requires it; present only when this response
             left them out (ask again with `include_excluded=true` to see them, each
             flagged with why). `planned` (QC samples): planned bags not yet collected,
-            held back unless you filter by `lab_status`. Mention these when you summarise:
-            a count or a pass rate over this list is a count over what is here.'
+            held back unless you filter by `lab_status`. `sample_trashed` (assays,
+            assay-results — in assay records): assays whose sample is in the Trash
+            (kept, re-linked on restore); ask again with `include_trashed_samples=true`
+            to see them, flagged. `qaqc_excluded_and_sample_trashed`: assays withheld
+            for BOTH reasons, counted here once and in neither bucket above (the buckets
+            add up to what the list left out). Mention these when you summarise: a
+            count or a pass rate over this list is a count over what is here.'
           properties:
             soft_deleted:
               type: integer
             qaqc_excluded:
               type: integer
             planned:
+              type: integer
+            sample_trashed:
+              type: integer
+            qaqc_excluded_and_sample_trashed:
               type: integer
           required:
           - soft_deleted
@@ -27328,14 +27926,23 @@ components:
             approval where the project requires it; present only when this response
             left them out (ask again with `include_excluded=true` to see them, each
             flagged with why). `planned` (QC samples): planned bags not yet collected,
-            held back unless you filter by `lab_status`. Mention these when you summarise:
-            a count or a pass rate over this list is a count over what is here.'
+            held back unless you filter by `lab_status`. `sample_trashed` (assays,
+            assay-results — in assay records): assays whose sample is in the Trash
+            (kept, re-linked on restore); ask again with `include_trashed_samples=true`
+            to see them, flagged. `qaqc_excluded_and_sample_trashed`: assays withheld
+            for BOTH reasons, counted here once and in neither bucket above (the buckets
+            add up to what the list left out). Mention these when you summarise: a
+            count or a pass rate over this list is a count over what is here.'
           properties:
             soft_deleted:
               type: integer
             qaqc_excluded:
               type: integer
             planned:
+              type: integer
+            sample_trashed:
+              type: integer
+            qaqc_excluded_and_sample_trashed:
               type: integer
           required:
           - soft_deleted
@@ -27467,14 +28074,23 @@ components:
             approval where the project requires it; present only when this response
             left them out (ask again with `include_excluded=true` to see them, each
             flagged with why). `planned` (QC samples): planned bags not yet collected,
-            held back unless you filter by `lab_status`. Mention these when you summarise:
-            a count or a pass rate over this list is a count over what is here.'
+            held back unless you filter by `lab_status`. `sample_trashed` (assays,
+            assay-results — in assay records): assays whose sample is in the Trash
+            (kept, re-linked on restore); ask again with `include_trashed_samples=true`
+            to see them, flagged. `qaqc_excluded_and_sample_trashed`: assays withheld
+            for BOTH reasons, counted here once and in neither bucket above (the buckets
+            add up to what the list left out). Mention these when you summarise: a
+            count or a pass rate over this list is a count over what is here.'
           properties:
             soft_deleted:
               type: integer
             qaqc_excluded:
               type: integer
             planned:
+              type: integer
+            sample_trashed:
+              type: integer
+            qaqc_excluded_and_sample_trashed:
               type: integer
           required:
           - soft_deleted
@@ -27558,14 +28174,23 @@ components:
             approval where the project requires it; present only when this response
             left them out (ask again with `include_excluded=true` to see them, each
             flagged with why). `planned` (QC samples): planned bags not yet collected,
-            held back unless you filter by `lab_status`. Mention these when you summarise:
-            a count or a pass rate over this list is a count over what is here.'
+            held back unless you filter by `lab_status`. `sample_trashed` (assays,
+            assay-results — in assay records): assays whose sample is in the Trash
+            (kept, re-linked on restore); ask again with `include_trashed_samples=true`
+            to see them, flagged. `qaqc_excluded_and_sample_trashed`: assays withheld
+            for BOTH reasons, counted here once and in neither bucket above (the buckets
+            add up to what the list left out). Mention these when you summarise: a
+            count or a pass rate over this list is a count over what is here.'
           properties:
             soft_deleted:
               type: integer
             qaqc_excluded:
               type: integer
             planned:
+              type: integer
+            sample_trashed:
+              type: integer
+            qaqc_excluded_and_sample_trashed:
               type: integer
           required:
           - soft_deleted
@@ -27649,14 +28274,23 @@ components:
             approval where the project requires it; present only when this response
             left them out (ask again with `include_excluded=true` to see them, each
             flagged with why). `planned` (QC samples): planned bags not yet collected,
-            held back unless you filter by `lab_status`. Mention these when you summarise:
-            a count or a pass rate over this list is a count over what is here.'
+            held back unless you filter by `lab_status`. `sample_trashed` (assays,
+            assay-results — in assay records): assays whose sample is in the Trash
+            (kept, re-linked on restore); ask again with `include_trashed_samples=true`
+            to see them, flagged. `qaqc_excluded_and_sample_trashed`: assays withheld
+            for BOTH reasons, counted here once and in neither bucket above (the buckets
+            add up to what the list left out). Mention these when you summarise: a
+            count or a pass rate over this list is a count over what is here.'
           properties:
             soft_deleted:
               type: integer
             qaqc_excluded:
               type: integer
             planned:
+              type: integer
+            sample_trashed:
+              type: integer
+            qaqc_excluded_and_sample_trashed:
               type: integer
           required:
           - soft_deleted
@@ -28001,8 +28635,13 @@ components:
             approval where the project requires it; present only when this response
             left them out (ask again with `include_excluded=true` to see them, each
             flagged with why). `planned` (QC samples): planned bags not yet collected,
-            held back unless you filter by `lab_status`. Mention these when you summarise:
-            a count or a pass rate over this list is a count over what is here.'
+            held back unless you filter by `lab_status`. `sample_trashed` (assays,
+            assay-results — in assay records): assays whose sample is in the Trash
+            (kept, re-linked on restore); ask again with `include_trashed_samples=true`
+            to see them, flagged. `qaqc_excluded_and_sample_trashed`: assays withheld
+            for BOTH reasons, counted here once and in neither bucket above (the buckets
+            add up to what the list left out). Mention these when you summarise: a
+            count or a pass rate over this list is a count over what is here.'
           properties:
             soft_deleted:
               type: integer
@@ -28010,8 +28649,143 @@ components:
               type: integer
             planned:
               type: integer
+            sample_trashed:
+              type: integer
+            qaqc_excluded_and_sample_trashed:
+              type: integer
           required:
           - soft_deleted
+        merge_settings:
+          type: object
+          nullable: true
+          description: 'The merge settings this response APPLIED to turn several assay
+            values of one element into one: present only when the read merged. `id`
+            / `name` (null id: the built-in default — the project has none on file),
+            `strategy` (high | low | average), `units` (what every value was converted
+            to; an element override may name its own), `below_detection` (how a below-detection
+            result was substituted), `over_range` (an over-range result is used at
+            its limit, unflagged), `element_overrides`. Choose other settings with
+            `merge_settings_id`; read raw values at `assay-results/`.'
+          properties:
+            id:
+              type: integer
+              nullable: true
+            name:
+              type: string
+            is_project_default:
+              type: boolean
+              nullable: true
+            read:
+              type: string
+              enum:
+              - sample
+              - export
+              - intercepts
+              description: 'Which merge this describes: `sample` (sample lists and
+                composites — always one merged value per element), `export` (shaped
+                by `merge_mode`), `intercepts`.'
+            merge_mode:
+              type: string
+              enum:
+              - merged
+              - unmerged
+              - both
+              description: The settings' export shape (applies to exports only).
+            applies_as:
+              type: string
+            strategy:
+              type: string
+              nullable: true
+              description: null when nothing is merged (an unmerged export).
+            strategy_detail:
+              type: string
+            units:
+              type: string
+              nullable: true
+            unit_conversion:
+              type: string
+            columns:
+              type: object
+              description: 'Exports: the column name patterns (`{element}`, `{units}`,
+                `{strategy}`, `{method}`).'
+              properties:
+                patterns:
+                  type: array
+                  items:
+                    type: string
+            below_detection:
+              type: object
+              properties:
+                handling:
+                  type: string
+                  enum:
+                  - half_detection_limit
+                  - detection_limit
+                  - custom
+                  - zero
+                  - 'null'
+                multiplier:
+                  type: number
+                detail:
+                  type: string
+                no_detection_limit:
+                  type: string
+            no_detection_limit:
+              type: object
+              nullable: true
+              description: 'null when every below-detection result has a detection
+                limit to resolve. Otherwise the (method, element) PAIRS (not rows)
+                whose below-detection results have none: exports and intercept tables
+                write them as 0 (they look like real zeros); sample reads, composites,
+                3D and maps leave them out. Tell the user the pairs and offer to set
+                the limits (`remedy`); never guess a detection limit.'
+              properties:
+                code:
+                  type: string
+                  enum:
+                  - no_detection_limit
+                pairs:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      method_id:
+                        type: integer
+                        nullable: true
+                      method:
+                        type: string
+                        nullable: true
+                      element:
+                        type: string
+                      values:
+                        type: integer
+                        description: How many below-detection results the pair has.
+                pairs_total:
+                  type: integer
+                  description: All such pairs (`pairs` lists the first 25).
+                detail:
+                  type: string
+                remedy:
+                  type: string
+            over_range:
+              type: string
+            element_overrides:
+              type: array
+              items:
+                type: object
+                properties:
+                  element:
+                    type: string
+                  strategy:
+                    type: string
+                  units:
+                    type: string
+                  digestion_filter:
+                    type: integer
+                    nullable: true
+                  finish_filter:
+                    type: integer
+                    nullable: true
       additionalProperties: false
     PaginatedProjectFileReadList:
       type: object
@@ -28140,14 +28914,23 @@ components:
             approval where the project requires it; present only when this response
             left them out (ask again with `include_excluded=true` to see them, each
             flagged with why). `planned` (QC samples): planned bags not yet collected,
-            held back unless you filter by `lab_status`. Mention these when you summarise:
-            a count or a pass rate over this list is a count over what is here.'
+            held back unless you filter by `lab_status`. `sample_trashed` (assays,
+            assay-results — in assay records): assays whose sample is in the Trash
+            (kept, re-linked on restore); ask again with `include_trashed_samples=true`
+            to see them, flagged. `qaqc_excluded_and_sample_trashed`: assays withheld
+            for BOTH reasons, counted here once and in neither bucket above (the buckets
+            add up to what the list left out). Mention these when you summarise: a
+            count or a pass rate over this list is a count over what is here.'
           properties:
             soft_deleted:
               type: integer
             qaqc_excluded:
               type: integer
             planned:
+              type: integer
+            sample_trashed:
+              type: integer
+            qaqc_excluded_and_sample_trashed:
               type: integer
           required:
           - soft_deleted
@@ -28348,14 +29131,23 @@ components:
             approval where the project requires it; present only when this response
             left them out (ask again with `include_excluded=true` to see them, each
             flagged with why). `planned` (QC samples): planned bags not yet collected,
-            held back unless you filter by `lab_status`. Mention these when you summarise:
-            a count or a pass rate over this list is a count over what is here.'
+            held back unless you filter by `lab_status`. `sample_trashed` (assays,
+            assay-results — in assay records): assays whose sample is in the Trash
+            (kept, re-linked on restore); ask again with `include_trashed_samples=true`
+            to see them, flagged. `qaqc_excluded_and_sample_trashed`: assays withheld
+            for BOTH reasons, counted here once and in neither bucket above (the buckets
+            add up to what the list left out). Mention these when you summarise: a
+            count or a pass rate over this list is a count over what is here.'
           properties:
             soft_deleted:
               type: integer
             qaqc_excluded:
               type: integer
             planned:
+              type: integer
+            sample_trashed:
+              type: integer
+            qaqc_excluded_and_sample_trashed:
               type: integer
           required:
           - soft_deleted
@@ -28583,14 +29375,23 @@ components:
             approval where the project requires it; present only when this response
             left them out (ask again with `include_excluded=true` to see them, each
             flagged with why). `planned` (QC samples): planned bags not yet collected,
-            held back unless you filter by `lab_status`. Mention these when you summarise:
-            a count or a pass rate over this list is a count over what is here.'
+            held back unless you filter by `lab_status`. `sample_trashed` (assays,
+            assay-results — in assay records): assays whose sample is in the Trash
+            (kept, re-linked on restore); ask again with `include_trashed_samples=true`
+            to see them, flagged. `qaqc_excluded_and_sample_trashed`: assays withheld
+            for BOTH reasons, counted here once and in neither bucket above (the buckets
+            add up to what the list left out). Mention these when you summarise: a
+            count or a pass rate over this list is a count over what is here.'
           properties:
             soft_deleted:
               type: integer
             qaqc_excluded:
               type: integer
             planned:
+              type: integer
+            sample_trashed:
+              type: integer
+            qaqc_excluded_and_sample_trashed:
               type: integer
           required:
           - soft_deleted
@@ -29058,14 +29859,23 @@ components:
             approval where the project requires it; present only when this response
             left them out (ask again with `include_excluded=true` to see them, each
             flagged with why). `planned` (QC samples): planned bags not yet collected,
-            held back unless you filter by `lab_status`. Mention these when you summarise:
-            a count or a pass rate over this list is a count over what is here.'
+            held back unless you filter by `lab_status`. `sample_trashed` (assays,
+            assay-results — in assay records): assays whose sample is in the Trash
+            (kept, re-linked on restore); ask again with `include_trashed_samples=true`
+            to see them, flagged. `qaqc_excluded_and_sample_trashed`: assays withheld
+            for BOTH reasons, counted here once and in neither bucket above (the buckets
+            add up to what the list left out). Mention these when you summarise: a
+            count or a pass rate over this list is a count over what is here.'
           properties:
             soft_deleted:
               type: integer
             qaqc_excluded:
               type: integer
             planned:
+              type: integer
+            sample_trashed:
+              type: integer
+            qaqc_excluded_and_sample_trashed:
               type: integer
           required:
           - soft_deleted
@@ -29149,14 +29959,23 @@ components:
             approval where the project requires it; present only when this response
             left them out (ask again with `include_excluded=true` to see them, each
             flagged with why). `planned` (QC samples): planned bags not yet collected,
-            held back unless you filter by `lab_status`. Mention these when you summarise:
-            a count or a pass rate over this list is a count over what is here.'
+            held back unless you filter by `lab_status`. `sample_trashed` (assays,
+            assay-results — in assay records): assays whose sample is in the Trash
+            (kept, re-linked on restore); ask again with `include_trashed_samples=true`
+            to see them, flagged. `qaqc_excluded_and_sample_trashed`: assays withheld
+            for BOTH reasons, counted here once and in neither bucket above (the buckets
+            add up to what the list left out). Mention these when you summarise: a
+            count or a pass rate over this list is a count over what is here.'
           properties:
             soft_deleted:
               type: integer
             qaqc_excluded:
               type: integer
             planned:
+              type: integer
+            sample_trashed:
+              type: integer
+            qaqc_excluded_and_sample_trashed:
               type: integer
           required:
           - soft_deleted
@@ -29477,6 +30296,16 @@ components:
               lab_status_code:
                 type: string
                 nullable: true
+              sample_status:
+                type: string
+                readOnly: true
+                enum:
+                - live
+                - trashed
+                description: '`trashed`: the assay''s sample is in the Trash — the
+                  assay is kept and re-links on restore; a list leaves such assays
+                  out unless `include_trashed_samples=true`, a read by id returns
+                  it. Leave it out of statistics.'
               excluded:
                 type: boolean
                 description: 'True when a QAQC review WITHHOLDS this row from results
@@ -30693,11 +31522,22 @@ components:
           type: object
           additionalProperties: {}
           nullable: true
+        protocols:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
         blank_warning_limits:
           type: array
           items:
             type: object
             additionalProperties: {}
+        url:
+          type: string
+          nullable: true
+        blank_warning_limits_url:
+          type: string
+          nullable: true
         see_guide:
           type: array
           description: The guide sections that change how this answer should be read
@@ -30722,13 +31562,16 @@ components:
       required:
       - blank_criteria
       - blank_warning_limits
+      - blank_warning_limits_url
       - duplicate_criteria
       - duplicate_rpd_thresholds
       - project
       - protocol
+      - protocols
       - qaqc_excluded_elements
       - require_qaqc_approval
       - standards_thresholds
+      - url
       additionalProperties: false
     RecordHistory:
       type: object
@@ -31470,10 +32313,14 @@ components:
       enum:
       - export_set
       - default_set
+      - requested
+      - only_set
       type: string
       description: |-
         * `export_set` - export_set
         * `default_set` - default_set
+        * `requested` - requested
+        * `only_set` - only_set
     Sets:
       type: object
       properties:
@@ -31727,8 +32574,9 @@ components:
           pattern: ^-?\d{0,8}(?:\.\d{0,6})?$
           nullable: true
           description: Lower detection limit for the method that produced this value,
-            in the same units. A result below it is stored and sent as the sentinel
-            `-1.0000` (never a grade), not as a number at or below this limit.
+            in the same units. A result below it is returned on reads as the below-detection
+            sentinel `-1.0000` (never a grade, flagged `below_detection`), not as
+            a number at or below this limit.
         units:
           type: string
           maxLength: 16
@@ -33767,7 +34615,9 @@ components:
         code:
           type: string
           enum:
+          - above_upper_limit_as_value
           - azimuth_out_of_range
+          - below_detection_limit_as_value
           - coordinate_outside_crs
           - crs_implausible
           - depth_past_hole
@@ -33777,9 +34627,15 @@ components:
           - missing_epsg
           - negative_value
           - sample_trashed
-          description: '`azimuth_out_of_range`: azimuth (or dip direction) is outside
-            0..360 degrees.; `coordinate_outside_crs`: the coordinate cannot be in
-            its epsg (degrees beyond ±90 latitude or ±180 longitude under EPSG:4326).;
+          description: '`above_upper_limit_as_value`: an assay value is above its
+            method''s upper limit but is stored as a plain number, not flagged over
+            range (">UL"); the true value is unknown, at least the limit — look for
+            a re-assay by an ore-grade method.; `azimuth_out_of_range`: azimuth (or
+            dip direction) is outside 0..360 degrees.; `below_detection_limit_as_value`:
+            an assay value is below its method''s detection limit but is stored as
+            a plain number, not as a below-detection result ("<DL"); treat it as below
+            detection.; `coordinate_outside_crs`: the coordinate cannot be in its
+            epsg (degrees beyond ±90 latitude or ±180 longitude under EPSG:4326).;
             `crs_implausible`: the coordinate looks like degrees of longitude/latitude
             but its epsg is a projected system in metres or feet, so it sits near
             that grid''s origin (often at the equator on a map).; `depth_past_hole`:

@@ -46,7 +46,9 @@ show the user what will change, wait for their yes, then send the same request
 for real with that confirm value. A create that names no company is refused
 and lists the companies the person may use: ask the user which one, every
 time, even when only one is listed, and name the company again when you show
-the dry run. Changing a coordinate system that is already set also needs the
+the dry run. A create may carry the coordinate system (`crs`): it is applied in
+the same write, so one Undo takes back both. Changing a coordinate system that
+is already set also needs the
 user's explicit acknowledgement (change_project_crs). A change that raises
 what the company pays is never yours to make: it is refused with the page
 where the person does it themselves. Every write returns its Undo handle and

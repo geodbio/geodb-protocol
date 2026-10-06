@@ -75,9 +75,13 @@ true width.
 
 **Where a depth is in space.** A hole's desurveyed trace (from its collar and
 survey stations, minimum curvature by default) and the position at any depth
-down it are served by geoDB, on the PROJECT LOCAL GRID in metres — not degrees,
-and not the hole's own `epsg`. Interval records carry the same local-grid
-positions at their from/to depths. Read these instead of desurveying yourself;
+down it are served by geoDB in LABELLED frames: the project's local grid
+(offsets from its origin, possibly rotated, in the grid's own unit), the
+grid's base coordinate system, and WGS84 (elevation in metres) — never the
+hole's own `epsg`. Each read names which numbers are in which frame; never
+plot one frame against another. Interval records carry local-grid positions
+at their from/to depths, with WGS84 copies. Read these instead of desurveying
+yourself;
 a hole with no survey stations has no trace to read, and you say so rather
 than assuming it is vertical.
 
