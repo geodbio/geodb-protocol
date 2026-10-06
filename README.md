@@ -23,13 +23,13 @@ missing *exploration* vocabulary.
 > implement.
 
 > **Integrating? Start at [`AGENTS.md`](AGENTS.md).** It is written for an AI
-> coding agent and is the shortest path from a token to correct data: the six
+> coding agent and is the shortest path from a token to correct data: the ten
 > traps in this domain that produce silently wrong answers, the core profile,
 > the sync loop as runnable code, and every error code with its remedy. Then
 > run something from [`examples/`](examples/) — four languages, no signup.
 
 - **Spec + docs:** CC-BY-4.0 · **Schemas + code:** Apache-2.0
-- **Version:** `0.1.0` (pre-1.0 — the shape is stable, field details may still move)
+- **Version:** `0.3.2` (pre-1.0 — the shape is stable, field details may still move; [CHANGELOG](CHANGELOG.md))
 - **Reference implementation:** the geoDB API itself (this is not a paper standard)
 - **Python client:** [`geodb-client`](https://pypi.org/project/geodb-client/) — `pip install "geodb-client>=0.3,<0.4"` (the release paired with protocol 0.3)
 
@@ -37,23 +37,31 @@ missing *exploration* vocabulary.
 
 | Lane | What | Transport |
 |---|---|---|
-| **Records** | Relational, chain-of-custody data (collar / survey / the eight typed downhole interval families / samples / assay / QC / certificate / laboratory) — the first-in-category part | Read-only REST (OpenAPI 3), bulk as **GeoParquet** / CSV |
+| **Records** | Relational, chain-of-custody data (collar / survey / the eight typed downhole interval families / samples / assay / QC / certificate / laboratory) — the first-in-category part | REST (OpenAPI 3): paged reads, bulk as **GeoParquet** / CSV, and one write endpoint |
 | **Assets** | Surveys, rasters, documents as catalog items with footprints + checksums; grids also as **COG** | A per-project **STAC 1.1** catalog + the `xpl:` exploration extension |
 
 ## Auth model (read this first)
 
 Every endpoint is **authenticated and project-scoped**. There is no anonymous
-access to customer data. A project owner mints a **project-pinned, read-only,
-revocable access grant** (Project Settings → API Access Grants) and hands the
-token to a vendor:
+access to customer data. A project owner mints a **revocable access grant**
+(Project Settings → API Access Grants) and hands the token to a vendor:
 
 ```
 Authorization: Grant gdbg_<token>
 ```
 
-- The grant is pinned to exactly **one project** — it can never read another.
-- It is **read-only**. The single exception is `POST /api/v2/exports/`, which
-  creates an export *job* (it mutates no customer data).
+- The grant reaches **only the projects it was given**. A grant that reads
+  several names one on every read (`project=`); there is no current project.
+- It is **read-only unless it was given write access**. Writes go through one
+  endpoint, `POST /api/v2/records/`: answered per row, every write can be
+  dry-run first and undone afterwards, and nothing is ever hard-deleted. On geoDB's own servers, writing is open for
+  now to the AI connections of geoDB staff and of members of companies in the
+  geoDB protocol beta; any other key reads and is refused `writes_staff_only`.
+  `POST /api/v2/exports/` creates an export *job* and changes no data.
+- **An AI assistant connects without a key to copy**, through the remote MCP
+  connector at `https://api.geodb.io/mcp`: the person signs in and ticks the
+  projects it may reach. Open for now to the same staff and beta companies;
+  [AGENTS.md](AGENTS.md) has the steps for each assistant.
 - Every request made with a grant lands in a **customer-visible access log**, served or not: the owner sees each endpoint pulled, per hour, with request counts, and every refusal — a revoked or expired token still polling, a write attempt, an off-surface probe, a throttle — with its reason code. Requests whose token matches no grant cannot be attributed to one and are counted per IP-hour instead.
 - Asset downloads are **short-lived signed redirects** (302 → a ~5-minute URL);
   no long-lived links are ever embedded in the catalog JSON.
@@ -65,7 +73,7 @@ Existing first-party clients (mobile, QGIS, Blender) keep using Knox tokens
 
 ```
 AGENTS.md                  READ THIS FIRST if you are integrating. The entry point
-                           for an AI coding agent: the eight traps, the core profile,
+                           for an AI coding agent: the ten traps, the core profile,
                            the sync loop, every error code (tables generated)
 llms.txt                   One-line index of this repo, for LLM crawlers
 errors.json                Every reason_code with its meaning, remedy and whether
@@ -79,7 +87,8 @@ conformance/               The `geodb-conformance` package: point it at your OWN
                            been proven to fail against a deliberately broken mock
                            (`selftest`). agent_smoke.py also executes AGENTS.md's
                            quickstart literally, so a drifted quickstart fails CI
-spec/openapi.yaml          OpenAPI 3 for the read surface — NORMATIVE for the wire
+spec/openapi.yaml          OpenAPI 3 for the whole surface, reads and the records
+                           write endpoint — NORMATIVE for the wire
                            (generated from the reference implementation; regen below)
 PROFILE.md                 Which operations are the protocol and which are geoDB's
                            own (generated from the spec's x-protocol-core flags)
@@ -119,6 +128,8 @@ against a mock that implements the core profile and nothing else.)
 import geodb
 
 gx = geodb.Client(token="gdbg_...", base_url="https://api.geodb.io")
+# A grant on one project (the public sandbox) reads as below. A grant on several
+# names one on every read: gx.collars(project=12).
 
 collars = gx.collars().to_dataframe()        # GET /api/v2/drill-collars/   → pandas
 assays  = gx.assays().to_dataframe()         # GET /api/v2/assays/          → pandas
@@ -137,9 +148,10 @@ for item in gx.stac().items("rasters"):
         cog.download("grid.tif")             # short-SAS redirect, streamed
         break
 
-# Trigger a GeoParquet bulk export and get the file
-job = gx.export("drill_samples", format="geoparquet")
-path = job.wait().download("samples.parquet")
+# Trigger a GeoParquet bulk export and get the file (any table the project has;
+# the sandbox is a surface project, so it has collars but no drill samples)
+job = gx.export("drill_collars", format="geoparquet")
+path = job.wait().download("collars.parquet")
 ```
 
 `gx.surveys()` reads GEOPHYSICAL surveys and is a geoDB extension, not core —

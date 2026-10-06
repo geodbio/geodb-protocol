@@ -72,9 +72,10 @@ A project owner issues you a **grant**: one token, scoped to the project(s) it
 was given, revocable at any moment, and logged — the owner sees every call you
 make. You cannot reach a project outside its scope. geoDB keeps no current
 project: a key that reads several names one on every read. A key writes only
-if `GET /api/v2/grant-context/` says `"read_only": false`; while API writing
-opens, geoDB accepts writes from its own staff's connections only (others are
-refused `writes_staff_only`).
+if `GET /api/v2/grant-context/` says `"read_only": false`; for now, geoDB's
+own servers accept writes only from the AI connections of geoDB staff and of
+members of companies in the geoDB protocol beta (every other key is refused
+`writes_staff_only`).
 
 Two lanes: **records** (relational rows, JSON, paged) and **assets** (large
 files as STAC 1.1 items with footprints and checksums, fetched through
@@ -122,7 +123,7 @@ Not `Bearer`. A 401 from this API answers `WWW-Authenticate: Grant`.
 curl -s -H "Authorization: Grant $GEODB_TOKEN" "$GEODB_BASE_URL/api/v2/grant-context/"
 ```
 
-It returns the project the grant is pinned to, whether it is read-only, its
+It returns the projects the grant reaches, whether it is read-only, its
 throttle rate, its expiry, and the protocol version. Call it before assuming
 anything.
 

@@ -3,13 +3,15 @@
 > An open, machine-readable contract for pulling QA/QC'd mineral-exploration
 > data out of a geoDB project — drill collars, downhole logging, samples,
 > assays with laboratory chain of custody, geophysics, rasters and documents —
-> over an authenticated, project-scoped REST + STAC surface. Read-only in
-> v0.1.0. A project owner issues a revocable, project-pinned token; every call
-> is logged for them to see.
+> over an authenticated, project-scoped REST + STAC surface, with one write
+> endpoint (dry run, per-row answers, undo). Version 0.3.2. A project owner
+> issues a revocable token scoped to the projects it was given, or a person
+> connects their AI assistant at https://api.geodb.io/mcp; every call is logged
+> for the owner to see.
 
 ## Start here
 
-- [AGENTS.md](AGENTS.md): the entry point. Token, the eight domain traps that
+- [AGENTS.md](AGENTS.md): the entry point. Token, the ten domain traps that
   produce wrong answers silently, the core profile, the sync loop as runnable
   code, every error code with its remedy, retry policy. Read this first.
 
