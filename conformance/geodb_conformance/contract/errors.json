@@ -235,6 +235,30 @@
       "remedy": "Wait for Retry-After seconds; meanwhile collect further requests into one report, and tell the user what was filed.",
       "retry": "after"
     },
+    "file_threat_detected": {
+      "http": 400,
+      "meaning": "(per row) The malware scan flagged the file; nothing was stored.",
+      "remedy": "Do not retry this file. Tell the user the scan flagged it and that nothing was stored.",
+      "retry": "no"
+    },
+    "file_too_large": {
+      "http": 400,
+      "meaning": "(per row) The file is larger than this route takes (`offending.limit`, bytes); nothing was stored.",
+      "remedy": "A document or photo over the limit cannot be uploaded through the API; a large raster, mesh or archive goes as a project file (records/ \"upload_start\", up to 5 GB). Tell the user if neither fits.",
+      "retry": "no"
+    },
+    "file_type_mismatch": {
+      "http": 400,
+      "meaning": "(per row) The file's bytes are not what its name says (e.g. named .pdf but an image), or a mesh points at other files; nothing was stored.",
+      "remedy": "Give the file the extension of what it really is (`offending.found`), or export it in the named format (a mesh as one self-contained .glb), then upload it again.",
+      "retry": "no"
+    },
+    "file_type_not_allowed": {
+      "http": 400,
+      "meaning": "(per row) The file's type is not one this kind of upload takes (the web's own list, in `offending.allowed`); nothing was stored.",
+      "remedy": "Send the file in one of the listed formats (or as another kind of upload: a document, a photo or a project file), or tell the user.",
+      "retry": "no"
+    },
     "grant_auth_throttled": {
       "http": 429,
       "meaning": "Too many credentials that resolve to no grant have been presented from this address within the hour.",
@@ -433,6 +457,24 @@
       "remedy": "To bring back rows an undo removed, restore them: send {\"intent\": \"restore\", \"audit_batch_id\": <the undo's audit_batch_id>}. Otherwise read the records and correct them with an update.",
       "retry": "no"
     },
+    "note_not_yours": {
+      "http": 403,
+      "meaning": "(per row) This note was written by the user, by the in-app assistant, or by another app: an AI changes or removes only the notes it wrote itself.",
+      "remedy": "Leave the note as it is. To record something new, create a new note ({\"model\": \"ProjectNote\", \"intent\": \"create\"}); to change theirs, ask the user to edit it at /petra/notes/.",
+      "retry": "no"
+    },
+    "note_over_cap": {
+      "http": 409,
+      "meaning": "(per row) The note is over a limit: its title or body is too long, or the user already has the most notes allowed. `detail` gives the numbers.",
+      "remedy": "Shorten it (keep what is worth remembering, or split it into two notes), or ask the user which of their notes to remove first.",
+      "retry": "no"
+    },
+    "note_title_taken": {
+      "http": 409,
+      "meaning": "(per row) The user already has a note with this title; a create never overwrites a note.",
+      "remedy": "Pick a different title. If the note with that title is one you wrote (GET /api/v2/project-notes/ shows editable_by_you), update it by its id instead.",
+      "retry": "no"
+    },
     "null_not_allowed": {
       "http": 400,
       "meaning": "(per row) An update sent null for a field that cannot be emptied (it must always hold a value, or one of its choices). Named in `offending.fields`. Nothing on the row was written.",
@@ -495,8 +537,8 @@
     },
     "person_key_required": {
       "http": 403,
-      "meaning": "This endpoint is read only through a key that acts as a person \u2014 the user's own connected AI reads it with their permissions. A vendor or organisation key acts for no one and cannot read it (project documents: reports, contracts, memos).",
-      "remedy": "Ask the project's owner to send the document, or read it through the user's own connection (a connected AI acting as them).",
+      "meaning": "This is done only through a key that acts as a person \u2014 the user's own connected AI, with their permissions. A vendor or organisation key acts for no one, so it cannot read project documents (reports, contracts, memos) or a person's private notes, or upload files.",
+      "remedy": "Read it through the user's own connection (a connected AI acting as them). A person's notes are theirs alone; for a project document, ask the project's owner to send it.",
       "retry": "no"
     },
     "project_crs_required": {
@@ -607,6 +649,12 @@
       "remedy": "Ask the user which record is right; remove or rename the live one first, or leave this one in the Trash.",
       "retry": "no"
     },
+    "room_key_read_only": {
+      "http": 403,
+      "meaning": "This key is pinned to one data room; it reads what the room publishes and never writes or uploads. Nothing was written.",
+      "remedy": "Tell the user. A change to the project is made by someone with access to it \u2014 in the geoDB web app, or through their own connected AI.",
+      "retry": "no"
+    },
     "row_refused": {
       "http": 400,
       "meaning": "(per row) The landing checks refused this row; `detail` says which check and why.",
@@ -618,6 +666,12 @@
       "meaning": "(per row) The sample name is already registered as a DIFFERENT kind of sample (a drill sample vs a QC or surface sample): two records would share one assay.",
       "remedy": "Ask the user which record is right; correct the name (or the existing record) and resend the row. Nothing is guessed.",
       "retry": "no"
+    },
+    "scanner_unavailable": {
+      "http": 503,
+      "meaning": "The file could not be checked for malware just now, so it was not stored. Nothing is wrong with the file.",
+      "remedy": "Send the same upload again in a minute (the Retry-After header says when).",
+      "retry": "after"
     },
     "section_conflict": {
       "http": 409,
@@ -685,6 +739,12 @@
       "remedy": "Read the project's state again and ask the user what they want now.",
       "retry": "no"
     },
+    "storage_limit_exceeded": {
+      "http": 403,
+      "meaning": "(per row) The file would take the company past its storage limit; nothing was stored. The numbers are in `offending` (GB).",
+      "remedy": "Tell the user: an owner can free space (empty the Trash) or raise the plan on the Billing page; then send the upload again.",
+      "retry": "no"
+    },
     "throttled": {
       "http": 429,
       "meaning": "The grant's request rate was exceeded.",
@@ -727,6 +787,36 @@
       "remedy": "Use one of the models listed in `offending.accepted_models`; GET /api/v2/records/describe/<Model>/ describes each.",
       "retry": "no"
     },
+    "upload_incomplete": {
+      "http": 400,
+      "meaning": "(per row) Not every block has arrived (or one has the wrong length); nothing was stored. `offending.missing_blocks` names them.",
+      "remedy": "PUT the missing blocks to their URLs (exactly offset \u2026 offset+length of the file), then send the same upload_commit again.",
+      "retry": "no"
+    },
+    "upload_route_unavailable": {
+      "http": 400,
+      "meaning": "(per row) This server has no direct-to-storage route for project files.",
+      "remedy": "Upload the file in the geoDB web app (Project Files), or tell the user.",
+      "retry": "no"
+    },
+    "upload_slot_expired": {
+      "http": 400,
+      "meaning": "(per row) The upload was started more than two hours ago; nothing was stored.",
+      "remedy": "Start the upload again (upload_start), send the blocks, then commit within two hours.",
+      "retry": "no"
+    },
+    "upload_slot_invalid": {
+      "http": 400,
+      "meaning": "(per row) The \"slot\" is not one this server issued to THIS key (changed, cut short, or another key's).",
+      "remedy": "Send the \"slot\" exactly as upload_start returned it, with the same key; or start the upload again.",
+      "retry": "no"
+    },
+    "upload_slot_used": {
+      "http": 409,
+      "meaning": "(per row) This upload was already committed (`offending.id` is the project file); a slot commits once.",
+      "remedy": "Read the project file it made (GET /api/v2/project-files/{id}/); to send another file, start a new upload.",
+      "retry": "no"
+    },
     "use_grant_scheme": {
       "http": 401,
       "meaning": "The credential was sent under the Bearer scheme; grants authenticate under the Grant scheme.",
@@ -737,6 +827,12 @@
       "http": 403,
       "meaning": "A grant tried to write through a resource path. Records are written through ONE endpoint, POST /api/v2/records/.",
       "remedy": "POST /api/v2/records/ with {\"model\": \"<Model>\", \"intent\": \"create\" or \"upsert\", \"records\": [...]} \u2014 the exact call is in this refusal's `use` key. Validate first with \"dry_run\": true.",
+      "retry": "no"
+    },
+    "use_upload_endpoint": {
+      "http": 400,
+      "meaning": "A document or photo is uploaded as a FILE (multipart), not in a JSON records body; nothing was written.",
+      "remedy": "POST /api/v2/documents/ or /api/v2/photos/ as a multipart form (the file in \"document\" / \"image\", plus \"project\" and \"category\"), from code that holds a session key \u2014 the geodb-client helpers upload_document / upload_photo do it. The api_write tool carries JSON only.",
       "retry": "no"
     },
     "use_v2": {

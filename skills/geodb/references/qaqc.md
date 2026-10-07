@@ -78,8 +78,11 @@ blank, duplicate) comes back judged exactly as its certificate's QAQC page
 judges it: `pass` / `warn` / `fail`, or `unknown` when no acceptance
 criterion resolved (neither a pass nor a fail — say how many), with the
 measured and expected values, the Z-score and bias for standards, and the
-threshold that judged it. Each certificate carries its pass rates, how many
-readings could be judged, and the stored review decision. A project-wide read
+threshold that judged it. Each certificate carries its pass rates — every
+category counted as passed, warned and failed (failed means fail verdicts
+only; a warn is neither a pass nor a failure, and the pass rate is the passed
+share of all three) — how many readings could be judged, and the stored review
+decision. A project-wide read
 leaves out certificates a review rejected or superseded and LISTS them, so a
 pass rate is over the certificates in use — name them when you report it. A
 per-CRM summary answers "how is this standard performing". Quote these
