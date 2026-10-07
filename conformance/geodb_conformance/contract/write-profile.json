@@ -36,6 +36,7 @@
     "logging_set",
     "model",
     "project",
+    "qc_mapping",
     "records",
     "sample_set",
     "set",
@@ -460,6 +461,24 @@
       "remedy": "Drop the field and resend. If the user explicitly asked for a certificate's verdict to change, use \"intent\": \"qaqc_verdict\" (dry run first; it returns the \"confirm\" value) — never on your own initiative.",
       "retry": "no"
     },
+    "qc_append_already_applied": {
+      "http": 409,
+      "meaning": "An \"append\" QC read approves ONE write, and that write has landed; appending the same read again would add the same QC twice.",
+      "remedy": "To append more QC, send the new rows with their own QC read (dry run first) and the \"confirm\" that dry run returns.",
+      "retry": "no"
+    },
+    "qc_mapping_mismatch": {
+      "http": 409,
+      "meaning": "(per row) The QC rows sent differ from the QC read in \"qc_mapping\" for their certificate (a marker, kind, run count or parent); `detail` names each difference. Nothing lands for that certificate.",
+      "remedy": "Ask the user which is right: correct the rows, or send the corrected \"qc_mapping\" — then dry run again and use the new \"confirm\".",
+      "retry": "no"
+    },
+    "qc_mapping_required": {
+      "http": 409,
+      "meaning": "(per row) The row carries lab QC (a qc_type) and the request states no QC read for its certificate: QC lands only under a read the user has seen.",
+      "remedy": "Add \"qc_mapping\" to the request — per certificate: \"markers\" (marker, kind STD / BLK / DUP, runs, parent), \"dropped_rows\" (each with why), \"qc_policy\" (replace | append) — dry run it, show the user the read its before_writing states, then send the write with the \"confirm\" it returns.",
+      "retry": "no"
+    },
     "record_exists": {
       "http": 409,
       "meaning": "(per row) A create found an existing record with the same identifying fields but different values. A create never overwrites: the row was SKIPPED. `conflicts` names each field with the stored and the sent value.",
@@ -733,6 +752,11 @@
     "value_unparseable": {
       "meaning": "(per-row warning) The result is neither a number nor a lab status; nothing is stored for it.",
       "remedy": "Ask the user what the lab meant, correct the value (a number, \"<x\", \">x\" or a lab status) and resend the row.",
+      "retry": "no"
+    },
+    "values_skipped_record_exists": {
+      "meaning": "(write-level warning) A create SKIPPED value rows because their record (a sample, a method, a standard) already exists: nothing was stored for them — a create never adds values to an existing record. `records` and `rows` name them; `created_by_this_key` lists the records an EARLIER write of this key created (a record's rows were split across requests). `summary.skipped_by_reason` counts them.",
+      "remedy": "Tell the user. To store those values, resend exactly the rows named in `rows` with \"intent\": \"upsert\" (dry run first; Undo removes exactly the values it adds); a row that would CHANGE a stored value also needs \"acknowledge\": [\"replace_values\"] after the user agrees. Next time keep every row of one record in ONE request.",
       "retry": "no"
     },
     "write_not_recorded": {

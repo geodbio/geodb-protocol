@@ -53,3 +53,10 @@ element. Read its describe contract first. The dry run answers `verdicts`
 and a `confirm` value: show the user both and send the update with that
 `confirm` only after their yes. Every write can be undone. The settings in
 force are read at `qc-configuration/`.
+
+When blank readings come back `unknown` because no limit is set (the verdict
+read's `blank_limits` counts them, per element), ASK the user for their limits
+— an element, its units, the limit — and write what they say. Never pick a
+number yourself. You may OFFER a common convention as their choice, e.g. a
+multiple of each method's detection limit (the QAQC protocol's
+`blank_dl_multiple`); it becomes a rule only when they choose it.

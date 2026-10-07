@@ -2661,6 +2661,205 @@ paths:
               schema:
                 type: integer
       x-geodb-extension: true
+  /api/v2/documents/:
+    get:
+      operationId: documents_list
+      description: 'The project''s documents (reports, technical reports, certificates,
+        maps, memos, lead files): what each is, `document_url` (a time-limited link
+        to the original), `page_count`, `has_text` and `text_url` (the extracted text,
+        per page). Read through a key that acts as a person — the user''s own connected
+        AI, with their permissions on each project. A vendor or organisation key is
+        refused `person_key_required`. Read-only: documents are never written through
+        a key. A lead file whose address redaction is not done yet is withheld and
+        counted in `withheld`.'
+      summary: The project's documents; each row's text_read reads its text
+      parameters:
+      - name: limit
+        required: false
+        in: query
+        description: 'Rows per page: default 100, at most 500 (2,000 on `assay-results/`
+          and on `drill-samples/` rows without `expand=assay`, for an access grant).
+          A larger value is served at the cap and the envelope says so (`limit_clamped`).'
+        schema:
+          type: integer
+      - name: offset
+        required: false
+        in: query
+        description: The initial index from which to return the results.
+        schema:
+          type: integer
+      - in: query
+        name: project_id
+        schema:
+          type: string
+        description: Narrow to one project this credential can read, by its id. An
+          id that names no readable project is refused with `invalid_parameter` —
+          never an empty list.
+      - in: query
+        name: project
+        schema:
+          type: string
+        description: 'Narrow to one project this credential can read, by its id or
+          its exact name (case does not matter). A value that names no readable project
+          is refused with `invalid_parameter` — never an empty list. The JSON natural
+          key some app endpoints take (`{"name": …, "company": …}`) is not a form
+          this parameter accepts: it is refused with `invalid_parameter` too — send
+          the id.'
+      - in: query
+        name: company_id
+        schema:
+          type: string
+        description: The company this read is about, by its id (see `company`).
+      - in: query
+        name: company
+        schema:
+          type: string
+        description: 'The company this read is about, by its id or its exact name
+          (case does not matter): a company-level table (laboratories, methods, standards,
+          QC types) answers that company; with `scope=company` a project-level list
+          answers every project of it this credential can read. A value that names
+          no company this credential can read is refused with `invalid_parameter`.'
+      - in: query
+        name: scope
+        schema:
+          type: string
+        description: 'scope=company: read every readable project of ONE company instead
+          of one project — `company=<id>` names it (a credential that reads one company
+          needs none; several companies and none named is `company_required`). Never
+          across companies. Each row carries `project_id`. Read-only.'
+      tags:
+      - Documents
+      security:
+      - knoxApiToken: []
+      - cookieAuth: []
+      - GrantAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedDocumentReadList'
+          description: ''
+        '400':
+          description: The request could not be understood (see `reason_code`).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 'No usable credential. `reason_code` distinguishes a revoked
+            grant from an expired, unknown or malformed one; the response carries
+            `WWW-Authenticate: Grant`.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: The credential is valid but not permitted this operation —
+            outside the grant surface, a write with a read-only grant, or outside
+            a room-pinned grant's room.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: No such resource inside this credential's scope. A row in another
+            project is indistinguishable from one that does not exist, by design.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: The grant's request rate was exceeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            Retry-After:
+              description: Seconds to wait before retrying. Sent on every throttled
+                response.
+              schema:
+                type: integer
+      x-geodb-extension: true
+  /api/v2/documents/{id}/:
+    get:
+      operationId: documents_retrieve
+      description: 'One document. Add `text_pages=1-5` to read its extracted text
+        by page (at most 10 pages per call; `next_pages` names the next range) — for
+        a sandbox that cannot download the original. Read through a key that acts
+        as a person — the user''s own connected AI, with their permissions on each
+        project. A vendor or organisation key is refused `person_key_required`. Read-only:
+        documents are never written through a key. '
+      summary: One document; ?text_pages=1-10 returns its extracted text by page
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Document.
+        required: true
+      - in: query
+        name: text_pages
+        schema:
+          type: string
+        description: A page or page range of the extracted text, e.g. `1-5`; the answer
+          carries `text` {pages, page_count, next_pages, note}.
+      tags:
+      - Documents
+      security:
+      - knoxApiToken: []
+      - cookieAuth: []
+      - GrantAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentRead'
+          description: ''
+        '400':
+          description: The request could not be understood (see `reason_code`).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 'No usable credential. `reason_code` distinguishes a revoked
+            grant from an expired, unknown or malformed one; the response carries
+            `WWW-Authenticate: Grant`.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: The credential is valid but not permitted this operation —
+            outside the grant surface, a write with a read-only grant, or outside
+            a room-pinned grant's room.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: No such resource inside this credential's scope. A row in another
+            project is indistinguishable from one that does not exist, by design.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: The grant's request rate was exceeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            Retry-After:
+              description: Seconds to wait before retrying. Sent on every throttled
+                response.
+              schema:
+                type: integer
+      x-geodb-extension: true
   /api/v2/drill-alteration-sets/:
     get:
       operationId: drill_alteration_sets_list
@@ -14337,7 +14536,8 @@ paths:
         `limit` / `offset` page each family''s list, which then carries `count` (its
         sets in all). Never merge sets; say which set you read; before writing intervals
         or samples, ask which set if the user has not said: add to an existing one,
-        or create a new one.'
+        or create a new one. The answer is keyed by family, not a paged list: `{"project":
+        {...}, "families": {"lithology": {"sets": [...]}, ...}}` (no `results` key).'
       summary: The sets of a project, per family — what to offer before a write
       parameters:
       - in: query
@@ -19552,6 +19752,96 @@ components:
         * `VNO` - Vein Open
         * `CON` - Contact
         * `NON` - None / Massive Rock
+    DocumentRead:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        file_name:
+          type: string
+          maxLength: 255
+        title:
+          type: string
+          nullable: true
+          maxLength: 255
+        author:
+          type: string
+          nullable: true
+          maxLength: 255
+        date:
+          type: string
+          format: date
+          nullable: true
+        category:
+          allOf:
+          - $ref: '#/components/schemas/DocumentReadCategoryEnum'
+          title: Document Type
+        description:
+          type: string
+          nullable: true
+        file_size:
+          type: integer
+          readOnly: true
+          nullable: true
+        document_url:
+          type: string
+          readOnly: true
+          nullable: true
+        project_id:
+          type: integer
+          readOnly: true
+          description: The project this record is in (a credential may read several;
+            GET /api/v2/grant-context/ names them).
+        category_label:
+          type: string
+          nullable: true
+        page_count:
+          type: integer
+          nullable: true
+        has_text:
+          type: boolean
+        text_read:
+          type: string
+          nullable: true
+          description: The read that returns the extracted text by page (api_read
+            this path; `next_pages` names the next range), or null when there is no
+            text.
+        text_url:
+          type: string
+          nullable: true
+          description: A time-limited link to the extracted text (JSON, one entry
+            per page), or null.
+      required:
+      - category
+      - document_url
+      - file_name
+      - file_size
+      - id
+      additionalProperties: false
+    DocumentReadCategoryEnum:
+      enum:
+      - CT
+      - CM
+      - XC
+      - DH
+      - FS
+      - WP
+      - TX
+      - IM
+      - LH
+      - LF
+      - LS
+      - MP
+      - MM
+      - OT
+      - PM
+      - PR
+      - QC
+      - ST
+      - RP
+      - TR
+      type: string
     DrillAlterationRead:
       type: object
       properties:
@@ -25967,6 +26257,88 @@ components:
           - asked
           - served
       additionalProperties: false
+    PaginatedDocumentReadList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+          nullable: true
+          description: Total rows the list answers. Null when the request sent `skip_count=1`,
+            and on `assay-results/` pages after the first (read the total from the
+            first page).
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?offset=400&limit=100
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?offset=200&limit=100
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/DocumentRead'
+        modified_since_applied:
+          type: string
+          nullable: true
+          description: Echo of the `modified_since` value applied. Present only when
+            the request sent `modified_since`.
+        limit_clamped:
+          type: object
+          description: 'Present only when the request asked for more rows per page
+            than this list serves: `asked` is the `limit` sent, `served` the page
+            size used (500; 2,000 on `assay-results/` and on `drill-samples/` rows
+            without `expand=assay`). Page on with `next`, or by `offset` in steps
+            of `served`.'
+          properties:
+            asked:
+              type: integer
+            served:
+              type: integer
+          required:
+          - asked
+          - served
+        withheld:
+          type: object
+          nullable: true
+          additionalProperties:
+            type: integer
+          description: 'What this list''s DEFAULT filters left out, as counts, so
+            a gap is never silent. The counts cover the whole list, not one page:
+            they are sent on the FIRST page (no `offset`, or `offset=0`) and later
+            pages carry null. `soft_deleted`: rows deleted on the server (their ids
+            are in `deleted_ids`). `qaqc_excluded` (assays, QC samples): rows withheld
+            by a QAQC review — a rejected or superseded certificate, or one pending
+            approval where the project requires it; present only when this response
+            left them out (ask again with `include_excluded=true` to see them, each
+            flagged with why). `planned` (QC samples): planned bags not yet collected,
+            held back unless you filter by `lab_status`. `sample_trashed` (assays,
+            assay-results — in assay records): assays whose sample is in the Trash
+            (kept, re-linked on restore); ask again with `include_trashed_samples=true`
+            to see them, flagged. `qaqc_excluded_and_sample_trashed`: assays withheld
+            for BOTH reasons, counted here once and in neither bucket above (the buckets
+            add up to what the list left out). Mention these when you summarise: a
+            count or a pass rate over this list is a count over what is here.'
+          properties:
+            soft_deleted:
+              type: integer
+            qaqc_excluded:
+              type: integer
+            planned:
+              type: integer
+            sample_trashed:
+              type: integer
+            qaqc_excluded_and_sample_trashed:
+              type: integer
+          required:
+          - soft_deleted
+      additionalProperties: false
     PaginatedDrillAlterationReadList:
       type: object
       required:
@@ -31463,6 +31835,14 @@ components:
           nullable: true
           description: The offset of the next page of readings, or null when this
             is the last.
+        blank_limits:
+          type: object
+          additionalProperties: {}
+          description: 'Only when some blank readings are `unknown` because NO blank
+            limit is configured for their element: how many (`unknown_no_limit`),
+            the elements, and the remedy — ask the user for their limits; geoDB sets
+            none by itself. Each certificate''s `unknown_blanks` splits its unknown
+            blank readings into `no_limit_configured` and `other`.'
         see_guide:
           type: array
           description: The guide sections that change how this answer should be read
@@ -31721,7 +32101,7 @@ components:
           type: string
           minLength: 1
           description: '"retract" for a retract (else confirm_required); the value
-            a make_default_set dry run returned.'
+            a make_default_set, settings or QC-read (`qc_mapping`) dry run returned.'
         audit_batch_id:
           type: string
           format: uuid
@@ -31733,6 +32113,12 @@ components:
         layer:
           description: 'VectorLayer only: the layer the records (its features) land
             in, {"name": …, "kind": …} — see describe/VectorLayer/ `layer`.'
+        qc_mapping:
+          description: 'Assay only, when rows carry lab QC (`qc_type`): your QC read,
+            one entry per certificate — {"certificate": …, "markers": [{"marker",
+            "kind": STD|BLK|DUP, "runs", "parent"}], "dropped_rows": [{"row", "why"}],
+            "qc_policy": "replace"|"append"}. The dry run states it for the user and
+            returns the `confirm` the write needs.'
       required:
       - intent
     RecordsRowOutcome:
@@ -34705,6 +35091,10 @@ components:
         Grant <token>`. Tokens are minted by a project owner under Project Settings
         → API Access Grants and are scoped to a single project; write methods are
         rejected.'
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: sessionid
     knoxApiToken:
       type: apiKey
       in: header
@@ -34770,6 +35160,11 @@ tags:
 - name: Files
   description: Project files, their map tiles where they are georeferenced, and project
     elevation data.
+- name: Documents
+  description: 'The project''s documents — reports, technical reports, certificates,
+    maps, memos, lead files: what each is, a time-limited link to the original and
+    its extracted text by page. Read through a key that acts as a person (the user''s
+    own connected AI); read-only.'
 - name: Photos
   description: Photographs, both core photography and general project photos.
 - name: STAC Catalog

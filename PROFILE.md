@@ -157,7 +157,7 @@ Whole tables, built in the background, as GeoParquet / Parquet / CSV. One POST i
 | `exports_retrieve` | `GET /api/v2/exports/{job_id}/` | Poll an export job |
 | `exports_download_retrieve` | `GET /api/v2/exports/{job_id}/download/` | Download a finished export |
 
-## geoDB extensions — 141 operations
+## geoDB extensions — 143 operations
 
 Supported, project-scoped, and outside the contract. Read them freely against geoDB; do not expect them from another implementation.
 
@@ -165,6 +165,7 @@ Supported, project-scoped, and outside the contract. Read them freely against ge
 |---|---|---|
 | Assays | 16 | Analytical method definitions and the per-project rules for merging several results for one sample and element. |
 | Discovery | 13 | Custom-field definitions in their own right, and client-shaped rearrangements of the schema response. |
+| Documents | 2 |  |
 | Drill Holes | 7 | Pads, computed traces and their GeoJSON form. |
 | Drill Intervals | 20 | The `*-sets` logging-run groupings and the interval-type lookups — a geoDB organisational concept, not a measurement. |
 | Feedback | 1 |  |

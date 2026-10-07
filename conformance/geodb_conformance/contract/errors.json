@@ -493,6 +493,12 @@
       "remedy": "Use an operation from the operation map: GET /api/v2/ (on a connector, api_read path '') lists every operation a key may call, by task; GET /api/v2/grant-context/ lists the projects this credential can read (name one with project=<id>).",
       "retry": "no"
     },
+    "person_key_required": {
+      "http": 403,
+      "meaning": "This endpoint is read only through a key that acts as a person \u2014 the user's own connected AI reads it with their permissions. A vendor or organisation key acts for no one and cannot read it (project documents: reports, contracts, memos).",
+      "remedy": "Ask the project's owner to send the document, or read it through the user's own connection (a connected AI acting as them).",
+      "retry": "no"
+    },
     "project_crs_required": {
       "http": 409,
       "meaning": "The project has no coordinate system, so nothing can be placed on its local grid: positions along a hole (desurvey, trace, xyz at depth) and other derived positions need it. The stored native coordinates are untouched and readable.",
@@ -551,6 +557,24 @@
       "http": 409,
       "meaning": "(per row) The row tries to set a field that records a QAQC review decision (whether a certificate's results are withheld). It changes only through the certificate's verdict, never on a row.",
       "remedy": "Drop the field and resend. If the user explicitly asked for a certificate's verdict to change, use \"intent\": \"qaqc_verdict\" (dry run first; it returns the \"confirm\" value) \u2014 never on your own initiative.",
+      "retry": "no"
+    },
+    "qc_append_already_applied": {
+      "http": 409,
+      "meaning": "An \"append\" QC read approves ONE write, and that write has landed; appending the same read again would add the same QC twice.",
+      "remedy": "To append more QC, send the new rows with their own QC read (dry run first) and the \"confirm\" that dry run returns.",
+      "retry": "no"
+    },
+    "qc_mapping_mismatch": {
+      "http": 409,
+      "meaning": "(per row) The QC rows sent differ from the QC read in \"qc_mapping\" for their certificate (a marker, kind, run count or parent); `detail` names each difference. Nothing lands for that certificate.",
+      "remedy": "Ask the user which is right: correct the rows, or send the corrected \"qc_mapping\" \u2014 then dry run again and use the new \"confirm\".",
+      "retry": "no"
+    },
+    "qc_mapping_required": {
+      "http": 409,
+      "meaning": "(per row) The row carries lab QC (a qc_type) and the request states no QC read for its certificate: QC lands only under a read the user has seen.",
+      "remedy": "Add \"qc_mapping\" to the request \u2014 per certificate: \"markers\" (marker, kind STD / BLK / DUP, runs, parent), \"dropped_rows\" (each with why), \"qc_policy\" (replace | append) \u2014 dry run it, show the user the read its before_writing states, then send the write with the \"confirm\" it returns.",
       "retry": "no"
     },
     "record_exists": {
@@ -874,6 +898,11 @@
     "value_unparseable": {
       "meaning": "(per-row warning) The result is neither a number nor a lab status; nothing is stored for it.",
       "remedy": "Ask the user what the lab meant, correct the value (a number, \"<x\", \">x\" or a lab status) and resend the row.",
+      "retry": "no"
+    },
+    "values_skipped_record_exists": {
+      "meaning": "(write-level warning) A create SKIPPED value rows because their record (a sample, a method, a standard) already exists: nothing was stored for them \u2014 a create never adds values to an existing record. `records` and `rows` name them; `created_by_this_key` lists the records an EARLIER write of this key created (a record's rows were split across requests). `summary.skipped_by_reason` counts them.",
+      "remedy": "Tell the user. To store those values, resend exactly the rows named in `rows` with \"intent\": \"upsert\" (dry run first; Undo removes exactly the values it adds); a row that would CHANGE a stored value also needs \"acknowledge\": [\"replace_values\"] after the user agrees. Next time keep every row of one record in ONE request.",
       "retry": "no"
     },
     "write_not_recorded": {

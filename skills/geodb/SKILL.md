@@ -91,6 +91,12 @@ Every refusal carries `reason_code` + `remedy`: act on the remedy.
 - Asset and export downloads answer a 302 to a short-lived signed URL: do not
   follow it automatically; fetch `Location` WITHOUT the `Authorization`
   header.
+- **Documents** (`documents/` — reports, certificates, maps, memos; read by a
+  key that acts as a person): for project context read a document's extracted
+  text first, by page (`documents/<id>/?text_pages=1-10`; `next_pages` names
+  the next range), and download the original (`document_url`, a time-limited
+  link) for figures, maps and scanned tables. Cite the document and page you
+  read.
 - Every refusal is JSON with `reason_code`, `detail` and `remedy`: match on
   `reason_code`, act on `remedy`, never parse `detail`.
 
@@ -104,7 +110,11 @@ key included — is refused `writes_staff_only` there. The write contract below
 is the protocol's; a server that opens writes to your key answers it exactly so.
 
 **One endpoint.** Every write is `POST /api/v2/records/` with `model`,
-`intent` and `records` (up to 1,000 rows), and is answered row by row. A
+`intent` and `records` (up to 1,000 rows), and is answered row by row. The
+limit counts ROWS: one row of a long-form model is ONE value of a record (a
+sample's element, a method's limit), so split a big batch BETWEEN records,
+never inside one — a `create` never adds to a record an earlier request made,
+it skips those rows (`values_skipped_record_exists`). A
 write to any other path (`POST /api/v2/drill-collars/`, a `PATCH` or a
 `DELETE` on a record) is refused `use_records_endpoint`, and the refusal's
 `use` names the exact call to make instead. The intents (table below):
@@ -165,8 +175,12 @@ change, and the old values are kept for Undo. A long-form record's values
 an `upsert` ADDS a value a stored record lacks (Undo removes exactly it);
 overwriting a stored assay or water result needs `"acknowledge":
 ["replace_values"]`; correct one value with `update` (guide topic
-`assay-values`). A change Undo could not reverse is refused
-`undo_not_covered`. **Nulls:** in an `update`,
+`assay-values`). Assay rows that carry lab QC (a `qc_type`) land only under a
+QC read the user has seen: add `"qc_mapping"` (per certificate: the markers
+with kind, runs and parent, the rows you drop and why, `qc_policy` replace or
+append), dry run it so `before_writing` states the read, and send the write
+with the `"confirm"` it returns after their yes. A change Undo could not
+reverse is refused `undo_not_covered`. **Nulls:** in an `update`,
 `"field": null` empties that field (Undo restores it) — a field that must
 always hold a value is refused `null_not_allowed`; in `create` / `upsert` a
 null means "not given" and leaves the stored value alone. A field you leave
@@ -228,6 +242,9 @@ and the `write_id` that undoes it.
 changes the user's existing data or what the project shows. Dry-run it, tell
 the user exactly what will change, and send it only after their yes — even
 when their request was explicit; they have not yet seen what it will change.
+Say what `before_writing` leads with: what an upsert adds and what it
+overwrites, and — for a laboratory, method or standard, which the whole
+company shares — the other projects the change reaches (`company_reach`).
 
 **Reports.** The same endpoint with `model` `Report` · `ReportSection` ·
 `ReportFigure` (`describe/Report/` lists the fields and the project's

@@ -92,7 +92,9 @@ and report what the reads say before anything of your own:
    the duplicate criteria, the elements left out of pass rates. A blank with
    no limit for an element is judged `unknown` there when it has a detected
    value (missing configuration, not a clean blank); one the laboratory
-   reported below detection passes.
+   reported below detection passes. The verdict read counts those readings
+   apart (`blank_limits`, per element): geoDB sets no limit by itself, so say
+   how many and ask the user for their limits.
 2. **The verdicts per insertion**, per certificate. Each standards row says
    the method's detection limit, whether the reading was below it, and
    whether the CRM is certified at or below that limit — such a reading reads
@@ -417,8 +419,9 @@ before they are used. Read it before you explain a verdict or quote a limit,
 and quote the project's value, not a default it may have overridden. An
 element with no blank limit is judged `unknown` there when the blank has a
 detected value (missing configuration, not a clean blank); a blank reported
-below detection passes. These rules are changed by the user on the project's QAQC
-settings pages, never by a data write.
+below detection passes. These rules are the user's: they change them on the
+project's QAQC settings pages (or, where your key writes, through the QC
+configuration write with their go-ahead), never by a data write.
 
 Your own analysis = **what the pages don't draw**. Frame every result as
 analysis, never as the official verdict — and label every statistic (RPD =
