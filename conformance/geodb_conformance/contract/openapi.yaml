@@ -2667,11 +2667,12 @@ paths:
       description: 'The project''s documents (reports, technical reports, certificates,
         maps, memos, lead files): what each is, `document_url` (a time-limited link
         to the original), `page_count`, `has_text` and `text_url` (the extracted text,
-        per page). Read through a key that acts as a person — the user''s own connected
-        AI, with their permissions on each project. A vendor or organisation key is
-        refused `person_key_required`. A key may UPLOAD a document (POST, multipart)
-        but never edit, replace or delete one. A lead file whose address redaction
-        is not done yet is withheld and counted in `withheld`.'
+        per page). Read by any key on the project: a person''s own connected AI (with
+        their permissions) or a project-wide vendor key; a key pinned to a data room
+        reads the room''s chosen documents only. Only a key that acts as a person
+        may UPLOAD a document (POST, multipart); no key edits, replaces or deletes
+        one. A lead file (it carries a locator''s address) is withheld until staff
+        clear it, and counted in `withheld`.'
       summary: The project's documents; each row's text_read reads its text
       parameters:
       - name: limit
@@ -2859,11 +2860,11 @@ paths:
       operationId: documents_retrieve
       description: 'One document. Add `text_pages=1-5` to read its extracted text
         by page (at most 10 pages per call; `next_pages` names the next range) — for
-        a sandbox that cannot download the original. Read through a key that acts
-        as a person — the user''s own connected AI, with their permissions on each
-        project. A vendor or organisation key is refused `person_key_required`. A
-        key may UPLOAD a document (POST, multipart) but never edit, replace or delete
-        one. '
+        a sandbox that cannot download the original. Read by any key on the project:
+        a person''s own connected AI (with their permissions) or a project-wide vendor
+        key; a key pinned to a data room reads the room''s chosen documents only.
+        Only a key that acts as a person may UPLOAD a document (POST, multipart);
+        no key edits, replaces or deletes one. '
       summary: One document; ?text_pages=1-10 returns its extracted text by page
       parameters:
       - in: path
@@ -13241,7 +13242,7 @@ paths:
     get:
       operationId: qaqc_verdicts_retrieve
       description: |-
-        geoDB judges every QC reading (standard, blank, duplicate) with ONE engine — the one behind each certificate's QAQC page. This returns its verdicts: one row per reading with `status` (`pass` / `warn` / `fail` / `unknown` — `unknown` means no acceptance criterion resolved, which is neither a pass nor a fail), the measured and expected values, the Z-score and bias for standards, the detection-limit guard and the threshold that judged it (`threshold_source`, `threshold_reason`); plus, per certificate, the pass rates — each category counted `passed` / `warned` / `failed` (`failed` is fail verdicts only; a warn is not a pass, so `pass_rate` = passed over all three) — how many readings could be judged (`evaluability`) and the stored review decision (`approval`). Report these; never recompute a pass rate yourself — if you disagree with a verdict, say so and show why.
+        geoDB judges every QC reading (standard, blank, duplicate) with ONE engine — the one behind each certificate's QAQC page. This returns its verdicts: one row per reading with `status` (`pass` / `warn` / `fail` / `unknown` — `unknown` means no acceptance criterion resolved, which is neither a pass nor a fail), the measured and expected values, the Z-score and bias for standards (null on a reading reported below detection — the -1 is not a number; `z_score_reason` says why and the verdict stands), the detection-limit guard and the threshold that judged it (`threshold_source`, `threshold_reason`); plus, per certificate, the pass rates — each category counted `passed` / `warned` / `failed` (`failed` is fail verdicts only; a warn is not a pass, so `pass_rate` = passed over all three) — how many readings could be judged (`evaluability`) and the stored review decision (`approval`). Report these; never recompute a pass rate yourself — if you disagree with a verdict, say so and show why.
 
         Without `certificate`, the project's most recent certificates are read (up to 25). Certificates whose QAQC review REJECTED them (or a re-assay SUPERSEDED them) are left out of that population by default and listed under `withheld.certificates` with the reason — so a pass rate here is a pass rate over the certificates in use. Name a certificate, or send `include_rejected=true`, to read one. `group_by=standard` summarises standards per CRM, element, method comparability and unit.
       summary: 'geoDB''s own QC verdicts per insertion: read these, never recompute'
@@ -35697,8 +35698,9 @@ tags:
 - name: Documents
   description: 'The project''s documents — reports, technical reports, certificates,
     maps, memos, lead files: what each is, a time-limited link to the original and
-    its extracted text by page. Read through a key that acts as a person (the user''s
-    own connected AI); read-only.'
+    its extracted text by page. Read by any key on the project; a key pinned to a
+    data room reads the room''s chosen documents. Read-only (only a person''s key
+    may upload one); a lead file stays private until staff clear it.'
 - name: Photos
   description: Photographs, both core photography and general project photos.
 - name: STAC Catalog

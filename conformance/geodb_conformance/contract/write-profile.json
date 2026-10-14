@@ -205,8 +205,8 @@
     },
     "billing_permission_required": {
       "http": 403,
-      "meaning": "Moving a project between active, holding and frozen (or restoring one) changes what the company pays; only the company owner, a company manager or a billing manager may do it.",
-      "remedy": "Ask the company owner or a company manager to make the change.",
+      "meaning": "Moving a project between states (or restoring one) changes what the company pays; only the company owner, a company manager who can make purchases, or geoDB staff may do it.",
+      "remedy": "Ask the company owner to make the change, or to turn purchasing on for the user.",
       "retry": "no"
     },
     "certificate_unreject_conflict": {
@@ -331,8 +331,8 @@
     },
     "holding_not_offered": {
       "http": 409,
-      "meaning": "Holding is not part of this company's plan (or not available yet).",
-      "remedy": "Offer the user Active or Frozen instead.",
+      "meaning": "Paused is not part of this company's plan (or not available yet).",
+      "remedy": "Offer the user Drilling or Frozen instead.",
       "retry": "no"
     },
     "idempotency_conflict": {
@@ -367,7 +367,7 @@
     },
     "interval_overlap": {
       "http": 409,
-      "meaning": "(per row) The interval overlaps another interval of the SAME set in the same hole; within one set intervals may not overlap.",
+      "meaning": "(per row) The interval overlaps another interval of the SAME set in the same hole; within one set intervals may not overlap (never raised for alteration, whose rows overlap by design).",
       "remedy": "Ask the user: correct the depths, or put these intervals in a different (or new) set — across sets anything goes.",
       "retry": "no"
     },
@@ -623,6 +623,12 @@
       "remedy": "Tell the user: an owner can free space (empty the Trash) or raise the plan on the Billing page; then send the upload again.",
       "retry": "no"
     },
+    "tier_not_offered": {
+      "http": 409,
+      "meaning": "That plan is not offered for this company's projects (a single-price plan offers Drilling and Frozen; the per-project plans offer Paused, Field and Drilling; Frozen is a hold geoDB applies).",
+      "remedy": "Offer the user one of the plans the project face lists for the company.",
+      "retry": "no"
+    },
     "undo_not_covered": {
       "http": 409,
       "meaning": "(per row) Undo cannot yet reverse this change, and every write through this endpoint must be undoable, so it is refused. (Changing, adding or removing a long-form record's values is undoable and served.)",
@@ -793,6 +799,11 @@
     "method_detection_limit_missing": {
       "meaning": "(batch warning) These (method, element) pairs have no detection limit on their method, so a below-detection result keeps no limit at all.",
       "remedy": "If the lab reported detection limits, write them on the method first (model \"Method\", intent \"upsert\", with detection_limit and units), then the results. A method is shared by the whole company: a key that does not reach every project of it is refused out_of_scope, and then the user sets the limit on the web. Tell the user which pairs have none.",
+      "retry": "no"
+    },
+    "pad_footprint_left_behind": {
+      "meaning": "(batch warning) The write moves a drill pad that carries a drawn footprint polygon; the polygon is not moved or deleted and stays at the old spot. The pads are named in the detail.",
+      "remedy": "Tell the user to redraw the footprint on the pad's page.",
       "retry": "no"
     },
     "point_far_from_project": {

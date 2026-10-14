@@ -1,5 +1,27 @@
 # Changelog
 
+## Regenerated 2026-10-14 from deployed geoDB `12f5d47c2` (additive; `protocol_version` stays 0.3.3)
+
+Regenerated with prod's flags (MCP + READS + WRITES + MCP_STAFF_ONLY on) and
+`--publish-write-profile`. Nothing removed, renamed or retyped.
+
+- **Alteration intervals overlap by design.** Each alteration row is one
+  mineral, so several rows cover the same depth inside one set. The records gate
+  no longer refuses them `interval_overlap`, and a row is identified by hole,
+  start depth AND mineral (`records/describe/DrillAlteration/` lists
+  `["bhid", "depth_from", "alteration"]`), so two minerals starting at the same
+  depth are two records, never `duplicate_in_batch`. The sets guide
+  (`skills/geodb/references/sets.md`, the `SKILL.md` summary) and the
+  `interval_overlap` meaning say so.
+- New refusal codes `project_tier_required`, `tier_not_offered` (per-project
+  billing tiers) and warning `pad_footprint_left_behind` (drill pads).
+- Document reads: description text now says any key on the project reads them
+  (a person's connected AI or a project-wide vendor key; a data-room key reads
+  its room); lead files are withheld until staff clear them.
+
+Checks: validate.py, regenerate.py --check, emit_agents.py --check,
+export_protocol_guide --check, conformance selftest (22/22 write break matrix).
+
 ## [Unreleased] — 2026-10-06 (docs + one refusal's wording; no wire change)
 
 - **`grant_write_forbidden` no longer says grants are read-only.** Its meaning and

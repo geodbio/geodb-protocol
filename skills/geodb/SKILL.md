@@ -21,7 +21,7 @@ geoDB is the user's geological data warehouse: the one shared record of their ex
 
 ## Sets
 
-**Sets.** Downhole intervals and samples live in named sets (one logging pass, interpretation or sampling pass each; eight families; structures have none). Within one set in one hole intervals may not overlap; across sets anything goes. Each project has a default set per family (what everyone sees); each person an active set. When a project holds several sets of a kind, ask which one (or all); never merge sets; say which set every answer came from. Before any interval or sample write, ask which set if the user hasn't said, offering: add to an existing set · create a new one · correct rows in one. Derived interpretations go in a new set. Making a set the default needs the user's explicit yes.
+**Sets.** Downhole intervals and samples live in named sets (one logging pass, interpretation or sampling pass each; eight families; structures have none). Within one set in one hole intervals may not overlap (except alteration: one mineral per row, so its rows overlap by design); across sets anything goes. Each project has a default set per family (what everyone sees); each person an active set. When a project holds several sets of a kind, ask which one (or all); never merge sets; say which set every answer came from. Before any interval or sample write, ask which set if the user hasn't said, offering: add to an existing set · create a new one · correct rows in one. Derived interpretations go in a new set. Making a set the default needs the user's explicit yes.
 
 ## How you act
 
@@ -93,8 +93,8 @@ Every refusal carries `reason_code` + `remedy`: act on the remedy.
 - Asset and export downloads answer a 302 to a short-lived signed URL: do not
   follow it automatically; fetch `Location` WITHOUT the `Authorization`
   header.
-- **Documents** (`documents/` — reports, certificates, maps, memos; read by a
-  key that acts as a person): for project context read a document's extracted
+- **Documents** (`documents/` — reports, certificates, maps, memos; a key pinned
+  to a data room reads the room's chosen ones): for project context read a document's extracted
   text first, by page (`documents/<id>/?text_pages=1-10`; `next_pages` names
   the next range), and download the original (`document_url`, a time-limited
   link) for figures, maps and scanned tables. Cite the document and page you
@@ -293,7 +293,10 @@ change with that `confirm` only after the user's yes.
 once beside the records as `"layer": {"name": …, "kind": …}` (`describe/
 VectorLayer/` lists the kinds); each record is one feature, its `geometry` in
 its own `epsg`. One write lands one NEW layer, as a draft unless `"activate":
-true` (ask first); the answer's `layer` gives its id and where you and the user
+true`: ask the user "draft or live?" BEFORE the write. A written layer is never
+changed by writing it again: that adds a copy ("Name (2)"), and the answer's
+`layer.warning` says so. A draft goes live when the user promotes it in the
+map's layer panel. The answer's `layer` gives its id and where you and the user
 can read the draft. Undo removes the layer with its features.
 
 **Uploading files.** A file goes in from CODE that holds a key acting for a
@@ -309,7 +312,12 @@ goes in blocks straight to STORAGE (`describe/ProjectFile/`;
 it — run it from the user's machine, allow the storage host, or have the user
 upload it on the web. The file's extension must match its bytes. Each upload is
 answered like a records write, says where to read the file back, and returns a
-`write_id`: Undo moves it to the Trash.
+`write_id`: Undo moves it to the Trash. As for every write, HTTP 200 does not
+mean it landed: read the row's `status`. Send an `Idempotency-Key` (one fresh
+value per file) with every upload: a large file can time out at the network
+edge AFTER it landed, and a retry with the same key replays the first answer
+instead of storing the file twice (the client's upload_* helpers send one and
+retry under it for you).
 
 **Projects.** The same endpoint with `model` `Project`, one project per request
 (`describe/Project/`): `create` · `update` (name, description) ·

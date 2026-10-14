@@ -22,6 +22,13 @@ interpretation derived from pXRF, live side by side as two sets over the same
 depths, and neither changes the other. Two sets overlapping is normal; two
 intervals overlapping inside one set is an error the data will refuse.
 
+**Alteration is the exception.** Each alteration row is ONE mineral, so several
+rows cover the same depth inside one set by design (silica 60–63 m and chlorite
+61–66 m are two rows), which is also the shape 3D modelling packages expect. A
+row is identified by hole, start depth AND mineral: two minerals starting at
+the same depth are two records, never a duplicate. Never ask about, trim or
+split overlapping alteration rows.
+
 ### Default and active
 
 Each project has a **default set** per family: what maps, sections and
@@ -68,7 +75,8 @@ interpretation into someone's logged set.
 
 **Sets.** Downhole intervals and samples live in named sets (one logging pass,
 interpretation or sampling pass each; eight families; structures have none).
-Within one set in one hole intervals may not overlap; across sets anything
+Within one set in one hole intervals may not overlap (except alteration: one
+mineral per row, so its rows overlap by design); across sets anything
 goes. Each project has a default set per family (what everyone sees); each
 person an active set. When a project holds several sets of a kind, ask which
 one (or all); never merge sets; say which set every answer came from.
