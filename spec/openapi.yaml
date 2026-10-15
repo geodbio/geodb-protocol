@@ -10065,7 +10065,9 @@ paths:
       description: |-
         Mineral claims and other land holdings, with their geometry and status.
 
-        ⚠️ A project chooses how much of this is shared: nothing, an OUTLINE (geometry, name, county, state, status, acreage), or the full detail. The field set you receive depends on that setting, and a project sharing nothing returns 403 rather than an empty list — so do not read an absence here as "no claims".
+        A person's own connection (a connected AI or agent key acting for a project member) receives the full detail, on that person's access.
+
+        ⚠️ For an organization (vendor) key, a project chooses how much of this is shared: nothing, an OUTLINE (geometry, name, county, state, status, acreage), or the full detail. The field set a vendor key receives depends on that setting, and a project sharing nothing returns 403 rather than an empty list — so do not read an absence here as "no claims".
 
         Paged. Pass `modified_since` to fetch only what changed, and read `deleted_ids` to learn what was removed — that feed is how deletions reach you, since deleted rows simply stop appearing.
 
@@ -10226,7 +10228,9 @@ paths:
       description: |-
         Mineral claims and other land holdings, with their geometry and status.
 
-        ⚠️ A project chooses how much of this is shared: nothing, an OUTLINE (geometry, name, county, state, status, acreage), or the full detail. The field set you receive depends on that setting, and a project sharing nothing returns 403 rather than an empty list — so do not read an absence here as "no claims".
+        A person's own connection (a connected AI or agent key acting for a project member) receives the full detail, on that person's access.
+
+        ⚠️ For an organization (vendor) key, a project chooses how much of this is shared: nothing, an OUTLINE (geometry, name, county, state, status, acreage), or the full detail. The field set a vendor key receives depends on that setting, and a project sharing nothing returns 403 rather than an empty list — so do not read an absence here as "no claims".
       parameters:
       - in: path
         name: id
@@ -35685,10 +35689,11 @@ tags:
   description: Geophysical surveys and their acquisition metadata. Bulk geophysical
     data travels as STAC assets rather than as JSON rows.
 - name: Land Holdings
-  description: Mineral claims and other land holdings. ⚠️ A project chooses how much
-    of this a grant may read — off, outline (geometry and status only), or detailed
-    — so the fields present here depend on that setting, and `off` returns 403 rather
-    than an empty list.
+  description: Mineral claims and other land holdings. A person's own connection (a
+    connected AI or agent key) reads them in full on that person's access. ⚠️ For
+    an organization (vendor) key, a project chooses how much of this the key may read
+    — off, outline (geometry and status only), or detailed — so the fields present
+    depend on that setting, and `off` returns 403 rather than an empty list.
 - name: Map Layers
   description: Vector map layers and their features, plus roads — the cartographic
     layers a project carries, as opposed to its measurements.

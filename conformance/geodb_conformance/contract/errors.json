@@ -405,7 +405,7 @@
     },
     "land_holdings_not_shared": {
       "http": 403,
-      "meaning": "The project owner has not shared land holdings with API keys on this project.",
+      "meaning": "The project owner has not shared land holdings with organization (vendor) API keys on this project. A person's own connection is not bound by this setting.",
       "remedy": "Ask the project owner to share land holdings (outline or detailed) in Project Settings \u2192 Protocol / API Access, then retry. Nothing else about this key is wrong.",
       "retry": "no"
     },
