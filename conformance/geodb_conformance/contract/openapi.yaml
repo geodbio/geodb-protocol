@@ -1586,6 +1586,105 @@ paths:
                 type: integer
       summary: Get one of the laboratory certificates
       x-protocol-core: true
+  /api/v2/claim-plots/preview/:
+    get:
+      operationId: claim_plot_preview
+      description: 'Walks the claims YOU read from a lead file (a location notice)
+        with geoDB''s claim-plotting engine and answers where they land: each claim''s
+        polygon (WGS84 GeoJSON), confidence tier, acres and findings; the claims it
+        could NOT place, by name, with what each needs; the citation check of every
+        quoted call against the document''s own text layer (a scan has none: its claims
+        are flagged "unverified citation"); the live BLM claims and withdrawals the
+        claims meet; and `map.url` — a link to the project map where the USER confirms
+        or moves the reference point. Writes nothing. Record it with POST records/
+        {"model": "PlottedClaim", "intent": "create", "records": [{"preview": <preview_id>}]}
+        after the user confirmed the point, you previewed again at it, and they said
+        yes. A person''s own connection, on a project whose company pays, with the
+        plotting terms accepted.'
+      summary: Preview mining claims read from a lead file (walks them; writes nothing)
+      parameters:
+      - in: query
+        name: document
+        schema:
+          type: integer
+        description: The lead file (a Document of the project) the claims were read
+          from.
+      - in: query
+        name: plot
+        schema:
+          type: string
+        description: 'The claims as you read them, as ONE JSON object (a string):
+          {"claims": [<traverse>, ...], "reference_point": {...}, "block_name": "..."}.
+          A traverse is {"claim_name", "claim_type": "lode"|"placer", "courses": [{"from",
+          "to", "bearing": {"kind": "quadrant", "value_deg", "basis"}, "distance":
+          {"value", "unit"}, "precision_class", "narrative_citation": "<the notice''s
+          own words>"}], "stated_acres", "anchor"?} — a claim tied to a sibling''s
+          corner takes {"anchor": {"kind": "tie", "tie_to": {"claim", "corner", "own_corner"}}};
+          every other claim hangs off the ONE reference_point: {"x", "y", "epsg"}
+          (projected, as written) or {"lat", "lon", "epsg"}, plus "citation" (the
+          notice''s words for it). At most 20 claims. GET /api/v2/guide/claim-plotting/
+          teaches the shape.'
+      - in: query
+        name: project_id
+        schema:
+          type: integer
+        description: The project to read. Defaults to the project this credential
+          is pinned to; any other must be one it can read — an id naming no readable
+          project is refused with `invalid_parameter`, as on the lists.
+      tags:
+      - Land Holdings
+      security:
+      - knoxApiToken: []
+      - GrantAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClaimPlotPreview'
+          description: ''
+        '400':
+          description: The request could not be understood (see `reason_code`).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 'No usable credential. `reason_code` distinguishes a revoked
+            grant from an expired, unknown or malformed one; the response carries
+            `WWW-Authenticate: Grant`.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: The credential is valid but not permitted this operation —
+            outside the grant surface, a write with a read-only grant, or outside
+            a room-pinned grant's room.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: No such resource inside this credential's scope. A row in another
+            project is indistinguishable from one that does not exist, by design.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: The grant's request rate was exceeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            Retry-After:
+              description: Seconds to wait before retrying. Sent on every throttled
+                response.
+              schema:
+                type: integer
+      x-geodb-extension: true
   /api/v2/column-configurations/:
     get:
       operationId: column_configurations_list
@@ -10059,6 +10158,609 @@ paths:
                 type: integer
       summary: Get one of the laboratories
       x-protocol-core: true
+  /api/v2/land-claims/:
+    get:
+      operationId: land_claims_search
+      description: 'Federal mining claims from geoDB''s mirror of BLM''s MLRS layers,
+        in ONE area of interest (bbox, a point and radius, or a polygon; at most 260
+        km²), paged (`limit` ≤ 200). Each claim is keyed by its BLM `serial`: name,
+        claim type, status, claimants, lead file, key dates and its footprint. ⚠️
+        The footprint is BLM''s ALIQUOT footprint (the quarter-sections the claim
+        touches), never the claim boundary — use `recorded_acres` for size. A claim
+        BLM ships with no footprint is found by its legal description''s sections
+        (`matched_by: section`). `status`: active (default), closed or all. A person''s
+        own connection only, on a project whose company pays for geoDB (its first
+        free month counts); otherwise 403 `land_data_needs_paid_plan` with the remedy.
+        Read-only; never a whole layer. Every answer carries `mirror` (each layer''s
+        last sync and what it does not cover) and `not_a_clearance`: an empty answer
+        is NOT open ground.'
+      summary: BLM mining claims in an area
+      parameters:
+      - in: query
+        name: bbox
+        schema:
+          type: string
+        description: The area of interest as west,south,east,north in WGS84 degrees
+          (EPSG:4326, longitude first).
+      - in: query
+        name: lat
+        schema:
+          type: number
+        description: A point's latitude, WGS84 degrees (with lon and radius_m, instead
+          of bbox).
+      - in: query
+        name: limit
+        schema:
+          type: integer
+        description: Rows per page (default 100, at most 200).
+      - in: query
+        name: lon
+        schema:
+          type: number
+        description: A point's longitude, WGS84 degrees.
+      - in: query
+        name: offset
+        schema:
+          type: integer
+        description: Rows to skip (paging).
+      - in: query
+        name: polygon
+        schema:
+          type: string
+        description: The area as ONE GeoJSON Polygon (or WKT) in WGS84 degrees, instead
+          of bbox.
+      - in: query
+        name: project_id
+        schema:
+          type: integer
+        description: The project to read. Defaults to the project this credential
+          is pinned to; any other must be one it can read — an id naming no readable
+          project is refused with `invalid_parameter`, as on the lists.
+      - in: query
+        name: radius_m
+        schema:
+          type: number
+        description: The radius around lat/lon in metres (default 1000, at most 8000).
+      - in: query
+        name: status
+        schema:
+          type: string
+          enum:
+          - active
+          - all
+          - closed
+      tags:
+      - Public Land
+      security:
+      - knoxApiToken: []
+      - GrantAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LandClaims'
+          description: ''
+        '400':
+          description: The request could not be understood (see `reason_code`).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 'No usable credential. `reason_code` distinguishes a revoked
+            grant from an expired, unknown or malformed one; the response carries
+            `WWW-Authenticate: Grant`.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: The credential is valid but not permitted this operation —
+            outside the grant surface, a write with a read-only grant, or outside
+            a room-pinned grant's room.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: No such resource inside this credential's scope. A row in another
+            project is indistinguishable from one that does not exist, by design.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: The grant's request rate was exceeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            Retry-After:
+              description: Seconds to wait before retrying. Sent on every throttled
+                response.
+              schema:
+                type: integer
+      x-geodb-extension: true
+  /api/v2/land-claims/{serial}/:
+    get:
+      operationId: land_claims_retrieve
+      description: 'One claim from geoDB''s BLM mirror by its BLM serial (case number;
+        spaces and dashes are fine, and a legacy LR2000 serial is matched too — `matched_on`
+        says how). A serial the mirror does not hold is 404 `serial_not_in_mirror`:
+        that is not proof the claim does not exist. A person''s own connection only,
+        on a project whose company pays for geoDB (its first free month counts); otherwise
+        403 `land_data_needs_paid_plan` with the remedy. Read-only; never a whole
+        layer. Every answer carries `mirror` (each layer''s last sync and what it
+        does not cover) and `not_a_clearance`: an empty answer is NOT open ground.'
+      summary: One BLM mining claim by its serial
+      parameters:
+      - in: query
+        name: project_id
+        schema:
+          type: integer
+        description: The project to read. Defaults to the project this credential
+          is pinned to; any other must be one it can read — an id naming no readable
+          project is refused with `invalid_parameter`, as on the lists.
+      - in: path
+        name: serial
+        schema:
+          type: string
+        required: true
+      tags:
+      - Public Land
+      security:
+      - knoxApiToken: []
+      - GrantAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LandClaim'
+          description: ''
+        '400':
+          description: The request could not be understood (see `reason_code`).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 'No usable credential. `reason_code` distinguishes a revoked
+            grant from an expired, unknown or malformed one; the response carries
+            `WWW-Authenticate: Grant`.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: The credential is valid but not permitted this operation —
+            outside the grant surface, a write with a read-only grant, or outside
+            a room-pinned grant's room.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: No such resource inside this credential's scope. A row in another
+            project is indistinguishable from one that does not exist, by design.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: The grant's request rate was exceeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            Retry-After:
+              description: Seconds to wait before retrying. Sent on every throttled
+                response.
+              schema:
+                type: integer
+      x-geodb-extension: true
+  /api/v2/land-plss/:
+    get:
+      operationId: land_plss_at
+      description: 'For a point in WGS84 degrees: the state, principal meridian, township,
+        range and section it falls in, and — on a regular surveyed section only —
+        the quarter-quarter (computed from the section''s corners; an irregular or
+        unsurveyed section answers no aliquot and says why). A point where two surveys
+        overlap answers both. A section numbered above 36 is a protraction block on
+        unsurveyed ground, not an error. A person''s own connection only, on a project
+        whose company pays for geoDB (its first free month counts); otherwise 403
+        `land_data_needs_paid_plan` with the remedy. Read-only; never a whole layer.
+        Every answer carries `mirror` (each layer''s last sync and what it does not
+        cover) and `not_a_clearance`: an empty answer is NOT open ground.'
+      summary: What PLSS township, section and aliquot a point is in
+      parameters:
+      - in: query
+        name: lat
+        schema:
+          type: number
+        description: Latitude, WGS84 degrees.
+        required: true
+      - in: query
+        name: lon
+        schema:
+          type: number
+        description: Longitude, WGS84 degrees.
+        required: true
+      - in: query
+        name: project_id
+        schema:
+          type: integer
+        description: The project to read. Defaults to the project this credential
+          is pinned to; any other must be one it can read — an id naming no readable
+          project is refused with `invalid_parameter`, as on the lists.
+      tags:
+      - Public Land
+      security:
+      - knoxApiToken: []
+      - GrantAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LandPlssAt'
+          description: ''
+        '400':
+          description: The request could not be understood (see `reason_code`).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 'No usable credential. `reason_code` distinguishes a revoked
+            grant from an expired, unknown or malformed one; the response carries
+            `WWW-Authenticate: Grant`.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: The credential is valid but not permitted this operation —
+            outside the grant surface, a write with a read-only grant, or outside
+            a room-pinned grant's room.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: No such resource inside this credential's scope. A row in another
+            project is indistinguishable from one that does not exist, by design.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: The grant's request rate was exceeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            Retry-After:
+              description: Seconds to wait before retrying. Sent on every throttled
+                response.
+              schema:
+                type: integer
+      x-geodb-extension: true
+  /api/v2/land-sections/:
+    get:
+      operationId: land_plss_section
+      description: 'A section by state + township + range + section (+ meridian):
+        its outline (WGS84), division kind and published acres. A person''s own connection
+        only, on a project whose company pays for geoDB (its first free month counts);
+        otherwise 403 `land_data_needs_paid_plan` with the remedy. Read-only; never
+        a whole layer. Every answer carries `mirror` (each layer''s last sync and
+        what it does not cover) and `not_a_clearance`: an empty answer is NOT open
+        ground.'
+      summary: A PLSS section's outline
+      parameters:
+      - in: query
+        name: meridian
+        schema:
+          type: string
+        description: The principal meridian by name (e.g. Boise). Without it, every
+          meridian with this township in the state is answered.
+      - in: query
+        name: project_id
+        schema:
+          type: integer
+        description: The project to read. Defaults to the project this credential
+          is pinned to; any other must be one it can read — an id naming no readable
+          project is refused with `invalid_parameter`, as on the lists.
+      - in: query
+        name: range
+        schema:
+          type: string
+        description: e.g. R10E.
+        required: true
+      - in: query
+        name: section
+        schema:
+          type: integer
+        description: The section number.
+        required: true
+      - in: query
+        name: state
+        schema:
+          type: string
+        description: The two-letter state code.
+        required: true
+      - in: query
+        name: township
+        schema:
+          type: string
+        description: e.g. T13N.
+        required: true
+      tags:
+      - Public Land
+      security:
+      - knoxApiToken: []
+      - GrantAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LandPlssSection'
+          description: ''
+        '400':
+          description: The request could not be understood (see `reason_code`).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 'No usable credential. `reason_code` distinguishes a revoked
+            grant from an expired, unknown or malformed one; the response carries
+            `WWW-Authenticate: Grant`.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: The credential is valid but not permitted this operation —
+            outside the grant surface, a write with a read-only grant, or outside
+            a room-pinned grant's room.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: No such resource inside this credential's scope. A row in another
+            project is indistinguishable from one that does not exist, by design.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: The grant's request rate was exceeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            Retry-After:
+              description: Seconds to wait before retrying. Sent on every throttled
+                response.
+              schema:
+                type: integer
+      x-geodb-extension: true
+  /api/v2/land-status/:
+    get:
+      operationId: land_status
+      description: 'In ONE area of interest (at most 260 km²): designated wilderness,
+        BLM wilderness study areas and mineral withdrawals (`designations`), and surface
+        management — the federal agency or, in Alaska, the state land category (`ownership`).
+        Each piece is clipped to the area, with `acres_in_area` and `covers_whole_area`.
+        ⚠️ Mineral withdrawals here are the Forest Service''s (National Forest System
+        land only): BLM-administered withdrawals are not in the mirror. Ground with
+        no ownership piece is neither federal nor state land in the mirror. `geometry=false`
+        leaves the outlines out. A person''s own connection only, on a project whose
+        company pays for geoDB (its first free month counts); otherwise 403 `land_data_needs_paid_plan`
+        with the remedy. Read-only; never a whole layer. Every answer carries `mirror`
+        (each layer''s last sync and what it does not cover) and `not_a_clearance`:
+        an empty answer is NOT open ground.'
+      summary: Withdrawals, designations and surface ownership in an area
+      parameters:
+      - in: query
+        name: bbox
+        schema:
+          type: string
+        description: The area of interest as west,south,east,north in WGS84 degrees
+          (EPSG:4326, longitude first).
+      - in: query
+        name: geometry
+        schema:
+          type: boolean
+        description: Include the clipped outlines (default true).
+      - in: query
+        name: lat
+        schema:
+          type: number
+        description: A point's latitude, WGS84 degrees (with lon and radius_m, instead
+          of bbox).
+      - in: query
+        name: lon
+        schema:
+          type: number
+        description: A point's longitude, WGS84 degrees.
+      - in: query
+        name: polygon
+        schema:
+          type: string
+        description: The area as ONE GeoJSON Polygon (or WKT) in WGS84 degrees, instead
+          of bbox.
+      - in: query
+        name: project_id
+        schema:
+          type: integer
+        description: The project to read. Defaults to the project this credential
+          is pinned to; any other must be one it can read — an id naming no readable
+          project is refused with `invalid_parameter`, as on the lists.
+      - in: query
+        name: radius_m
+        schema:
+          type: number
+        description: The radius around lat/lon in metres (default 1000, at most 8000).
+      tags:
+      - Public Land
+      security:
+      - knoxApiToken: []
+      - GrantAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LandStatus'
+          description: ''
+        '400':
+          description: The request could not be understood (see `reason_code`).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 'No usable credential. `reason_code` distinguishes a revoked
+            grant from an expired, unknown or malformed one; the response carries
+            `WWW-Authenticate: Grant`.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: The credential is valid but not permitted this operation —
+            outside the grant surface, a write with a read-only grant, or outside
+            a room-pinned grant's room.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: No such resource inside this credential's scope. A row in another
+            project is indistinguishable from one that does not exist, by design.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: The grant's request rate was exceeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            Retry-After:
+              description: Seconds to wait before retrying. Sent on every throttled
+                response.
+              schema:
+                type: integer
+      x-geodb-extension: true
+  /api/v2/land-townships/:
+    get:
+      operationId: land_plss_township
+      description: 'A township by state + township + range (+ meridian): its outline
+        (WGS84) and the section numbers this mirror holds in it. A person''s own connection
+        only, on a project whose company pays for geoDB (its first free month counts);
+        otherwise 403 `land_data_needs_paid_plan` with the remedy. Read-only; never
+        a whole layer. Every answer carries `mirror` (each layer''s last sync and
+        what it does not cover) and `not_a_clearance`: an empty answer is NOT open
+        ground.'
+      summary: A PLSS township's outline and its sections
+      parameters:
+      - in: query
+        name: meridian
+        schema:
+          type: string
+        description: The principal meridian by name (e.g. Boise). Without it, every
+          meridian with this township in the state is answered.
+      - in: query
+        name: project_id
+        schema:
+          type: integer
+        description: The project to read. Defaults to the project this credential
+          is pinned to; any other must be one it can read — an id naming no readable
+          project is refused with `invalid_parameter`, as on the lists.
+      - in: query
+        name: range
+        schema:
+          type: string
+        description: e.g. R10E.
+        required: true
+      - in: query
+        name: state
+        schema:
+          type: string
+        description: The two-letter state code.
+        required: true
+      - in: query
+        name: township
+        schema:
+          type: string
+        description: e.g. T13N.
+        required: true
+      tags:
+      - Public Land
+      security:
+      - knoxApiToken: []
+      - GrantAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LandPlssTownship'
+          description: ''
+        '400':
+          description: The request could not be understood (see `reason_code`).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 'No usable credential. `reason_code` distinguishes a revoked
+            grant from an expired, unknown or malformed one; the response carries
+            `WWW-Authenticate: Grant`.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: The credential is valid but not permitted this operation —
+            outside the grant surface, a write with a read-only grant, or outside
+            a room-pinned grant's room.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: No such resource inside this credential's scope. A row in another
+            project is indistinguishable from one that does not exist, by design.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: The grant's request rate was exceeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            Retry-After:
+              description: Seconds to wait before retrying. Sent on every throttled
+                response.
+              schema:
+                type: integer
+      x-geodb-extension: true
   /api/v2/landholdings/:
     get:
       operationId: landholdings_list
@@ -12615,6 +13317,157 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ProjectCoordinateSystem'
+          description: ''
+        '400':
+          description: The request could not be understood (see `reason_code`).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 'No usable credential. `reason_code` distinguishes a revoked
+            grant from an expired, unknown or malformed one; the response carries
+            `WWW-Authenticate: Grant`.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: The credential is valid but not permitted this operation —
+            outside the grant surface, a write with a read-only grant, or outside
+            a room-pinned grant's room.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: No such resource inside this credential's scope. A row in another
+            project is indistinguishable from one that does not exist, by design.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: The grant's request rate was exceeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            Retry-After:
+              description: Seconds to wait before retrying. Sent on every throttled
+                response.
+              schema:
+                type: integer
+      x-geodb-extension: true
+  /api/v2/projects/{id}/view-link/:
+    get:
+      operationId: projects_view_link_retrieve
+      description: 'Build a link the user opens in geoDB: the 3D viewer framed on
+        the targets you name, at the angle you name, with the layers and colouring
+        you name. Targets are ids from your own reads: `holes:12,13`, `certificate:5`,
+        `submittal:7`, `logging_set:lithology:9` (`;`-separated), or a JSON list of
+        target objects (grid filters too). A target outside this project, deleted
+        or never existing is `unresolved` — the same answer for all three — and is
+        left out of the link. Hand the user `url` (`opens_on` says what it shows:
+        the link carries only what differs from the project''s default view, looking
+        north-east 30° down); pass on `notices` (traces or terrain still building).
+        Writes nothing; the link grants nothing.'
+      summary: A link to a view of the project (3D or the map)
+      parameters:
+      - in: query
+        name: angle
+        schema:
+          type: string
+        description: 'A camera preset: plan · ne30 · nw30 · se30 · sw30 · section-n
+          · section-e.'
+      - in: query
+        name: azimuth
+        schema:
+          type: number
+        description: Direction the camera looks toward, degrees clockwise from grid
+          north.
+      - in: query
+        name: color
+        schema:
+          type: string
+        description: 'An element: the assays coloured by the project''s colour range
+          for it.'
+      - in: query
+        name: focus
+        schema:
+          type: string
+          enum:
+          - hide
+          - highlight
+          - isolate
+          - none
+        description: What the view does with the targets (default highlight).
+      - in: query
+        name: hide
+        schema:
+          type: string
+        description: Comma list of layers or drilling parts to hide.
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      - in: query
+        name: layers
+        schema:
+          type: string
+        description: Comma list of layers or drilling parts to show.
+      - in: query
+        name: plunge
+        schema:
+          type: number
+        description: Degrees below horizontal (90 = plan).
+      - in: query
+        name: projection
+        schema:
+          type: string
+          enum:
+          - orthographic
+          - perspective
+      - in: query
+        name: surface
+        schema:
+          type: string
+        description: '`3d` (default) or `map` (the 2D project map: map targets `claim_block:<id>`,
+          `programme:<id>`, `plotted_claims:<ids>`, `lead_file:<id>` too; layers are
+          map layer keys; `color` colours the point samples).'
+      - in: query
+        name: targets
+        schema:
+          type: string
+        description: What the view is about (see above).
+      - in: query
+        name: title
+        schema:
+          type: string
+        description: The view's title.
+      - in: query
+        name: ve
+        schema:
+          type: number
+        description: Vertical exaggeration (0.1–20).
+      - in: query
+        name: zoom
+        schema:
+          type: number
+        description: Multiplier on the framed distance (2 = closer).
+      tags:
+      - Files
+      security:
+      - knoxApiToken: []
+      - GrantAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectViewLink'
           description: ''
         '400':
           description: The request could not be understood (see `reason_code`).
@@ -19488,6 +20341,110 @@ components:
         * `preliminary` - Preliminary
         * `finalized` - Finalized
         * `unverified` - Unverified (no certificate in source)
+    ClaimPlotPreview:
+      type: object
+      properties:
+        project:
+          type: object
+          additionalProperties: {}
+        document:
+          type: object
+          additionalProperties: {}
+        status:
+          type: string
+        preview_id:
+          type: string
+          nullable: true
+        plotted:
+          type: integer
+        claims:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+        refused:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+        audit:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+        citations:
+          type: object
+          additionalProperties: {}
+        reference_point:
+          type: object
+          additionalProperties: {}
+        warnings:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+        live_claims:
+          type: object
+          additionalProperties: {}
+        land_status:
+          type: object
+          additionalProperties: {}
+        map:
+          type: object
+          additionalProperties: {}
+        record:
+          type: object
+          additionalProperties: {}
+        message:
+          type: string
+        mirror:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+        not_a_clearance:
+          type: string
+        see_guide:
+          type: array
+          description: The guide sections that change how this answer should be read
+            — read them before reporting from it. Each names the topic, the section,
+            its path (GET it, no key needed beyond this one) and why it matters here.
+          items:
+            type: object
+            properties:
+              topic:
+                type: string
+              section:
+                type: string
+              url:
+                type: string
+              why:
+                type: string
+            required:
+            - topic
+            - section
+            - url
+            - why
+      required:
+      - audit
+      - citations
+      - claims
+      - document
+      - land_status
+      - live_claims
+      - map
+      - message
+      - mirror
+      - not_a_clearance
+      - plotted
+      - preview_id
+      - project
+      - record
+      - reference_point
+      - refused
+      - status
+      - warnings
+      additionalProperties: false
     ClaimStatusEnum:
       enum:
       - PL
@@ -25182,6 +26139,123 @@ components:
       - last_edited
       - name
       additionalProperties: false
+    LandClaim:
+      type: object
+      properties:
+        project:
+          type: object
+          additionalProperties: {}
+        mirror:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+        not_a_clearance:
+          type: string
+        matched_on:
+          type: string
+        claim:
+          type: object
+          additionalProperties: {}
+        see_guide:
+          type: array
+          description: The guide sections that change how this answer should be read
+            — read them before reporting from it. Each names the topic, the section,
+            its path (GET it, no key needed beyond this one) and why it matters here.
+          items:
+            type: object
+            properties:
+              topic:
+                type: string
+              section:
+                type: string
+              url:
+                type: string
+              why:
+                type: string
+            required:
+            - topic
+            - section
+            - url
+            - why
+      required:
+      - claim
+      - matched_on
+      - mirror
+      - not_a_clearance
+      - project
+      additionalProperties: false
+    LandClaims:
+      type: object
+      properties:
+        project:
+          type: object
+          additionalProperties: {}
+        mirror:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+        not_a_clearance:
+          type: string
+        area:
+          type: object
+          additionalProperties: {}
+        status:
+          type: string
+        footprintless_searched:
+          type: boolean
+        notices:
+          type: array
+          items:
+            type: string
+        count:
+          type: integer
+        next:
+          type: string
+          nullable: true
+        previous:
+          type: string
+          nullable: true
+        results:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+        see_guide:
+          type: array
+          description: The guide sections that change how this answer should be read
+            — read them before reporting from it. Each names the topic, the section,
+            its path (GET it, no key needed beyond this one) and why it matters here.
+          items:
+            type: object
+            properties:
+              topic:
+                type: string
+              section:
+                type: string
+              url:
+                type: string
+              why:
+                type: string
+            required:
+            - topic
+            - section
+            - url
+            - why
+      required:
+      - area
+      - count
+      - footprintless_searched
+      - mirror
+      - next
+      - not_a_clearance
+      - notices
+      - previous
+      - project
+      - results
+      - status
+      additionalProperties: false
     LandHoldingOutline:
       type: object
       properties:
@@ -25258,6 +26332,211 @@ components:
       - name
       - project
       - state
+      additionalProperties: false
+    LandPlssAt:
+      type: object
+      properties:
+        project:
+          type: object
+          additionalProperties: {}
+        mirror:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+        not_a_clearance:
+          type: string
+        point:
+          type: object
+          additionalProperties: {}
+        divisions:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+        townships:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+        see_guide:
+          type: array
+          description: The guide sections that change how this answer should be read
+            — read them before reporting from it. Each names the topic, the section,
+            its path (GET it, no key needed beyond this one) and why it matters here.
+          items:
+            type: object
+            properties:
+              topic:
+                type: string
+              section:
+                type: string
+              url:
+                type: string
+              why:
+                type: string
+            required:
+            - topic
+            - section
+            - url
+            - why
+      required:
+      - divisions
+      - mirror
+      - not_a_clearance
+      - point
+      - project
+      - townships
+      additionalProperties: false
+    LandPlssSection:
+      type: object
+      properties:
+        project:
+          type: object
+          additionalProperties: {}
+        mirror:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+        not_a_clearance:
+          type: string
+        matches:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+        see_guide:
+          type: array
+          description: The guide sections that change how this answer should be read
+            — read them before reporting from it. Each names the topic, the section,
+            its path (GET it, no key needed beyond this one) and why it matters here.
+          items:
+            type: object
+            properties:
+              topic:
+                type: string
+              section:
+                type: string
+              url:
+                type: string
+              why:
+                type: string
+            required:
+            - topic
+            - section
+            - url
+            - why
+      required:
+      - matches
+      - mirror
+      - not_a_clearance
+      - project
+      additionalProperties: false
+    LandPlssTownship:
+      type: object
+      properties:
+        project:
+          type: object
+          additionalProperties: {}
+        mirror:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+        not_a_clearance:
+          type: string
+        matches:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+        see_guide:
+          type: array
+          description: The guide sections that change how this answer should be read
+            — read them before reporting from it. Each names the topic, the section,
+            its path (GET it, no key needed beyond this one) and why it matters here.
+          items:
+            type: object
+            properties:
+              topic:
+                type: string
+              section:
+                type: string
+              url:
+                type: string
+              why:
+                type: string
+            required:
+            - topic
+            - section
+            - url
+            - why
+      required:
+      - matches
+      - mirror
+      - not_a_clearance
+      - project
+      additionalProperties: false
+    LandStatus:
+      type: object
+      properties:
+        project:
+          type: object
+          additionalProperties: {}
+        mirror:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+        not_a_clearance:
+          type: string
+        area:
+          type: object
+          additionalProperties: {}
+        designations:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+        ownership:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+        truncated:
+          type: array
+          items:
+            type: string
+        see_guide:
+          type: array
+          description: The guide sections that change how this answer should be read
+            — read them before reporting from it. Each names the topic, the section,
+            its path (GET it, no key needed beyond this one) and why it matters here.
+          items:
+            type: object
+            properties:
+              topic:
+                type: string
+              section:
+                type: string
+              url:
+                type: string
+              why:
+                type: string
+            required:
+            - topic
+            - section
+            - url
+            - why
+      required:
+      - area
+      - designations
+      - mirror
+      - not_a_clearance
+      - ownership
+      - project
+      - truncated
       additionalProperties: false
     LengthUnitsEnum:
       enum:
@@ -31835,6 +33114,50 @@ components:
       - project
       - results
       additionalProperties: false
+    ProjectViewLink:
+      type: object
+      properties:
+        surface:
+          type: string
+        project:
+          type: object
+          additionalProperties: {}
+        url:
+          type: string
+        opens_on:
+          type: string
+        resolved:
+          type: object
+          additionalProperties: {}
+        unresolved:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+        unresolved_count:
+          type: integer
+        notices:
+          type: array
+          items:
+            type: string
+        setup:
+          type: object
+          additionalProperties: {}
+        scene:
+          type: object
+          additionalProperties: {}
+      required:
+      - notices
+      - opens_on
+      - project
+      - resolved
+      - scene
+      - setup
+      - surface
+      - unresolved
+      - unresolved_count
+      - url
+      additionalProperties: false
     QAQCProtocol:
       type: object
       properties:
@@ -35693,7 +37016,17 @@ tags:
     connected AI or agent key) reads them in full on that person's access. ⚠️ For
     an organization (vendor) key, a project chooses how much of this the key may read
     — off, outline (geometry and status only), or detailed — so the fields present
-    depend on that setting, and `off` returns 403 rather than an empty list.
+    depend on that setting, and `off` returns 403 rather than an empty list. Claims
+    read from a lead file are PLOTTED through the claim-plots preview (geoDB walks
+    them; the user confirms the reference point on the map) and recorded through the
+    records endpoint.
+- name: Public Land
+  description: 'geoDB''s mirror of the agencies'' public land layers, read a neighbourhood
+    at a time: BLM mining claims (by area, or one by its serial), the PLSS township
+    / section / aliquot at a point (and a township or section outline), and withdrawals,
+    designations and surface ownership in an area. For a person''s own connection
+    on a paying project. Every answer says when each layer was last synced and what
+    it does not cover: an empty answer is NOT open ground and never a title search.'
 - name: Map Layers
   description: Vector map layers and their features, plus roads — the cartographic
     layers a project carries, as opposed to its measurements.

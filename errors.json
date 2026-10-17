@@ -339,7 +339,7 @@
     },
     "holding_not_offered": {
       "http": 409,
-      "meaning": "Paused is not part of this company's plan (or not available yet).",
+      "meaning": "Holding is not part of this company's plan (or not available yet).",
       "remedy": "Offer the user Drilling or Frozen instead.",
       "retry": "no"
     },
@@ -403,10 +403,28 @@
       "remedy": "Correct the parameter named in `offending` and resend. Dates are ISO 8601 (YYYY-MM-DD or a full timestamp).",
       "retry": "no"
     },
+    "land_area_required": {
+      "http": 400,
+      "meaning": "A land read names one area of interest (or one point); this one named none. The mirror is never read whole.",
+      "remedy": "Send bbox=west,south,east,north, or lat=&lon= (+ radius_m), or polygon=<GeoJSON>, in WGS84 degrees.",
+      "retry": "no"
+    },
+    "land_area_too_large": {
+      "http": 400,
+      "meaning": "The area of interest is larger than one land read covers (260 km\u00b2, a radius of at most 8 km).",
+      "remedy": "Read the ground the user is working on: a smaller box or radius, or several reads over the parts that matter.",
+      "retry": "no"
+    },
+    "land_data_needs_paid_plan": {
+      "http": 403,
+      "meaning": "Land data (the BLM claims, PLSS and land-status mirror) is part of every paid project, and the company of the project this read names is not paying (its first free month counts as paying).",
+      "remedy": "Tell the user the land reads need a paid project and pass on the remedy and its link; read a project of a paying company, if the user has one.",
+      "retry": "no"
+    },
     "land_holdings_not_shared": {
       "http": 403,
       "meaning": "The project owner has not shared land holdings with organization (vendor) API keys on this project. A person's own connection is not bound by this setting.",
-      "remedy": "Ask the project owner to share land holdings (outline or detailed) in Project Settings \u2192 Protocol / API Access, then retry. Nothing else about this key is wrong.",
+      "remedy": "Ask the project owner to share land holdings (outline or detailed) in Project Settings \u2192 Data Export & ODBC Settings \u2192 API Grants (Vendor Access), then retry. Nothing else about this key is wrong.",
       "retry": "no"
     },
     "landing_failed": {
@@ -541,6 +559,60 @@
       "remedy": "Read it through the user's own connection (a connected AI acting as them). A person's notes are theirs alone.",
       "retry": "no"
     },
+    "plot_already_recorded": {
+      "http": 409,
+      "meaning": "A claim of the block already has a current plot in this project; a record never makes a second current plot of one claim.",
+      "remedy": "Tell the user which claim is already plotted. Correcting a recorded claim is done on the project map (Arrange / Adjust) or with Petra, not through this connection.",
+      "retry": "no"
+    },
+    "plot_needs_reference_point": {
+      "http": 400,
+      "meaning": "A plotting preview names ONE proposed reference point for the block: the numbers as the notice writes them, in the frame (EPSG) they are written in.",
+      "remedy": "Send plot.reference_point {\"x\", \"y\", \"epsg\", \"citation\"} (or lat / lon / epsg); the user confirms or moves it on the map before anything records.",
+      "retry": "no"
+    },
+    "plot_preview_required": {
+      "http": 409,
+      "meaning": "A plotted-claims record names a preview this connection made on this project, and none matches (replaced by a newer preview, already recorded, or never made).",
+      "remedy": "Preview the claims (GET /api/v2/claim-plots/preview/), show the user, and record the preview_id that answer gives.",
+      "retry": "no"
+    },
+    "plot_preview_stale": {
+      "http": 409,
+      "meaning": "The user confirmed (or changed) the reference point after this preview, so the claims may land somewhere else now.",
+      "remedy": "Preview again with the same body (it walks from the user's point), show the user where the claims land, then record that preview.",
+      "retry": "no"
+    },
+    "plotting_needs_paid_plan": {
+      "http": 403,
+      "meaning": "Claim plotting is part of every paid project, and the company of the project named is not paying (its first free month counts as paying).",
+      "remedy": "Pass on the refusal's own sentence and its link (offending.remedy_url) to the user; plot in a project of a paying company, if they have one.",
+      "retry": "no"
+    },
+    "plotting_quota_exceeded": {
+      "http": 403,
+      "meaning": "The person has plotted as many claims this month as their plan allows.",
+      "remedy": "Tell the user the monthly plotting allowance is used up (the refusal says when it renews); nothing was recorded.",
+      "retry": "no"
+    },
+    "plotting_tos_required": {
+      "http": 403,
+      "meaning": "The person has not accepted the claim-plotting terms (a consent geoDB records from the person, on the web \u2014 never through a key).",
+      "remedy": "Ask the user to open the project map on geoDB, start plotting a claim there and accept the plotting terms; then preview again.",
+      "retry": "no"
+    },
+    "plotting_unavailable": {
+      "http": 403,
+      "meaning": "Claim plotting is not switched on for this account.",
+      "remedy": "Tell the user claim plotting is not available on their account yet.",
+      "retry": "no"
+    },
+    "plss_not_in_mirror": {
+      "http": 404,
+      "meaning": "No such township or section is in geoDB's PLSS mirror (unsurveyed ground, a state not loaded, or a mistyped label).",
+      "remedy": "Check the state, township, range, section and meridian; or read land-plss/ at a point to see what is there.",
+      "retry": "no"
+    },
     "project_crs_required": {
       "http": 409,
       "meaning": "The project has no coordinate system, so nothing can be placed on its local grid: positions along a hole (desurvey, trace, xyz at depth) and other derived positions need it. The stored native coordinates are untouched and readable.",
@@ -555,7 +627,7 @@
     },
     "project_holding": {
       "http": 409,
-      "meaning": "(per row) The project is Paused: its data can be read and exported and its claims kept up, but no geology data may be added, changed or removed. Nothing in this row was written.",
+      "meaning": "(per row) The project is on Holding: its data can be read and exported and its claims kept up, but no geology data may be added, changed or removed. Nothing in this row was written.",
       "remedy": "Tell the person: an owner, or a manager who can make purchases, can switch the project to Field or Drilling on the geoDB Billing page (it raises the monthly price). Resend once it is switched. For a one-off correction, point them to geoDB support instead (the row's remedy names it): the correction stays blocked here.",
       "retry": "maybe"
     },
@@ -637,6 +709,12 @@
       "remedy": "Leave it, or ASK THE USER whether the records that use it should go first (retract those, then this one). Never remove other records just to make room.",
       "retry": "no"
     },
+    "reference_point_unconfirmed": {
+      "http": 409,
+      "meaning": "Nothing records until the USER confirms the block's reference point on the project map (the frame is theirs to pick, never the AI's alone).",
+      "remedy": "Give the user the preview's map.url; when they have confirmed the point there, preview again and record that preview.",
+      "retry": "no"
+    },
     "rekey_refused": {
       "http": 409,
       "meaning": "(per row) The row would change an existing record's identifying fields. That is a different record, never an update.",
@@ -689,6 +767,12 @@
       "http": 409,
       "meaning": "This report section cannot change through an outside app: a Qualified Person has attested it, or (on a compliance report) has accepted it and owns its text. `offending.qp_state` says which.",
       "remedy": "Leave this section to its Qualified Person. Tell the user the QP edits or signs it in the geoDB web app; an app may draft only sections no QP has accepted or attested.",
+      "retry": "no"
+    },
+    "serial_not_in_mirror": {
+      "http": 404,
+      "meaning": "No claim with that serial is in geoDB's BLM mirror. That is not proof the claim does not exist: it may be newer than the last sync, or mistyped.",
+      "remedy": "Check the serial against the user's source, and say the mirror's sync date.",
       "retry": "no"
     },
     "session_key_api_only": {
@@ -759,7 +843,7 @@
     },
     "tier_not_offered": {
       "http": 409,
-      "meaning": "That plan is not offered for this company's projects (a single-price plan offers Drilling and Frozen; the per-project plans offer Paused, Field and Drilling; Frozen is a hold geoDB applies).",
+      "meaning": "That plan is not offered for this company's projects (a single-price plan offers Drilling and Frozen; the per-project plans offer Holding, Field and Drilling; Frozen is a hold geoDB applies).",
       "remedy": "Offer the user one of the plans the project face lists for the company.",
       "retry": "no"
     },
@@ -857,6 +941,18 @@
       "http": 400,
       "meaning": "The request body or parameters failed validation.",
       "remedy": "Correct the fields named in the response and resend.",
+      "retry": "no"
+    },
+    "view_link_too_long": {
+      "http": 400,
+      "meaning": "The view names more than a link can carry (a very long hole list).",
+      "remedy": "Name a certificate, submittal, logging set or grid filter instead of the hole list (it stands for all its holes), or save the view and give its short link.",
+      "retry": "no"
+    },
+    "view_surface_unavailable": {
+      "http": 409,
+      "meaning": "That kind of view cannot be linked to or saved for this project yet: it is a beta not switched on for the project's company (geoDB 3D), or a surface the server does not offer.",
+      "remedy": "Tell the user and describe the view in words for now; if the project has the other surface (3d or map), ask for that one instead.",
       "retry": "no"
     },
     "write_access_insufficient": {
@@ -998,6 +1094,11 @@
       "remedy": "Check the azimuth and dip with the user; correct the station with an update.",
       "retry": "no"
     },
+    "unverified_citation": {
+      "meaning": "The lead file has no text layer (a scan), so the quoted calls could not be checked against it; the claims carry an \"unverified citation\" flag on the record.",
+      "remedy": "Tell the user the quotes could not be checked; the reference point must be confirmed on the map before anything records.",
+      "retry": "no"
+    },
     "value_rounded": {
       "meaning": "(per-row warning) The value has more decimal places than the database keeps; it is stored rounded. The detail names the value sent and the value stored.",
       "remedy": "Nothing is refused. Tell the user the value is stored rounded; if the extra precision matters, it is lost here.",
@@ -1016,6 +1117,11 @@
     "values_skipped_record_exists": {
       "meaning": "(write-level warning) A create SKIPPED value rows because their record (a sample, a method, a standard) already exists: nothing was stored for them \u2014 a create never adds values to an existing record. `records` and `rows` name them; `created_by_this_key` lists the records an EARLIER write of this key created (a record's rows were split across requests). `summary.skipped_by_reason` counts them.",
       "remedy": "Tell the user. To store those values, resend exactly the rows named in `rows` with \"intent\": \"upsert\" (dry run first; Undo removes exactly the values it adds); a row that would CHANGE a stored value also needs \"acknowledge\": [\"replace_values\"] after the user agrees. Next time keep every row of one record in ONE request.",
+      "retry": "no"
+    },
+    "view_target_unresolved": {
+      "meaning": "(per-row warning) A saved 3D view names a target (a hole, a certificate, a set, a filter) that is not in its project \u2014 missing, deleted or another project's, the same answer for all three. A view built from `view` leaves it out; a whole `scene` keeps it, and it shows nothing when the view opens. `result.unresolved` lists them.",
+      "remedy": "Tell the user which targets were left out; check the ids against your own reads.",
       "retry": "no"
     },
     "write_not_recorded": {

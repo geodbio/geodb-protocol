@@ -1,6 +1,6 @@
 # Projects: creating one, its coordinate system, its states, and the Trash
 
-Which company a new project belongs to (always ask), setting up the project's coordinate system, what Active, Holding and Frozen each stop, and why deleting a project is reversible.
+Which company a new project belongs to (always ask), setting up the project's coordinate system, what the Drilling, Field and Holding plans and a Frozen hold each stop, and why deleting a project is reversible.
 
 A project belongs to exactly one **company**, and a person may belong to
 several. The company decides who sees the project, what it costs and whose
@@ -24,13 +24,19 @@ the user, made once and on purpose. A project with no coordinate system
 cannot compute traces or positions down a hole; the remedy is to set one,
 never to guess positions.
 
-A project is in one of three **states**. **Active**: everything works.
-**Holding**: the project can be read, exported and its claims maintained, but
-no geology data is added, edited or deleted (imports, logging, field sync and
-connected-AI writes are refused). **Frozen**: sealed; nobody can open, read or
-export it until it is unfrozen. A state can change what the company pays:
-moving down takes effect from the next billing cycle; moving up is the
-person's own decision, made in the browser.
+A project is on one of three **plans**, or on a hold. **Drilling**: everything
+works. **Field**: everything except holes or intervals deeper than 100 ft of
+hole length (assays and QAQC for samples that already exist are accepted).
+**Holding**: keeps the project and its claims in good standing; it can be read,
+exported and its claims maintained, but no geology data is added, edited or
+deleted (imports, logging, field sync and connected-AI writes are refused), and no
+claim is plotted or a plotted claim changed.
+**Frozen**: a hold geoDB applies; sealed, nobody can open, read or export it
+until it is lifted. A company on a single-price plan (not per-project) is
+offered only **Drilling** and **Frozen**: never offer it Field or Holding. A
+plan can change what the company pays: moving down takes
+effect when the billing cycle ends; moving up is the person's own decision,
+made in the browser.
 
 **Deleting a project is reversible.** It moves to the Trash with everything
 in it and can be restored for the retention window; nothing is purged by an
