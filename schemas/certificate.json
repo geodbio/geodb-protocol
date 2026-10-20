@@ -181,6 +181,51 @@
       ],
       "format": "date"
     },
+    "in_trash": {
+      "type": "boolean",
+      "description": "Present (true) only on a record in the Trash, returned because the read sent `include_trashed=true`. Restore it (its `trash.restore` request) rather than creating its twin."
+    },
+    "trash": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "description": "Present only on an `in_trash` row: how to bring it back. `audit_batch_id` is the removal that put it in the Trash (null when it was removed without a batch record: then `note` says to use the web Trash); `batch_records` counts, by record type, everything that one removal took (this record included) and `other_records_in_batch` how many besides it; `restore` is the records request that restores that removal, as a dry run. A restore brings back the WHOLE removal: show the user the dry run's `restoring` (every record it brings back) before sending it with `dry_run: false`.",
+      "properties": {
+        "audit_batch_id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "uuid"
+        },
+        "removed_at": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        },
+        "batch_records": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "integer"
+          }
+        },
+        "other_records_in_batch": {
+          "type": "integer"
+        },
+        "restore": {
+          "type": [
+            "object",
+            "null"
+          ]
+        },
+        "note": {
+          "type": "string"
+        }
+      }
+    },
     "project_id": {
       "type": "integer",
       "description": "The project this record is in (a credential may read several; GET /api/v2/grant-context/ names them)."

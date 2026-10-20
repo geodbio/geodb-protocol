@@ -187,6 +187,90 @@
       "remedy": "Use the project's coordinate-system page on the web (calibration tools).",
       "retry": "no"
     },
+    "dataset_already_written": {
+      "http": 409,
+      "meaning": "Every member of this plan has already landed (`offending.write_id` names the write), or the write was undone; a plan is never landed twice. Nothing more was written.",
+      "remedy": "Nothing to send again. Report the write named in `offending` to the user (its \"undo\" takes it back). To land more or new data, rehearse a new dataset.",
+      "retry": "no"
+    },
+    "dataset_column_forbidden": {
+      "http": 400,
+      "meaning": "A dataset member file carries a column that only the request may carry (project, dry_run, acknowledge, confirm, qc_mapping, plan_token, intent or model): consent and routing never come from a file. Nothing was written.",
+      "remedy": "Remove the column(s) named in `offending.fields` from the file and upload it again; send the project, the acknowledgements and the QC reading in the dataset request body.",
+      "retry": "no"
+    },
+    "dataset_file_changed": {
+      "http": 409,
+      "meaning": "A member file is no longer the one the user approved: its bytes changed, or it was moved to the Trash, undone or is no longer this connection's upload in the project. That member was not written.",
+      "remedy": "Upload the member file again if needed, rehearse the dataset (or the answer's \"rehearse_rest\") with the files as they are now, show the user, and write the new plan after they say yes.",
+      "retry": "no"
+    },
+    "dataset_file_unreadable": {
+      "http": 400,
+      "meaning": "A dataset member file could not be read as a CSV: not a .csv file, not UTF-8, no header row, a header column with no name or named twice, or a row that breaks the CSV format (`offending.reason` and `offending.line` say which). Nothing was written.",
+      "remedy": "Write the member as a UTF-8 CSV (comma-separated, double-quoted cells where needed, header row first, one column per field, each named once), upload it again and name the new document id.",
+      "retry": "no"
+    },
+    "dataset_in_progress": {
+      "http": 409,
+      "meaning": "This plan is being written right now by another request (the same write sent twice). Nothing more was started.",
+      "remedy": "Wait a minute and send the same write again: it lands only what has not landed yet, and its answer lists every member.",
+      "retry": "after"
+    },
+    "dataset_interrupted": {
+      "http": 409,
+      "meaning": "A dataset job the server ran in the background (a rehearsal, write or undo) ended without finishing: the server running it was interrupted or hit an unexpected error. A write landed nothing of the member it was on; members before it may have landed and stay landed.",
+      "remedy": "Send the same request again: a rehearsal runs again from the start, a write lands only the members that have not landed yet (never one twice), and an undo takes back what is still there. Quote the error_id in `offending` if it happens again.",
+      "retry": "after"
+    },
+    "dataset_not_grouped": {
+      "http": 400,
+      "meaning": "A dataset member file is not grouped: in an Assay file every certificate's rows must be together, and in any other long-form file every record's rows must be. The rows of the certificate or record named in `offending` start again further down. Nothing was written.",
+      "remedy": "Sort the file by certificate (Assay) or by the record's name (other long-form files) so each one's rows are together, upload it again and name the new document id.",
+      "retry": "no"
+    },
+    "dataset_plan_changed": {
+      "http": 409,
+      "meaning": "The data changed since the rehearsal the user approved, so a member would no longer land as approved (`offending` compares its approved summary with what it would do now), or the project's QC judging changed under a QC read. That member was not written; members before it may have landed (the answer lists each one).",
+      "remedy": "Tell the user what landed and what did not. To land the rest, send the answer's \"rehearse_rest\" request, show the user the new rehearsal and write it after they say yes; or undo what landed with the answer's \"undo\".",
+      "retry": "no"
+    },
+    "dataset_plan_expired": {
+      "http": 409,
+      "meaning": "The approved plan is more than 24 hours old; the data may have moved since. Nothing was written.",
+      "remedy": "Rehearse the dataset again with the same files, show the user the new answer, and write that plan after they say yes.",
+      "retry": "no"
+    },
+    "dataset_plan_invalid": {
+      "http": 409,
+      "meaning": "The dataset write does not name a plan this key approved: the plan token does not match a rehearsal this connection ran (altered, another key's, or an unknown dataset id), or the write asks for a different intent. Nothing was written.",
+      "remedy": "Send the rehearsal's \"write\" body exactly as it was returned, after the user said yes. If it was lost, rehearse the dataset again and show the user the new answer.",
+      "retry": "no"
+    },
+    "dataset_project_busy": {
+      "http": 409,
+      "meaning": "Dataset jobs on one project run one at a time; this one waited the longest it may (`offending.waited_seconds`) for another dataset job on the same project to finish, then stopped. Nothing of it was written.",
+      "remedy": "Send the same dataset request again later (the Retry-After header says when). If it keeps happening, ask the user whether another large dataset is being loaded into this project right now.",
+      "retry": "after"
+    },
+    "dataset_rows_busy": {
+      "http": 409,
+      "meaning": "Another write (someone else's edit, a field app's sync) was holding rows this dataset changes, so the rehearsal, or the member a write was landing, stopped after a few seconds rather than make that person wait (`offending.lock_timeout_ms`). Nothing of it was written; in a write, the members before it may have landed (the answer lists each one).",
+      "remedy": "Send the same dataset request again in a minute; it needs no new files (a write lands only what has not landed yet). If it keeps happening, ask the user whether someone is editing this project right now.",
+      "retry": "after"
+    },
+    "dataset_too_large": {
+      "http": 400,
+      "meaning": "The dataset passes one of its limits (`offending.limit` names it and `offending.max` gives the limit): member files, bytes per file, data rows per dataset, per member or per certificate, columns, or characters per cell. Nothing was written.",
+      "remedy": "Split the work into several datasets under the limit named (for example one per group of certificates), or shorten the cell named.",
+      "retry": "no"
+    },
+    "dataset_write_failed": {
+      "http": 409,
+      "meaning": "The dataset write stopped on an unexpected error while landing one member; nothing of that member landed. Members before it may have landed (the answer lists each one).",
+      "remedy": "Tell the user what landed and what did not. Send the same write again later (it lands only what has not landed yet), or undo what landed with the answer's \"undo\".",
+      "retry": "after"
+    },
     "duplicate_external_id": {
       "http": 409,
       "meaning": "(per row) This external_id already names a DIFFERENT record for this key, or appears twice in one request.",
@@ -847,6 +931,18 @@
       "remedy": "Offer the user one of the plans the project face lists for the company.",
       "retry": "no"
     },
+    "trash_needs_person_key": {
+      "http": 400,
+      "meaning": "Records in the Trash are shown only to a key acting as a person (the user's own connected AI, with their project-wide access), as the web shows a person their project's Trash. A vendor or organisation key, or a key pinned to one data room, never sees the Trash, so include_trashed was not applied.",
+      "remedy": "Leave include_trashed out: this key reads live records only. A person who wants the Trash opens it in the geoDB web app, or reads it through their own connected AI.",
+      "retry": "no"
+    },
+    "undo_needs_company_reach": {
+      "http": 403,
+      "meaning": "The write being undone created or changed a record every project of the company shares (a laboratory, method or standard), so it is undone only through a key that reaches every live project of that company; this key no longer does (`offending.company_shared`). It is refused whole, never undone in part. Nothing was changed.",
+      "remedy": "Undo it through a key that reaches every project of the company (the user's own connection, set to cover the whole company), or ask the user to undo it from the geoDB web app. Do not retry with this key.",
+      "retry": "no"
+    },
     "undo_not_covered": {
       "http": 409,
       "meaning": "(per row) Undo cannot yet reverse this change, and every write through this endpoint must be undoable, so it is refused. (Changing, adding or removing a long-form record's values is undoable and served.)",
@@ -966,6 +1062,12 @@
       "meaning": "Writing through the API is open to the AI connections of geoDB staff and of members of companies in the geoDB protocol beta for now. Every other key (an organisation or vendor key, anyone else's connection) reads but does not write, whatever write access it was given.",
       "remedy": "Read with this key, or make the change in the geoDB web app. To join the beta, contact geoDB: https://geodb.io/contact-us/.",
       "retry": "no"
+    },
+    "writes_switched_off": {
+      "http": 503,
+      "meaning": "Writes through AI connections were switched off on the server after this dataset job was accepted, so it did not run; a write already running finished the member it was on and stopped before the next (the members before it stay landed, under the answer's one undo).",
+      "remedy": "Tell the user that writing through AI connections is paused on the server right now and that nothing more was written. Send the same request again later: a write lands only what has not landed yet.",
+      "retry": "maybe"
     }
   },
   "warning_codes": {
@@ -1062,6 +1164,11 @@
     "qc_type_missing": {
       "meaning": "(per-row warning) The sample name looks like a lab QC marker (a standard, blank or duplicate) but the row carries no qc_type, so it lands as a routine sample and never reaches the QAQC checks.",
       "remedy": "Ask the user whether it is QC. If it is, resend the row with its qc_type (and the standard it is); if it is a real sample id, go on.",
+      "retry": "no"
+    },
+    "record_in_trash": {
+      "meaning": "(per-row warning) A record with the same identifying fields (the same name, or hole and depths) is in the Trash. This row does NOT restore it: it creates a second, new record beside it. The detail names the trashed record's id and the removal (its audit_batch_id) that holds it.",
+      "remedy": "Tell the user. If it is the same record, restore it and leave this row out: send the \"restore\" intent naming the removal the detail names (\"audit_batch_id\"; a person's key also reads it, with the restore request, as the record's \"trash\" on its list with include_trashed=true) as a dry run, show the user every record it brings back (the whole removal), then send it after their yes. A record removed without a batch record is restored in the web Trash. If it is a different record, send the row as it is. Nothing is restored automatically.",
       "retry": "no"
     },
     "sample_link_changes": {

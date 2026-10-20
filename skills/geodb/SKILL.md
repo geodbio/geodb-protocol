@@ -77,8 +77,9 @@ Every refusal carries `reason_code` + `remedy`: act on the remedy.
 
 - Every list answers one envelope: `count`, `next`, `previous`, `results`,
   plus `deleted_ids`, `deleted_since_applied` and `sync_timestamp`. Page with
-  `limit` (max 500) and `offset`, and follow `next` rather than building
-  URLs. A parameter a list does not read (`page_size`, a guessed filter) is
+  `limit` (100 when you send none, max 500; max 2,000 on `assay-results/` and
+  on lean `drill-samples/` pages) and `offset`, and follow `next` rather than
+  building URLs. A parameter a list does not read (`page_size`, a guessed filter) is
   refused 400 `invalid_parameter`, naming the ones it honours.
 - **Incremental sync:** pass the last `sync_timestamp` as `modified_since`.
   The comparison is by DAY, so same-day rows come back again: UPSERT by `id`,
@@ -305,7 +306,10 @@ Claude Code, Cowork); the `api_write` tool carries JSON, never a file. Documents
 (PDF, Word, Excel, CSV, text, images …) and photos are multipart POSTs to
 `documents/` and `photos/` (at most 95 MiB each; geodb-client `upload_document`,
 `upload_photo`); a drill-box image is a photo with `attach_to={"model":
-"DrillPhoto", "id": <box id>}` (`attach_drill_box_image`). A project file —
+"DrillPhoto", "id": <box id>}` (`attach_drill_box_image`), a laboratory's
+certificate file a document with `upload_document(..., attach_to={"model":
+"Certificate", "id": <certificate id>})` (client 0.3.5+; without the client,
+the same JSON as the multipart field `attach_to`). A project file —
 raster, DEM, geophysics grid, GeoPackage, archive, 3D mesh (.glb), up to 250 MB —
 goes in blocks straight to STORAGE (`describe/ProjectFile/`;
 `upload_project_file`): a sandbox that may reach only the API host cannot send
@@ -318,6 +322,16 @@ value per file) with every upload: a large file can time out at the network
 edge AFTER it landed, and a retry with the same key replays the first answer
 instead of storing the file twice (the client's upload_* helpers send one and
 retry under it for you).
+
+**Datasets.** Several record types that depend on one another (a laboratory,
+its methods, certificates and the assays that hang off them) are rehearsed
+together as ONE dataset, not written as many batches: upload one CSV per record
+type as a document, POST `records/` with `"model": "Dataset"` and `"dry_run":
+true` naming them (`describe/Dataset/` is the contract; geodb-client 0.3.5+
+`validate_dataset`), show the user the answer, then send its `write` body after
+their yes: one Undo covers the whole dataset. Never rebuild the project locally
+to check a load; the dry run is the authority. The guide topic
+`working-efficiently` walks through a lab-certificate load.
 
 **Projects.** The same endpoint with `model` `Project`, one project per request
 (`describe/Project/`): `create` · `update` (name, description) ·
@@ -365,6 +379,7 @@ Read the topic before answering a question in its area; each is `references/<id>
 - `geostatistics` · Geostatistics: compositing, declustering, capping and variography
 - `metal-equivalents` · "Metal equivalents: price decks and the equivalent grade every surface shows"
 - `odbc-settings` · "ODBC settings: the frame and units connected modelling and GIS tools read"
+- `odbc-troubleshooting` · "ODBC troubleshooting: when a modelling or GIS package doesn't show what geoDB holds"
 - `projects` · Projects: creating one, its coordinate system, its states, and the Trash
 - `public-land` · Public land: who holds claims here, what PLSS division it is, and what is withdrawn
 - `qaqc-protocols` · "QAQC protocols: how often QC goes in, and the criteria every verdict is judged by"
@@ -374,3 +389,4 @@ Read the topic before answering a question in its area; each is `references/<id>
 - `sets` · Sets: several versions of the same downhole data, side by side
 - `views` · Views: showing the user their data in 3D, and handing them the link
 - `water` · Water results: non-detects, the detected and over-range flags, and units
+- `working-efficiently` · Working efficiently: large reads and imports

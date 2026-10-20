@@ -1029,6 +1029,13 @@ paths:
         description: 'Restore nested objects the lean shape names by id, comma-separated:
           certificate, method. For a small one-off read; a table reads the lookup
           tables once instead.'
+      - in: query
+        name: name
+        schema:
+          type: string
+        description: Exact sample name (an assay record is named by its sample; as
+          stored, case-sensitive); several names comma-separated. Finds given samples'
+          lab results without reading the whole table.
       tags:
       - Assays
       security:
@@ -1229,6 +1236,13 @@ paths:
         schema:
           type: string
         description: Narrow to one laboratory certificate, by its id.
+      - in: query
+        name: name
+        schema:
+          type: string
+        description: Exact sample name (an assay record is named by its sample; as
+          stored, case-sensitive); several names comma-separated. Finds given samples'
+          lab results without reading the whole table.
       tags:
       - Assays
       security:
@@ -1300,6 +1314,13 @@ paths:
           type: integer
         description: A unique integer value identifying this assay.
         required: true
+      - in: query
+        name: expand
+        schema:
+          type: string
+        description: 'Restore nested objects the lean shape names by id, comma-separated:
+          certificate, laboratory, method. For a small one-off read; a table reads
+          the lookup tables once instead.'
       tags:
       - Assays
       security:
@@ -1460,6 +1481,26 @@ paths:
           of one project — `company=<id>` names it (a credential that reads one company
           needs none; several companies and none named is `company_required`). Never
           across companies. Each row carries `project_id`. Read-only.'
+      - in: query
+        name: name
+        schema:
+          type: string
+        description: Exact record name (as stored, case-sensitive); several names
+          comma-separated. The quick way to find one record.
+      - in: query
+        name: include_trashed
+        schema:
+          type: boolean
+        description: 'Records in the Trash (removed, restorable). `true`: the list
+          also returns them, each marked `in_trash: true` (live rows carry no such
+          key) with a `trash` object naming the removal that put it there (`audit_batch_id`),
+          what that removal took, and the records `restore` request that brings it
+          back, so you can tell the user what the server holds — a name taken by a
+          trashed record is restored (after the user agrees), never re-created beside
+          it. With the Trash in the answer the list''s `deleted_ids` is empty: the
+          trashed records are the `in_trash` rows, not deletions to apply. Only a
+          key acting as a person (the user''s own connection) may send it; a vendor
+          or data-room key is refused `trash_needs_person_key`.'
       tags:
       - Assays
       security:
@@ -1531,6 +1572,20 @@ paths:
           type: integer
         description: A unique integer value identifying this certificate.
         required: true
+      - in: query
+        name: include_trashed
+        schema:
+          type: boolean
+        description: 'Records in the Trash (removed, restorable). `true`: the list
+          also returns them, each marked `in_trash: true` (live rows carry no such
+          key) with a `trash` object naming the removal that put it there (`audit_batch_id`),
+          what that removal took, and the records `restore` request that brings it
+          back, so you can tell the user what the server holds — a name taken by a
+          trashed record is restored (after the user agrees), never re-created beside
+          it. With the Trash in the answer the list''s `deleted_ids` is empty: the
+          trashed records are the `in_trash` rows, not deletions to apply. Only a
+          key acting as a person (the user''s own connection) may send it; a vendor
+          or data-room key is refused `trash_needs_person_key`.'
       tags:
       - Assays
       security:
@@ -3324,10 +3379,11 @@ paths:
         name: bhid
         schema:
           type: string
-        description: Narrow to a drill hole, by its id or its exact name (case does
-          not matter; a name shared by holes in several projects you can read matches
-          each of them). A name that matches no readable hole is refused with `invalid_parameter`
-          — never an empty list.
+        description: Narrow to one or several drill holes, comma-separated, each by
+          its id or its exact name (case does not matter; a name shared by holes in
+          several projects you can read matches each of them). A name that matches
+          no readable hole is refused with `invalid_parameter` naming it — never an
+          empty list.
       - in: query
         name: set
         schema:
@@ -3581,6 +3637,20 @@ paths:
           type: string
         description: Exact record name (as stored, case-sensitive); several names
           comma-separated. The quick way to find one record.
+      - in: query
+        name: include_trashed
+        schema:
+          type: boolean
+        description: 'Records in the Trash (removed, restorable). `true`: the list
+          also returns them, each marked `in_trash: true` (live rows carry no such
+          key) with a `trash` object naming the removal that put it there (`audit_batch_id`),
+          what that removal took, and the records `restore` request that brings it
+          back, so you can tell the user what the server holds — a name taken by a
+          trashed record is restored (after the user agrees), never re-created beside
+          it. With the Trash in the answer the list''s `deleted_ids` is empty: the
+          trashed records are the `in_trash` rows, not deletions to apply. Only a
+          key acting as a person (the user''s own connection) may send it; a vendor
+          or data-room key is refused `trash_needs_person_key`.'
       tags:
       - Drill Holes
       security:
@@ -3652,6 +3722,20 @@ paths:
           type: integer
         description: A unique integer value identifying this Drill Collar.
         required: true
+      - in: query
+        name: include_trashed
+        schema:
+          type: boolean
+        description: 'Records in the Trash (removed, restorable). `true`: the list
+          also returns them, each marked `in_trash: true` (live rows carry no such
+          key) with a `trash` object naming the removal that put it there (`audit_batch_id`),
+          what that removal took, and the records `restore` request that brings it
+          back, so you can tell the user what the server holds — a name taken by a
+          trashed record is restored (after the user agrees), never re-created beside
+          it. With the Trash in the answer the list''s `deleted_ids` is empty: the
+          trashed records are the `in_trash` rows, not deletions to apply. Only a
+          key acting as a person (the user''s own connection) may send it; a vendor
+          or data-room key is refused `trash_needs_person_key`.'
       tags:
       - Drill Holes
       security:
@@ -4140,10 +4224,11 @@ paths:
         name: bhid
         schema:
           type: string
-        description: Narrow to a drill hole, by its id or its exact name (case does
-          not matter; a name shared by holes in several projects you can read matches
-          each of them). A name that matches no readable hole is refused with `invalid_parameter`
-          — never an empty list.
+        description: Narrow to one or several drill holes, comma-separated, each by
+          its id or its exact name (case does not matter; a name shared by holes in
+          several projects you can read matches each of them). A name that matches
+          no readable hole is refused with `invalid_parameter` naming it — never an
+          empty list.
       - in: query
         name: set
         schema:
@@ -4505,10 +4590,11 @@ paths:
         name: bhid
         schema:
           type: string
-        description: Narrow to a drill hole, by its id or its exact name (case does
-          not matter; a name shared by holes in several projects you can read matches
-          each of them). A name that matches no readable hole is refused with `invalid_parameter`
-          — never an empty list.
+        description: Narrow to one or several drill holes, comma-separated, each by
+          its id or its exact name (case does not matter; a name shared by holes in
+          several projects you can read matches each of them). A name that matches
+          no readable hole is refused with `invalid_parameter` naming it — never an
+          empty list.
       - in: query
         name: set
         schema:
@@ -5128,10 +5214,11 @@ paths:
         name: bhid
         schema:
           type: string
-        description: Narrow to a drill hole, by its id or its exact name (case does
-          not matter; a name shared by holes in several projects you can read matches
-          each of them). A name that matches no readable hole is refused with `invalid_parameter`
-          — never an empty list.
+        description: Narrow to one or several drill holes, comma-separated, each by
+          its id or its exact name (case does not matter; a name shared by holes in
+          several projects you can read matches each of them). A name that matches
+          no readable hole is refused with `invalid_parameter` naming it — never an
+          empty list.
       - in: query
         name: set
         schema:
@@ -5337,6 +5424,26 @@ paths:
           QC types) answers that company; with `scope=company` a project-level list
           answers every project of it this credential can read. A value that names
           no company this credential can read is refused with `invalid_parameter`.'
+      - in: query
+        name: name
+        schema:
+          type: string
+        description: Exact record name (as stored, case-sensitive); several names
+          comma-separated. The quick way to find one record.
+      - in: query
+        name: include_trashed
+        schema:
+          type: boolean
+        description: 'Records in the Trash (removed, restorable). `true`: the list
+          also returns them, each marked `in_trash: true` (live rows carry no such
+          key) with a `trash` object naming the removal that put it there (`audit_batch_id`),
+          what that removal took, and the records `restore` request that brings it
+          back, so you can tell the user what the server holds — a name taken by a
+          trashed record is restored (after the user agrees), never re-created beside
+          it. With the Trash in the answer the list''s `deleted_ids` is empty: the
+          trashed records are the `in_trash` rows, not deletions to apply. Only a
+          key acting as a person (the user''s own connection) may send it; a vendor
+          or data-room key is refused `trash_needs_person_key`.'
       tags:
       - Drill Holes
       security:
@@ -5404,6 +5511,20 @@ paths:
           type: integer
         description: A unique integer value identifying this Drill Pad.
         required: true
+      - in: query
+        name: include_trashed
+        schema:
+          type: boolean
+        description: 'Records in the Trash (removed, restorable). `true`: the list
+          also returns them, each marked `in_trash: true` (live rows carry no such
+          key) with a `trash` object naming the removal that put it there (`audit_batch_id`),
+          what that removal took, and the records `restore` request that brings it
+          back, so you can tell the user what the server holds — a name taken by a
+          trashed record is restored (after the user agrees), never re-created beside
+          it. With the Trash in the answer the list''s `deleted_ids` is empty: the
+          trashed records are the `in_trash` rows, not deletions to apply. Only a
+          key acting as a person (the user''s own connection) may send it; a vendor
+          or data-room key is refused `trash_needs_person_key`.'
       tags:
       - Drill Holes
       security:
@@ -5692,10 +5813,11 @@ paths:
         name: bhid
         schema:
           type: string
-        description: Narrow to a drill hole, by its id or its exact name (case does
-          not matter; a name shared by holes in several projects you can read matches
-          each of them). A name that matches no readable hole is refused with `invalid_parameter`
-          — never an empty list.
+        description: Narrow to one or several drill holes, comma-separated, each by
+          its id or its exact name (case does not matter; a name shared by holes in
+          several projects you can read matches each of them). A name that matches
+          no readable hole is refused with `invalid_parameter` naming it — never an
+          empty list.
       tags:
       - Photos
       security:
@@ -6171,10 +6293,11 @@ paths:
         name: bhid
         schema:
           type: string
-        description: Narrow to a drill hole, by its id or its exact name (case does
-          not matter; a name shared by holes in several projects you can read matches
-          each of them). A name that matches no readable hole is refused with `invalid_parameter`
-          — never an empty list.
+        description: Narrow to one or several drill holes, comma-separated, each by
+          its id or its exact name (case does not matter; a name shared by holes in
+          several projects you can read matches each of them). A name that matches
+          no readable hole is refused with `invalid_parameter` naming it — never an
+          empty list.
       - in: query
         name: set
         schema:
@@ -6512,10 +6635,11 @@ paths:
         name: bhid
         schema:
           type: string
-        description: Narrow to a drill hole, by its id or its exact name (case does
-          not matter; a name shared by holes in several projects you can read matches
-          each of them). A name that matches no readable hole is refused with `invalid_parameter`
-          — never an empty list.
+        description: Narrow to one or several drill holes, comma-separated, each by
+          its id or its exact name (case does not matter; a name shared by holes in
+          several projects you can read matches each of them). A name that matches
+          no readable hole is refused with `invalid_parameter` naming it — never an
+          empty list.
       - in: query
         name: set
         schema:
@@ -6565,6 +6689,12 @@ paths:
           type: string
         description: 'Legacy: `true` merges with the project''s default merge settings.
           Prefer `merge_settings_id` or `assay_config_id`.'
+      - in: query
+        name: name
+        schema:
+          type: string
+        description: Exact record name (as stored, case-sensitive); several names
+          comma-separated. The quick way to find one record.
       tags:
       - Samples
       security:
@@ -6634,6 +6764,12 @@ paths:
           type: integer
         description: A unique integer value identifying this Drill Sample.
         required: true
+      - in: query
+        name: expand
+        schema:
+          type: string
+        description: 'Restore nested objects the lean shape names by id, comma-separated:
+          assay. For a small one-off read; a table reads the lookup tables once instead.'
       tags:
       - Samples
       security:
@@ -6858,10 +6994,11 @@ paths:
         name: bhid
         schema:
           type: string
-        description: Narrow to a drill hole, by its id or its exact name (case does
-          not matter; a name shared by holes in several projects you can read matches
-          each of them). A name that matches no readable hole is refused with `invalid_parameter`
-          — never an empty list.
+        description: Narrow to one or several drill holes, comma-separated, each by
+          its id or its exact name (case does not matter; a name shared by holes in
+          several projects you can read matches each of them). A name that matches
+          no readable hole is refused with `invalid_parameter` naming it — never an
+          empty list.
       - in: query
         name: set
         schema:
@@ -7479,10 +7616,11 @@ paths:
         name: bhid
         schema:
           type: string
-        description: Narrow to a drill hole, by its id or its exact name (case does
-          not matter; a name shared by holes in several projects you can read matches
-          each of them). A name that matches no readable hole is refused with `invalid_parameter`
-          — never an empty list.
+        description: Narrow to one or several drill holes, comma-separated, each by
+          its id or its exact name (case does not matter; a name shared by holes in
+          several projects you can read matches each of them). A name that matches
+          no readable hole is refused with `invalid_parameter` naming it — never an
+          empty list.
       tags:
       - Drill Intervals
       security:
@@ -7714,10 +7852,11 @@ paths:
         name: bhid
         schema:
           type: string
-        description: Narrow to a drill hole, by its id or its exact name (case does
-          not matter; a name shared by holes in several projects you can read matches
-          each of them). A name that matches no readable hole is refused with `invalid_parameter`
-          — never an empty list.
+        description: Narrow to one or several drill holes, comma-separated, each by
+          its id or its exact name (case does not matter; a name shared by holes in
+          several projects you can read matches each of them). A name that matches
+          no readable hole is refused with `invalid_parameter` naming it — never an
+          empty list.
       tags:
       - Drill Holes
       security:
@@ -8387,10 +8526,11 @@ paths:
         name: bhid
         schema:
           type: string
-        description: Narrow to a drill hole, by its id or its exact name (case does
-          not matter; a name shared by holes in several projects you can read matches
-          each of them). A name that matches no readable hole is refused with `invalid_parameter`
-          — never an empty list.
+        description: Narrow to one or several drill holes, comma-separated, each by
+          its id or its exact name (case does not matter; a name shared by holes in
+          several projects you can read matches each of them). A name that matches
+          no readable hole is refused with `invalid_parameter` naming it — never an
+          empty list.
       - in: query
         name: set
         schema:
@@ -8780,7 +8920,7 @@ paths:
         is 200 with `status: duplicate` and `duplicate_of`, the id already filed.'
       summary: File a feature request or a bug report
       tags:
-      - Feedback
+      - Writing
       requestBody:
         content:
           application/json:
@@ -8954,6 +9094,12 @@ paths:
           QC types) answers that company; with `scope=company` a project-level list
           answers every project of it this credential can read. A value that names
           no company this credential can read is refused with `invalid_parameter`.'
+      - in: query
+        name: name
+        schema:
+          type: string
+        description: Exact record name (as stored, case-sensitive); several names
+          comma-separated. The quick way to find one record.
       tags:
       - Surface Geology
       security:
@@ -9093,7 +9239,7 @@ paths:
         name: bhid
         schema:
           type: string
-        description: One hole, by id or exact name.
+        description: One or several holes, comma-separated, each by id or exact name.
       - in: query
         name: certificate
         schema:
@@ -9464,6 +9610,12 @@ paths:
           QC types) answers that company; with `scope=company` a project-level list
           answers every project of it this credential can read. A value that names
           no company this credential can read is refused with `invalid_parameter`.'
+      - in: query
+        name: name
+        schema:
+          type: string
+        description: Exact record name (as stored, case-sensitive); several names
+          comma-separated. The quick way to find one record.
       tags:
       - Geophysics
       security:
@@ -10037,6 +10189,26 @@ paths:
           QC types) answers that company; with `scope=company` a project-level list
           answers every project of it this credential can read. A value that names
           no company this credential can read is refused with `invalid_parameter`.'
+      - in: query
+        name: name
+        schema:
+          type: string
+        description: Exact record name (as stored, case-sensitive); several names
+          comma-separated. The quick way to find one record.
+      - in: query
+        name: include_trashed
+        schema:
+          type: boolean
+        description: 'Records in the Trash (removed, restorable). `true`: the list
+          also returns them, each marked `in_trash: true` (live rows carry no such
+          key) with a `trash` object naming the removal that put it there (`audit_batch_id`),
+          what that removal took, and the records `restore` request that brings it
+          back, so you can tell the user what the server holds — a name taken by a
+          trashed record is restored (after the user agrees), never re-created beside
+          it. With the Trash in the answer the list''s `deleted_ids` is empty: the
+          trashed records are the `in_trash` rows, not deletions to apply. Only a
+          key acting as a person (the user''s own connection) may send it; a vendor
+          or data-room key is refused `trash_needs_person_key`.'
       tags:
       - Assays
       security:
@@ -10103,6 +10275,20 @@ paths:
           type: integer
         description: A unique integer value identifying this laboratory.
         required: true
+      - in: query
+        name: include_trashed
+        schema:
+          type: boolean
+        description: 'Records in the Trash (removed, restorable). `true`: the list
+          also returns them, each marked `in_trash: true` (live rows carry no such
+          key) with a `trash` object naming the removal that put it there (`audit_batch_id`),
+          what that removal took, and the records `restore` request that brings it
+          back, so you can tell the user what the server holds — a name taken by a
+          trashed record is restored (after the user agrees), never re-created beside
+          it. With the Trash in the answer the list''s `deleted_ids` is empty: the
+          trashed records are the `in_trash` rows, not deletions to apply. Only a
+          key acting as a person (the user''s own connection) may send it; a vendor
+          or data-room key is refused `trash_needs_person_key`.'
       tags:
       - Assays
       security:
@@ -10868,6 +11054,12 @@ paths:
           QC types) answers that company; with `scope=company` a project-level list
           answers every project of it this credential can read. A value that names
           no company this credential can read is refused with `invalid_parameter`.'
+      - in: query
+        name: name
+        schema:
+          type: string
+        description: Exact record name (as stored, case-sensitive); several names
+          comma-separated. The quick way to find one record.
       tags:
       - Land Holdings
       security:
@@ -11313,6 +11505,26 @@ paths:
           QC types) answers that company; with `scope=company` a project-level list
           answers every project of it this credential can read. A value that names
           no company this credential can read is refused with `invalid_parameter`.'
+      - in: query
+        name: name
+        schema:
+          type: string
+        description: Exact record name (as stored, case-sensitive); several names
+          comma-separated. The quick way to find one record.
+      - in: query
+        name: include_trashed
+        schema:
+          type: boolean
+        description: 'Records in the Trash (removed, restorable). `true`: the list
+          also returns them, each marked `in_trash: true` (live rows carry no such
+          key) with a `trash` object naming the removal that put it there (`audit_batch_id`),
+          what that removal took, and the records `restore` request that brings it
+          back, so you can tell the user what the server holds — a name taken by a
+          trashed record is restored (after the user agrees), never re-created beside
+          it. With the Trash in the answer the list''s `deleted_ids` is empty: the
+          trashed records are the `in_trash` rows, not deletions to apply. Only a
+          key acting as a person (the user''s own connection) may send it; a vendor
+          or data-room key is refused `trash_needs_person_key`.'
       tags:
       - Assays
       security:
@@ -11380,6 +11592,20 @@ paths:
           type: integer
         description: A unique integer value identifying this method.
         required: true
+      - in: query
+        name: include_trashed
+        schema:
+          type: boolean
+        description: 'Records in the Trash (removed, restorable). `true`: the list
+          also returns them, each marked `in_trash: true` (live rows carry no such
+          key) with a `trash` object naming the removal that put it there (`audit_batch_id`),
+          what that removal took, and the records `restore` request that brings it
+          back, so you can tell the user what the server holds — a name taken by a
+          trashed record is restored (after the user agrees), never re-created beside
+          it. With the Trash in the answer the list''s `deleted_ids` is empty: the
+          trashed records are the `in_trash` rows, not deletions to apply. Only a
+          key acting as a person (the user''s own connection) may send it; a vendor
+          or data-room key is refused `trash_needs_person_key`.'
       tags:
       - Assays
       security:
@@ -14434,10 +14660,11 @@ paths:
         name: bhid
         schema:
           type: string
-        description: Narrow to a drill hole, by its id or its exact name (case does
-          not matter; a name shared by holes in several projects you can read matches
-          each of them). A name that matches no readable hole is refused with `invalid_parameter`
-          — never an empty list.
+        description: Narrow to one or several drill holes, comma-separated, each by
+          its id or its exact name (case does not matter; a name shared by holes in
+          several projects you can read matches each of them). A name that matches
+          no readable hole is refused with `invalid_parameter` naming it — never an
+          empty list.
       - in: query
         name: qc_type
         schema:
@@ -14466,6 +14693,17 @@ paths:
           type: string
         description: Legacy twin of `category` (the same six codes), kept for older
           clients; prefer `category`.
+      - in: query
+        name: name
+        schema:
+          type: string
+        description: 'QC sample name, several comma-separated. Matches the name as
+          stored (case-sensitive) AND, for laboratory QC, the lab''s bare id: geoDB
+          stores a lab-QC name decorated with its own certificate (`<id> (<job>)`,
+          `<id> (<job> - <status>)`, `<job>_<id>`, `<job>_<id>_<n>`), so `name=<id>`
+          finds those rows too, but only when the job in the name is the QC sample''s
+          own certificate (never a prefix match, never a parenthetical the lab wrote).
+          Each row''s `name` is the stored form.'
       tags:
       - Quality Control
       security:
@@ -14767,6 +15005,83 @@ paths:
                 type: integer
       summary: Get one of the QC sample types
       x-geodb-extension: true
+  /api/v2/record-counts/:
+    get:
+      operationId: record_counts_retrieve
+      description: 'One small read before any table: for every record type geoDB writes
+        (drill holes, samples, assays, certificates, methods, logging …) that this
+        key can read, the number of records on the project now (`live`), and, for
+        a key acting as a person, how many are in the Trash (`in_trash`). Company-wide
+        catalogs (laboratories, methods, standards) are counted for the project''s
+        company and named in `company_wide`. Each count is what that type''s list
+        returns by default (`notes` says what a count leaves out, e.g. planned bags
+        or rows a QAQC review withholds), so a type at 0 has nothing a list would
+        return and needs no overlap check; a large one is read filtered (by name or
+        hole), never paged whole. A record type this key cannot read is named in `not_readable`;
+        one whose count failed, in `uncounted`.'
+      summary: How many records of each type a project holds
+      parameters:
+      - in: query
+        name: project_id
+        schema:
+          type: integer
+        description: The project to read. Defaults to the project this credential
+          is pinned to; any other must be one it can read — an id naming no readable
+          project is refused with `invalid_parameter`, as on the lists.
+      tags:
+      - Discovery
+      security:
+      - knoxApiToken: []
+      - GrantAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecordCounts'
+          description: ''
+        '400':
+          description: The request could not be understood (see `reason_code`).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 'No usable credential. `reason_code` distinguishes a revoked
+            grant from an expired, unknown or malformed one; the response carries
+            `WWW-Authenticate: Grant`.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: The credential is valid but not permitted this operation —
+            outside the grant surface, a write with a read-only grant, or outside
+            a room-pinned grant's room.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: No such resource inside this credential's scope. A row in another
+            project is indistinguishable from one that does not exist, by design.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: The grant's request rate was exceeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            Retry-After:
+              description: Seconds to wait before retrying. Sent on every throttled
+                response.
+              schema:
+                type: integer
+      x-geodb-extension: true
   /api/v2/records/:
     post:
       operationId: records_write
@@ -14775,7 +15090,10 @@ paths:
         a refusal of the whole request is an HTTP error. `dry_run: true` validates.
         Send an `Idempotency-Key` header to make a retry replay the first answer.
         Every write that changed something returns a `write_id`; `{"intent": "undo",
-        "write_id": …}` reverses it. Hard delete and purge never cross the API.'
+        "write_id": …}` reverses it. Hard delete and purge never cross the API. `"model":
+        "Dataset"` rehearses (then writes, under one undo) many records of several
+        types at once from uploaded CSV member files; a large one, or a large dataset
+        undo, answers 202 with a poll handle.'
       summary: Write data, projects, settings, reports and file uploads; undo
       tags:
       - Writing
@@ -14801,6 +15119,161 @@ paths:
               schema:
                 $ref: '#/components/schemas/RecordsWriteResponse'
           description: Per-row outcomes.
+        '202':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecordsDatasetQueued'
+          description: 'A Dataset request (or a dataset write''s undo) too large to
+            answer here: GET `dataset.poll`, waiting the Retry-After seconds.'
+        '400':
+          description: The request could not be understood (see `reason_code`).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 'No usable credential. `reason_code` distinguishes a revoked
+            grant from an expired, unknown or malformed one; the response carries
+            `WWW-Authenticate: Grant`.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: The credential is valid but not permitted this operation —
+            outside the grant surface, a write with a read-only grant, or outside
+            a room-pinned grant's room.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: No such resource inside this credential's scope. A row in another
+            project is indistinguishable from one that does not exist, by design.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: The grant's request rate was exceeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            Retry-After:
+              description: Seconds to wait before retrying. Sent on every throttled
+                response.
+              schema:
+                type: integer
+      x-geodb-extension: true
+  /api/v2/records/datasets/{job_id}/:
+    get:
+      operationId: records_dataset_retrieve
+      description: 'Poll a Dataset rehearsal, write or undo the server is running
+        in the background. **The status code is the signal:** `202` while it is queued
+        or running — wait the `Retry-After` seconds, then poll again (`progress` says
+        how far it got); `200` once it ended: `status: done` with `result` (exactly
+        what the request would have answered had it been small), or `status: failed`
+        with the `reason_code`, `remedy` and the `status_code` the refusal would have
+        carried inline. A job is visible only to the key that started it; any other
+        id is `not_found`.'
+      summary: 'One of this key''s dataset jobs: a rehearsal, write or undo'
+      parameters:
+      - in: path
+        name: job_id
+        schema:
+          type: string
+          format: uuid
+        description: The id a Dataset answer named (`dataset.id` of a poll handle;
+          a rehearsal's `dataset`).
+        required: true
+      tags:
+      - Writing
+      security:
+      - knoxApiToken: []
+      - GrantAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecordsDatasetJob'
+          description: ''
+        '202':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecordsDatasetJob'
+          description: Still running.
+        '400':
+          description: The request could not be understood (see `reason_code`).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 'No usable credential. `reason_code` distinguishes a revoked
+            grant from an expired, unknown or malformed one; the response carries
+            `WWW-Authenticate: Grant`.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: The credential is valid but not permitted this operation —
+            outside the grant surface, a write with a read-only grant, or outside
+            a room-pinned grant's room.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: No such resource inside this credential's scope. A row in another
+            project is indistinguishable from one that does not exist, by design.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: The grant's request rate was exceeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            Retry-After:
+              description: Seconds to wait before retrying. Sent on every throttled
+                response.
+              schema:
+                type: integer
+      x-geodb-extension: true
+  /api/v2/records/datasets/{job_id}/detail/:
+    get:
+      operationId: records_dataset_detail
+      description: 'The full detail of a Dataset rehearsal, as a parquet file: one
+        row per exception and warning (with its file line), per certificate and per
+        method / element pair. Answers a 302 to a short-lived signed URL; only the
+        key that ran the rehearsal may read it, for 72 hours.'
+      summary: A dataset rehearsal's full detail file (a signed redirect)
+      parameters:
+      - in: path
+        name: job_id
+        schema:
+          type: string
+          format: uuid
+        description: The id a Dataset answer named (`dataset.id` of a poll handle;
+          a rehearsal's `dataset`).
+        required: true
+      tags:
+      - Writing
+      security:
+      - knoxApiToken: []
+      - GrantAuth: []
+      responses:
+        '302':
+          description: A short-lived signed URL to the file.
         '400':
           description: The request could not be understood (see `reason_code`).
           content:
@@ -15435,6 +15908,12 @@ paths:
           QC types) answers that company; with `scope=company` a project-level list
           answers every project of it this credential can read. A value that names
           no company this credential can read is refused with `invalid_parameter`.'
+      - in: query
+        name: name
+        schema:
+          type: string
+        description: Exact record name (as stored, case-sensitive); several names
+          comma-separated. The quick way to find one record.
       tags:
       - Map Layers
       security:
@@ -16641,6 +17120,26 @@ paths:
           QC types) answers that company; with `scope=company` a project-level list
           answers every project of it this credential can read. A value that names
           no company this credential can read is refused with `invalid_parameter`.'
+      - in: query
+        name: name
+        schema:
+          type: string
+        description: Exact record name (as stored, case-sensitive); several names
+          comma-separated. The quick way to find one record.
+      - in: query
+        name: include_trashed
+        schema:
+          type: boolean
+        description: 'Records in the Trash (removed, restorable). `true`: the list
+          also returns them, each marked `in_trash: true` (live rows carry no such
+          key) with a `trash` object naming the removal that put it there (`audit_batch_id`),
+          what that removal took, and the records `restore` request that brings it
+          back, so you can tell the user what the server holds — a name taken by a
+          trashed record is restored (after the user agrees), never re-created beside
+          it. With the Trash in the answer the list''s `deleted_ids` is empty: the
+          trashed records are the `in_trash` rows, not deletions to apply. Only a
+          key acting as a person (the user''s own connection) may send it; a vendor
+          or data-room key is refused `trash_needs_person_key`.'
       tags:
       - Quality Control
       security:
@@ -16709,6 +17208,20 @@ paths:
           type: integer
         description: A unique integer value identifying this standard.
         required: true
+      - in: query
+        name: include_trashed
+        schema:
+          type: boolean
+        description: 'Records in the Trash (removed, restorable). `true`: the list
+          also returns them, each marked `in_trash: true` (live rows carry no such
+          key) with a `trash` object naming the removal that put it there (`audit_batch_id`),
+          what that removal took, and the records `restore` request that brings it
+          back, so you can tell the user what the server holds — a name taken by a
+          trashed record is restored (after the user agrees), never re-created beside
+          it. With the Trash in the answer the list''s `deleted_ids` is empty: the
+          trashed records are the `in_trash` rows, not deletions to apply. Only a
+          key acting as a person (the user''s own connection) may send it; a vendor
+          or data-room key is refused `trash_needs_person_key`.'
       tags:
       - Quality Control
       security:
@@ -16867,6 +17380,12 @@ paths:
           QC types) answers that company; with `scope=company` a project-level list
           answers every project of it this credential can read. A value that names
           no company this credential can read is refused with `invalid_parameter`.'
+      - in: query
+        name: name
+        schema:
+          type: string
+        description: Exact record name (as stored, case-sensitive); several names
+          comma-separated. The quick way to find one record.
       tags:
       - Surface Geology
       security:
@@ -17052,6 +17571,26 @@ paths:
           of one project — `company=<id>` names it (a credential that reads one company
           needs none; several companies and none named is `company_required`). Never
           across companies. Each row carries `project_id`. Read-only.'
+      - in: query
+        name: name
+        schema:
+          type: string
+        description: Exact record name (as stored, case-sensitive); several names
+          comma-separated. The quick way to find one record.
+      - in: query
+        name: include_trashed
+        schema:
+          type: boolean
+        description: 'Records in the Trash (removed, restorable). `true`: the list
+          also returns them, each marked `in_trash: true` (live rows carry no such
+          key) with a `trash` object naming the removal that put it there (`audit_batch_id`),
+          what that removal took, and the records `restore` request that brings it
+          back, so you can tell the user what the server holds — a name taken by a
+          trashed record is restored (after the user agrees), never re-created beside
+          it. With the Trash in the answer the list''s `deleted_ids` is empty: the
+          trashed records are the `in_trash` rows, not deletions to apply. Only a
+          key acting as a person (the user''s own connection) may send it; a vendor
+          or data-room key is refused `trash_needs_person_key`.'
       tags:
       - Assays
       security:
@@ -17121,6 +17660,20 @@ paths:
           type: integer
         description: A unique integer value identifying this submittal.
         required: true
+      - in: query
+        name: include_trashed
+        schema:
+          type: boolean
+        description: 'Records in the Trash (removed, restorable). `true`: the list
+          also returns them, each marked `in_trash: true` (live rows carry no such
+          key) with a `trash` object naming the removal that put it there (`audit_batch_id`),
+          what that removal took, and the records `restore` request that brings it
+          back, so you can tell the user what the server holds — a name taken by a
+          trashed record is restored (after the user agrees), never re-created beside
+          it. With the Trash in the answer the list''s `deleted_ids` is empty: the
+          trashed records are the `in_trash` rows, not deletions to apply. Only a
+          key acting as a person (the user''s own connection) may send it; a vendor
+          or data-room key is refused `trash_needs_person_key`.'
       tags:
       - Assays
       security:
@@ -17872,6 +18425,14 @@ paths:
           QC types) answers that company; with `scope=company` a project-level list
           answers every project of it this credential can read. A value that names
           no company this credential can read is refused with `invalid_parameter`.'
+      - in: query
+        name: scope
+        schema:
+          type: string
+        description: 'scope=company: read every readable project of ONE company instead
+          of one project — `company=<id>` names it (a credential that reads one company
+          needs none; several companies and none named is `company_required`). Never
+          across companies. Each row carries `project_id`. Read-only.'
       tags:
       - Map Layers
       security:
@@ -18174,6 +18735,12 @@ paths:
           of one project — `company=<id>` names it (a credential that reads one company
           needs none; several companies and none named is `company_required`). Never
           across companies. Each row carries `project_id`. Read-only.'
+      - in: query
+        name: name
+        schema:
+          type: string
+        description: Exact record name (as stored, case-sensitive); several names
+          comma-separated. The quick way to find one record.
       tags:
       - Water
       security:
@@ -18360,6 +18927,26 @@ paths:
           of one project — `company=<id>` names it (a credential that reads one company
           needs none; several companies and none named is `company_required`). Never
           across companies. Each row carries `project_id`. Read-only.'
+      - in: query
+        name: name
+        schema:
+          type: string
+        description: Exact record name (as stored, case-sensitive); several names
+          comma-separated. The quick way to find one record.
+      - in: query
+        name: include_trashed
+        schema:
+          type: boolean
+        description: 'Records in the Trash (removed, restorable). `true`: the list
+          also returns them, each marked `in_trash: true` (live rows carry no such
+          key) with a `trash` object naming the removal that put it there (`audit_batch_id`),
+          what that removal took, and the records `restore` request that brings it
+          back, so you can tell the user what the server holds — a name taken by a
+          trashed record is restored (after the user agrees), never re-created beside
+          it. With the Trash in the answer the list''s `deleted_ids` is empty: the
+          trashed records are the `in_trash` rows, not deletions to apply. Only a
+          key acting as a person (the user''s own connection) may send it; a vendor
+          or data-room key is refused `trash_needs_person_key`.'
       tags:
       - Water
       security:
@@ -18427,6 +19014,20 @@ paths:
           type: integer
         description: A unique integer value identifying this Water Quality Certificate.
         required: true
+      - in: query
+        name: include_trashed
+        schema:
+          type: boolean
+        description: 'Records in the Trash (removed, restorable). `true`: the list
+          also returns them, each marked `in_trash: true` (live rows carry no such
+          key) with a `trash` object naming the removal that put it there (`audit_batch_id`),
+          what that removal took, and the records `restore` request that brings it
+          back, so you can tell the user what the server holds — a name taken by a
+          trashed record is restored (after the user agrees), never re-created beside
+          it. With the Trash in the answer the list''s `deleted_ids` is empty: the
+          trashed records are the `in_trash` rows, not deletions to apply. Only a
+          key acting as a person (the user''s own connection) may send it; a vendor
+          or data-room key is refused `trash_needs_person_key`.'
       tags:
       - Water
       security:
@@ -18537,6 +19138,26 @@ paths:
           QC types) answers that company; with `scope=company` a project-level list
           answers every project of it this credential can read. A value that names
           no company this credential can read is refused with `invalid_parameter`.'
+      - in: query
+        name: name
+        schema:
+          type: string
+        description: Exact record name (as stored, case-sensitive); several names
+          comma-separated. The quick way to find one record.
+      - in: query
+        name: include_trashed
+        schema:
+          type: boolean
+        description: 'Records in the Trash (removed, restorable). `true`: the list
+          also returns them, each marked `in_trash: true` (live rows carry no such
+          key) with a `trash` object naming the removal that put it there (`audit_batch_id`),
+          what that removal took, and the records `restore` request that brings it
+          back, so you can tell the user what the server holds — a name taken by a
+          trashed record is restored (after the user agrees), never re-created beside
+          it. With the Trash in the answer the list''s `deleted_ids` is empty: the
+          trashed records are the `in_trash` rows, not deletions to apply. Only a
+          key acting as a person (the user''s own connection) may send it; a vendor
+          or data-room key is refused `trash_needs_person_key`.'
       tags:
       - Water
       security:
@@ -18605,6 +19226,20 @@ paths:
           type: integer
         description: A unique integer value identifying this Water Quality Method.
         required: true
+      - in: query
+        name: include_trashed
+        schema:
+          type: boolean
+        description: 'Records in the Trash (removed, restorable). `true`: the list
+          also returns them, each marked `in_trash: true` (live rows carry no such
+          key) with a `trash` object naming the removal that put it there (`audit_batch_id`),
+          what that removal took, and the records `restore` request that brings it
+          back, so you can tell the user what the server holds — a name taken by a
+          trashed record is restored (after the user agrees), never re-created beside
+          it. With the Trash in the answer the list''s `deleted_ids` is empty: the
+          trashed records are the `in_trash` rows, not deletions to apply. Only a
+          key acting as a person (the user''s own connection) may send it; a vendor
+          or data-room key is refused `trash_needs_person_key`.'
       tags:
       - Water
       security:
@@ -18786,6 +19421,12 @@ paths:
           type: string
         description: 'Narrow to one sample type: `REG` regular, `DUP` field duplicate,
           `BLK` field blank, `QC` QC sample (or its name).'
+      - in: query
+        name: name
+        schema:
+          type: string
+        description: Exact record name (as stored, case-sensitive); several names
+          comma-separated. The quick way to find one record.
       tags:
       - Water
       security:
@@ -19024,6 +19665,26 @@ paths:
           type: string
         description: 'Narrow to one site status: `AC` active, `IN` inactive, `AB`
           abandoned (or its name).'
+      - in: query
+        name: name
+        schema:
+          type: string
+        description: Exact record name (as stored, case-sensitive); several names
+          comma-separated. The quick way to find one record.
+      - in: query
+        name: include_trashed
+        schema:
+          type: boolean
+        description: 'Records in the Trash (removed, restorable). `true`: the list
+          also returns them, each marked `in_trash: true` (live rows carry no such
+          key) with a `trash` object naming the removal that put it there (`audit_batch_id`),
+          what that removal took, and the records `restore` request that brings it
+          back, so you can tell the user what the server holds — a name taken by a
+          trashed record is restored (after the user agrees), never re-created beside
+          it. With the Trash in the answer the list''s `deleted_ids` is empty: the
+          trashed records are the `in_trash` rows, not deletions to apply. Only a
+          key acting as a person (the user''s own connection) may send it; a vendor
+          or data-room key is refused `trash_needs_person_key`.'
       tags:
       - Water
       security:
@@ -19093,6 +19754,20 @@ paths:
           type: integer
         description: A unique integer value identifying this Water Site.
         required: true
+      - in: query
+        name: include_trashed
+        schema:
+          type: boolean
+        description: 'Records in the Trash (removed, restorable). `true`: the list
+          also returns them, each marked `in_trash: true` (live rows carry no such
+          key) with a `trash` object naming the removal that put it there (`audit_batch_id`),
+          what that removal took, and the records `restore` request that brings it
+          back, so you can tell the user what the server holds — a name taken by a
+          trashed record is restored (after the user agrees), never re-created beside
+          it. With the Trash in the answer the list''s `deleted_ids` is empty: the
+          trashed records are the `in_trash` rows, not deletions to apply. Only a
+          key acting as a person (the user''s own connection) may send it; a vendor
+          or data-room key is refused `trash_needs_person_key`.'
       tags:
       - Water
       security:
@@ -20297,6 +20972,44 @@ components:
           format: date
           readOnly: true
           nullable: true
+        in_trash:
+          type: boolean
+          readOnly: true
+          description: Present (true) only on a record in the Trash, returned because
+            the read sent `include_trashed=true`. Restore it (its `trash.restore`
+            request) rather than creating its twin.
+        trash:
+          type: object
+          readOnly: true
+          nullable: true
+          description: 'Present only on an `in_trash` row: how to bring it back. `audit_batch_id`
+            is the removal that put it in the Trash (null when it was removed without
+            a batch record: then `note` says to use the web Trash); `batch_records`
+            counts, by record type, everything that one removal took (this record
+            included) and `other_records_in_batch` how many besides it; `restore`
+            is the records request that restores that removal, as a dry run. A restore
+            brings back the WHOLE removal: show the user the dry run''s `restoring`
+            (every record it brings back) before sending it with `dry_run: false`.'
+          properties:
+            audit_batch_id:
+              type: string
+              format: uuid
+              nullable: true
+            removed_at:
+              type: string
+              format: date-time
+              nullable: true
+            batch_records:
+              type: object
+              additionalProperties:
+                type: integer
+            other_records_in_batch:
+              type: integer
+            restore:
+              type: object
+              nullable: true
+            note:
+              type: string
         project_id:
           type: integer
           readOnly: true
@@ -21137,7 +21850,9 @@ components:
           description: 'The document type code: RP report, TR technical report, MM
             memo, MP map, CT certificate, PM permit, PR press release, QC quality
             control, IM image, LS long section, XC cross section, DH drill-hole related,
-            OT other (describe the rest from a documents/ read).'
+            OT other (describe the rest from a documents/ read). Required unless attach_to
+            names a certificate (the category then defaults to CT); a sent category
+            is kept.'
         file_name:
           type: string
           minLength: 1
@@ -21154,12 +21869,18 @@ components:
         description:
           type: string
           minLength: 1
+        attach_to:
+          type: string
+          minLength: 1
+          description: '{"model": "Certificate", "id": <the certificate''s id>} as
+            a JSON string: link the document (the laboratory''s file for that job)
+            to that certificate (same project) in this request. The category then
+            defaults to CT.'
         dry_run:
           type: boolean
           default: false
           description: 'true: check the upload and store nothing (no write_id).'
       required:
-      - category
       - document
       - project
     DrillAlterationRead:
@@ -21670,6 +22391,44 @@ components:
           - $ref: '#/components/schemas/GeoJSONPoint'
           nullable: true
           readOnly: true
+        in_trash:
+          type: boolean
+          readOnly: true
+          description: Present (true) only on a record in the Trash, returned because
+            the read sent `include_trashed=true`. Restore it (its `trash.restore`
+            request) rather than creating its twin.
+        trash:
+          type: object
+          readOnly: true
+          nullable: true
+          description: 'Present only on an `in_trash` row: how to bring it back. `audit_batch_id`
+            is the removal that put it in the Trash (null when it was removed without
+            a batch record: then `note` says to use the web Trash); `batch_records`
+            counts, by record type, everything that one removal took (this record
+            included) and `other_records_in_batch` how many besides it; `restore`
+            is the records request that restores that removal, as a dry run. A restore
+            brings back the WHOLE removal: show the user the dry run''s `restoring`
+            (every record it brings back) before sending it with `dry_run: false`.'
+          properties:
+            audit_batch_id:
+              type: string
+              format: uuid
+              nullable: true
+            removed_at:
+              type: string
+              format: date-time
+              nullable: true
+            batch_records:
+              type: object
+              additionalProperties:
+                type: integer
+            other_records_in_batch:
+              type: integer
+            restore:
+              type: object
+              nullable: true
+            note:
+              type: string
         project_id:
           type: integer
           readOnly: true
@@ -22570,6 +23329,44 @@ components:
           format: date
           readOnly: true
           nullable: true
+        in_trash:
+          type: boolean
+          readOnly: true
+          description: Present (true) only on a record in the Trash, returned because
+            the read sent `include_trashed=true`. Restore it (its `trash.restore`
+            request) rather than creating its twin.
+        trash:
+          type: object
+          readOnly: true
+          nullable: true
+          description: 'Present only on an `in_trash` row: how to bring it back. `audit_batch_id`
+            is the removal that put it in the Trash (null when it was removed without
+            a batch record: then `note` says to use the web Trash); `batch_records`
+            counts, by record type, everything that one removal took (this record
+            included) and `other_records_in_batch` how many besides it; `restore`
+            is the records request that restores that removal, as a dry run. A restore
+            brings back the WHOLE removal: show the user the dry run''s `restoring`
+            (every record it brings back) before sending it with `dry_run: false`.'
+          properties:
+            audit_batch_id:
+              type: string
+              format: uuid
+              nullable: true
+            removed_at:
+              type: string
+              format: date-time
+              nullable: true
+            batch_records:
+              type: object
+              additionalProperties:
+                type: integer
+            other_records_in_batch:
+              type: integer
+            restore:
+              type: object
+              nullable: true
+            note:
+              type: string
         project_id:
           type: integer
           readOnly: true
@@ -26128,6 +26925,44 @@ components:
           format: date
           readOnly: true
           nullable: true
+        in_trash:
+          type: boolean
+          readOnly: true
+          description: Present (true) only on a record in the Trash, returned because
+            the read sent `include_trashed=true`. Restore it (its `trash.restore`
+            request) rather than creating its twin.
+        trash:
+          type: object
+          readOnly: true
+          nullable: true
+          description: 'Present only on an `in_trash` row: how to bring it back. `audit_batch_id`
+            is the removal that put it in the Trash (null when it was removed without
+            a batch record: then `note` says to use the web Trash); `batch_records`
+            counts, by record type, everything that one removal took (this record
+            included) and `other_records_in_batch` how many besides it; `restore`
+            is the records request that restores that removal, as a dry run. A restore
+            brings back the WHOLE removal: show the user the dry run''s `restoring`
+            (every record it brings back) before sending it with `dry_run: false`.'
+          properties:
+            audit_batch_id:
+              type: string
+              format: uuid
+              nullable: true
+            removed_at:
+              type: string
+              format: date-time
+              nullable: true
+            batch_records:
+              type: object
+              additionalProperties:
+                type: integer
+            other_records_in_batch:
+              type: integer
+            restore:
+              type: object
+              nullable: true
+            note:
+              type: string
         company_id:
           type: integer
           readOnly: true
@@ -26754,6 +27589,44 @@ components:
           format: date
           readOnly: true
           nullable: true
+        in_trash:
+          type: boolean
+          readOnly: true
+          description: Present (true) only on a record in the Trash, returned because
+            the read sent `include_trashed=true`. Restore it (its `trash.restore`
+            request) rather than creating its twin.
+        trash:
+          type: object
+          readOnly: true
+          nullable: true
+          description: 'Present only on an `in_trash` row: how to bring it back. `audit_batch_id`
+            is the removal that put it in the Trash (null when it was removed without
+            a batch record: then `note` says to use the web Trash); `batch_records`
+            counts, by record type, everything that one removal took (this record
+            included) and `other_records_in_batch` how many besides it; `restore`
+            is the records request that restores that removal, as a dry run. A restore
+            brings back the WHOLE removal: show the user the dry run''s `restoring`
+            (every record it brings back) before sending it with `dry_run: false`.'
+          properties:
+            audit_batch_id:
+              type: string
+              format: uuid
+              nullable: true
+            removed_at:
+              type: string
+              format: date-time
+              nullable: true
+            batch_records:
+              type: object
+              additionalProperties:
+                type: integer
+            other_records_in_batch:
+              type: integer
+            restore:
+              type: object
+              nullable: true
+            note:
+              type: string
         company_id:
           type: integer
           readOnly: true
@@ -33764,6 +34637,49 @@ components:
       - standards_thresholds
       - url
       additionalProperties: false
+    RecordCounts:
+      type: object
+      properties:
+        project:
+          type: object
+          additionalProperties: {}
+        counts:
+          type: object
+          additionalProperties:
+            type: object
+            additionalProperties: {}
+          description: '{record type: {"live": n, "in_trash": n (person keys)}}'
+        company_wide:
+          type: array
+          items:
+            type: string
+        in_trash_counted:
+          type: boolean
+        not_readable:
+          type: array
+          items:
+            type: string
+        uncounted:
+          type: array
+          items:
+            type: string
+          description: Record types this key can read whose count failed this time
+            (read their list instead).
+        notes:
+          type: object
+          additionalProperties:
+            type: string
+          description: '{record type: what its count includes} for the types whose
+            list leaves some records out by default.'
+      required:
+      - company_wide
+      - counts
+      - in_trash_counted
+      - not_readable
+      - notes
+      - project
+      - uncounted
+      additionalProperties: false
     RecordHistory:
       type: object
       properties:
@@ -33784,6 +34700,80 @@ components:
       - record
       - results
       - truncated
+      additionalProperties: false
+    RecordsDatasetHandle:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: The job id the poll path names.
+        kind:
+          type: string
+          description: '`rehearsal`, `write` or `undo`.'
+        status:
+          type: string
+          description: '`queued` or `running`.'
+        poll:
+          type: string
+          description: 'GET this path (absolute on this host: /api/v2/records/datasets/<id>/)
+            for the answer.'
+      required:
+      - id
+      - kind
+      - poll
+      - status
+      additionalProperties: false
+    RecordsDatasetJob:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        kind:
+          type: string
+          description: '`rehearsal`, `write` or `undo`.'
+        status:
+          type: string
+          description: '`queued` / `running` (202: poll again after Retry-After),
+            `done` (the answer is `result`) or `failed` / `cancelled` (`reason_code`,
+            `detail`, `remedy`, `offending`).'
+        progress:
+          type: object
+          additionalProperties: {}
+          description: '{member, members, model, rows_done, rows_total, waiting_for?}'
+        result:
+          type: object
+          additionalProperties: {}
+          description: 'done: what the request would have answered inline (a stopped
+            write''s answer included).'
+        reason_code:
+          type: string
+        detail:
+          type: string
+        remedy:
+          type: string
+        offending:
+          type: object
+          additionalProperties: {}
+        status_code:
+          type: integer
+          description: 'failed / cancelled: the HTTP status the refusal would have
+            carried had the request been answered inline (401, 403, 409, 429, 503
+            …) — handle it as that response; the poll itself answers 200.'
+      required:
+      - id
+      - kind
+      - progress
+      - status
+      additionalProperties: false
+    RecordsDatasetQueued:
+      type: object
+      properties:
+        dataset:
+          $ref: '#/components/schemas/RecordsDatasetHandle'
+      required:
+      - dataset
       additionalProperties: false
     RecordsDescribe:
       type: object
@@ -33835,11 +34825,26 @@ components:
           additionalProperties: {}
           description: '{rule}: where this record''s image is written (the photo upload
             with attach_to).'
+        documents:
+          type: object
+          additionalProperties: {}
+          description: '{rule}: where this record''s own file is uploaded (the document
+            upload with attach_to).'
         batch_limit:
           type: integer
+        land_order:
+          type: object
+          additionalProperties: {}
+          description: '{parents: [the record types this one names, which must exist
+            first], order: [every record type, parents first], rule}'
         project:
           type: object
           additionalProperties: {}
+        qc_mapping:
+          type: object
+          additionalProperties: {}
+          description: 'Assay only: {rule, example} — the shape of the request''s
+            QC read (lab QC rows need it).'
       required:
       - batch_limit
       - confirm_note
@@ -33849,6 +34854,7 @@ components:
       - identity_note
       - intent_rules
       - intents
+      - land_order
       - long_form
       - model
       - project
@@ -33934,7 +34940,19 @@ components:
             one entry per certificate — {"certificate": …, "markers": [{"marker",
             "kind": STD|BLK|DUP, "runs", "parent"}], "dropped_rows": [{"row", "why"}],
             "qc_policy": "replace"|"append"}. The dry run states it for the user and
-            returns the `confirm` the write needs.'
+            returns the `confirm` the write needs. A Dataset carries it for its Assay
+            member, or {"same_as": "<rehearsal id>"} (a stopped write''s `rehearse_rest`).'
+        dataset:
+          description: 'model Dataset only (describe/Dataset/ says how): the rehearsal
+            {"members": [{"document": <id>, "model": "<Model>", "intent"?, "set"?},
+            …], "continues"?: "<write_id>"} — member files this connection uploaded
+            as CSV documents; or, in the write the rehearsal returned, {"approved":
+            "<dataset id>"}.'
+        plan_token:
+          type: string
+          minLength: 1
+          description: 'model Dataset write only: the token the rehearsal returned
+            in its `write` body (send that body as it is).'
       required:
       - intent
     RecordsRowOutcome:
@@ -34152,6 +35170,15 @@ components:
         undone_by_model:
           type: object
           additionalProperties: {}
+        stopped:
+          type: object
+          additionalProperties: {}
+          description: 'A model Dataset write that stopped part-way (`status: stopped`):
+            {member, reason_code, detail, remedy, offending?, status_code} — `status_code`
+            is the HTTP status the stopping refusal carries on its own (401 a key
+            that can no longer be used, 403, 409, 503 …): handle the stop as that
+            response. The answer itself is 200; `rehearse_rest` rehearses what did
+            not land.'
       required:
       - dry_run
       - intent
@@ -34733,6 +35760,44 @@ components:
           format: date
           readOnly: true
           nullable: true
+        in_trash:
+          type: boolean
+          readOnly: true
+          description: Present (true) only on a record in the Trash, returned because
+            the read sent `include_trashed=true`. Restore it (its `trash.restore`
+            request) rather than creating its twin.
+        trash:
+          type: object
+          readOnly: true
+          nullable: true
+          description: 'Present only on an `in_trash` row: how to bring it back. `audit_batch_id`
+            is the removal that put it in the Trash (null when it was removed without
+            a batch record: then `note` says to use the web Trash); `batch_records`
+            counts, by record type, everything that one removal took (this record
+            included) and `other_records_in_batch` how many besides it; `restore`
+            is the records request that restores that removal, as a dry run. A restore
+            brings back the WHOLE removal: show the user the dry run''s `restoring`
+            (every record it brings back) before sending it with `dry_run: false`.'
+          properties:
+            audit_batch_id:
+              type: string
+              format: uuid
+              nullable: true
+            removed_at:
+              type: string
+              format: date-time
+              nullable: true
+            batch_records:
+              type: object
+              additionalProperties:
+                type: integer
+            other_records_in_batch:
+              type: integer
+            restore:
+              type: object
+              nullable: true
+            note:
+              type: string
         company_id:
           type: integer
           readOnly: true
@@ -35447,6 +36512,44 @@ components:
           format: date
           readOnly: true
           nullable: true
+        in_trash:
+          type: boolean
+          readOnly: true
+          description: Present (true) only on a record in the Trash, returned because
+            the read sent `include_trashed=true`. Restore it (its `trash.restore`
+            request) rather than creating its twin.
+        trash:
+          type: object
+          readOnly: true
+          nullable: true
+          description: 'Present only on an `in_trash` row: how to bring it back. `audit_batch_id`
+            is the removal that put it in the Trash (null when it was removed without
+            a batch record: then `note` says to use the web Trash); `batch_records`
+            counts, by record type, everything that one removal took (this record
+            included) and `other_records_in_batch` how many besides it; `restore`
+            is the records request that restores that removal, as a dry run. A restore
+            brings back the WHOLE removal: show the user the dry run''s `restoring`
+            (every record it brings back) before sending it with `dry_run: false`.'
+          properties:
+            audit_batch_id:
+              type: string
+              format: uuid
+              nullable: true
+            removed_at:
+              type: string
+              format: date-time
+              nullable: true
+            batch_records:
+              type: object
+              additionalProperties:
+                type: integer
+            other_records_in_batch:
+              type: integer
+            restore:
+              type: object
+              nullable: true
+            note:
+              type: string
         project_id:
           type: integer
           readOnly: true
@@ -35505,6 +36608,44 @@ components:
         notes:
           type: string
           description: Additional notes about this submittal
+        in_trash:
+          type: boolean
+          readOnly: true
+          description: Present (true) only on a record in the Trash, returned because
+            the read sent `include_trashed=true`. Restore it (its `trash.restore`
+            request) rather than creating its twin.
+        trash:
+          type: object
+          readOnly: true
+          nullable: true
+          description: 'Present only on an `in_trash` row: how to bring it back. `audit_batch_id`
+            is the removal that put it in the Trash (null when it was removed without
+            a batch record: then `note` says to use the web Trash); `batch_records`
+            counts, by record type, everything that one removal took (this record
+            included) and `other_records_in_batch` how many besides it; `restore`
+            is the records request that restores that removal, as a dry run. A restore
+            brings back the WHOLE removal: show the user the dry run''s `restoring`
+            (every record it brings back) before sending it with `dry_run: false`.'
+          properties:
+            audit_batch_id:
+              type: string
+              format: uuid
+              nullable: true
+            removed_at:
+              type: string
+              format: date-time
+              nullable: true
+            batch_records:
+              type: object
+              additionalProperties:
+                type: integer
+            other_records_in_batch:
+              type: integer
+            restore:
+              type: object
+              nullable: true
+            note:
+              type: string
         project_id:
           type: integer
           readOnly: true
@@ -36134,6 +37275,44 @@ components:
           format: date
           readOnly: true
           nullable: true
+        in_trash:
+          type: boolean
+          readOnly: true
+          description: Present (true) only on a record in the Trash, returned because
+            the read sent `include_trashed=true`. Restore it (its `trash.restore`
+            request) rather than creating its twin.
+        trash:
+          type: object
+          readOnly: true
+          nullable: true
+          description: 'Present only on an `in_trash` row: how to bring it back. `audit_batch_id`
+            is the removal that put it in the Trash (null when it was removed without
+            a batch record: then `note` says to use the web Trash); `batch_records`
+            counts, by record type, everything that one removal took (this record
+            included) and `other_records_in_batch` how many besides it; `restore`
+            is the records request that restores that removal, as a dry run. A restore
+            brings back the WHOLE removal: show the user the dry run''s `restoring`
+            (every record it brings back) before sending it with `dry_run: false`.'
+          properties:
+            audit_batch_id:
+              type: string
+              format: uuid
+              nullable: true
+            removed_at:
+              type: string
+              format: date-time
+              nullable: true
+            batch_records:
+              type: object
+              additionalProperties:
+                type: integer
+            other_records_in_batch:
+              type: integer
+            restore:
+              type: object
+              nullable: true
+            note:
+              type: string
         project_id:
           type: integer
           readOnly: true
@@ -36194,6 +37373,44 @@ components:
           format: date
           readOnly: true
           nullable: true
+        in_trash:
+          type: boolean
+          readOnly: true
+          description: Present (true) only on a record in the Trash, returned because
+            the read sent `include_trashed=true`. Restore it (its `trash.restore`
+            request) rather than creating its twin.
+        trash:
+          type: object
+          readOnly: true
+          nullable: true
+          description: 'Present only on an `in_trash` row: how to bring it back. `audit_batch_id`
+            is the removal that put it in the Trash (null when it was removed without
+            a batch record: then `note` says to use the web Trash); `batch_records`
+            counts, by record type, everything that one removal took (this record
+            included) and `other_records_in_batch` how many besides it; `restore`
+            is the records request that restores that removal, as a dry run. A restore
+            brings back the WHOLE removal: show the user the dry run''s `restoring`
+            (every record it brings back) before sending it with `dry_run: false`.'
+          properties:
+            audit_batch_id:
+              type: string
+              format: uuid
+              nullable: true
+            removed_at:
+              type: string
+              format: date-time
+              nullable: true
+            batch_records:
+              type: object
+              additionalProperties:
+                type: integer
+            other_records_in_batch:
+              type: integer
+            restore:
+              type: object
+              nullable: true
+            note:
+              type: string
         company_id:
           type: integer
           readOnly: true
@@ -36711,6 +37928,44 @@ components:
           - $ref: '#/components/schemas/SourceCoordinate'
           nullable: true
           readOnly: true
+        in_trash:
+          type: boolean
+          readOnly: true
+          description: Present (true) only on a record in the Trash, returned because
+            the read sent `include_trashed=true`. Restore it (its `trash.restore`
+            request) rather than creating its twin.
+        trash:
+          type: object
+          readOnly: true
+          nullable: true
+          description: 'Present only on an `in_trash` row: how to bring it back. `audit_batch_id`
+            is the removal that put it in the Trash (null when it was removed without
+            a batch record: then `note` says to use the web Trash); `batch_records`
+            counts, by record type, everything that one removal took (this record
+            included) and `other_records_in_batch` how many besides it; `restore`
+            is the records request that restores that removal, as a dry run. A restore
+            brings back the WHOLE removal: show the user the dry run''s `restoring`
+            (every record it brings back) before sending it with `dry_run: false`.'
+          properties:
+            audit_batch_id:
+              type: string
+              format: uuid
+              nullable: true
+            removed_at:
+              type: string
+              format: date-time
+              nullable: true
+            batch_records:
+              type: object
+              additionalProperties:
+                type: integer
+            other_records_in_batch:
+              type: integer
+            restore:
+              type: object
+              nullable: true
+            note:
+              type: string
         project_id:
           type: integer
           readOnly: true
@@ -37055,8 +38310,6 @@ tags:
     for each record type (read it before writing), and this key''s own write log,
     each write with its undo handle. Every write is answered per row, `dry_run` validates
     without writing, and a write that changed something returns the `write_id` that
-    undoes it. Hard delete and purge never cross the API.'
-- name: Feedback
-  description: 'Tell the geoDB team about geoDB itself: a feature request (something
-    it cannot do yet) or a bug report (something that did not work as described).
-    Not project data; rate-limited per key and per person.'
+    undoes it. Hard delete and purge never cross the API. Also here: `feedback/`,
+    to tell the geoDB team about geoDB itself (a feature request or a bug report;
+    not project data; rate-limited per key and per person).'
