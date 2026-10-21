@@ -1298,6 +1298,96 @@ paths:
                 type: integer
       summary: List assay results
       x-protocol-core: true
+  /api/v2/assays-waiting/:
+    get:
+      operationId: assays_waiting_retrieve
+      description: 'The project''s assay results that no drill, surface or QC sample
+        is linked to (a result links to a sample BY NAME, so it waits until a sample
+        of that name exists), grouped by certificate: `certificate` (`id`, `name`,
+        `analysis_date`, `laboratory`), `count` and the first `sample_names` (`names_more`:
+        how many are not listed). Groups are paged with `limit` / `offset`; with `certificate=<id>`
+        the answer is that one group, its names paged by `limit` / `offset`. Read
+        it after an assay load: a misspelt name, or a sample file not loaded yet,
+        is the usual cause.'
+      summary: Assay results still waiting for their samples
+      parameters:
+      - in: query
+        name: certificate
+        schema:
+          type: integer
+        description: 'One certificate by id: its waiting sample names, paged.'
+      - in: query
+        name: limit
+        schema:
+          type: integer
+        description: Groups per page (default 50, at most 500); with `certificate`,
+          names per page (at most 2000).
+      - in: query
+        name: offset
+        schema:
+          type: integer
+        description: How many groups (or names) to skip.
+      - in: query
+        name: project_id
+        schema:
+          type: integer
+        description: The project to read. Defaults to the project this credential
+          is pinned to; any other must be one it can read — an id naming no readable
+          project is refused with `invalid_parameter`, as on the lists.
+      tags:
+      - Assays
+      security:
+      - knoxApiToken: []
+      - GrantAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssaysWaiting'
+          description: ''
+        '400':
+          description: The request could not be understood (see `reason_code`).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 'No usable credential. `reason_code` distinguishes a revoked
+            grant from an expired, unknown or malformed one; the response carries
+            `WWW-Authenticate: Grant`.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: The credential is valid but not permitted this operation —
+            outside the grant surface, a write with a read-only grant, or outside
+            a room-pinned grant's room.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: No such resource inside this credential's scope. A row in another
+            project is indistinguishable from one that does not exist, by design.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: The grant's request rate was exceeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            Retry-After:
+              description: Seconds to wait before retrying. Sent on every throttled
+                response.
+              schema:
+                type: integer
+      x-geodb-extension: true
   /api/v2/assays/{id}/:
     get:
       operationId: assays_retrieve
@@ -2748,9 +2838,11 @@ paths:
         geoDB stores and merges a value the laboratory reported below its limit: stored
         as the sentinel `-1` with `below_detection: true` on the value; a MERGED read
         (intercepts, exports, merged sample reads) substitutes it per `bdl_handling`.
-        Never average the sentinel, and never substitute a merged value twice. Field-XRF
-        instruments are not laboratory methods and are not listed: read their readings
-        at `/api/v2/field-xrf/`.'
+        Never average the sentinel, and never substitute a merged value twice. Laboratory
+        methods and field-XRF instruments (portable-XRF readings: field XRF; check
+        its calibration against laboratory pairs before treating it as grade) are
+        both listed, each pair labelled with its `source_type`, unless `source_type`
+        names one.'
       summary: Detection limits per method and element, and how below-detection is
         handled
       parameters:
@@ -2761,6 +2853,16 @@ paths:
         description: The project to read. Defaults to the project this credential
           is pinned to; any other must be one it can read — an id naming no readable
           project is refused with `invalid_parameter`, as on the lists.
+      - in: query
+        name: source_type
+        schema:
+          type: string
+          enum:
+          - field_xrf
+          - lab
+        description: 'List one source''s methods: `lab` (laboratory methods) or `field_xrf`
+          (field-XRF instruments). Omitted: both, each pair labelled with its `source_type`.
+          Anything else is refused.'
       tags:
       - Assays
       security:
@@ -4380,6 +4482,8 @@ paths:
         ⛔ **There is no cutoff.** Where an intercept starts and stops is a geologist's judgement — real intercepts open and close below their own average and carry internal waste — so the server never chooses boundaries, and a request that names a cutoff or threshold is refused. Propose boundaries and say why; the geologist rules.
 
         Each interval carries `coverage` (assayed length / span): below 1.0 means gaps or unassayed ground — say so when you report it. Below-detection values were already substituted by the merge settings (the project's default, or `merge_settings_id`); `merge` states the settings applied (`merge.below_detection`) — never substitute them again. Downhole length is not true width.
+
+        Laboratory and field-XRF values are both read unless `source_type` names one: each sample row says its `source_type` (a field-XRF value beside a laboratory value has its own `<column>_field_xrf` column), and each interval and the answer state `sources_used`. A field-XRF reading is a point (no length), so it weighs nothing in an interval: the grades do not move, only the rows and the sources listed.
       summary: Length-weighted intervals over boundaries you choose
       parameters:
       - in: query
@@ -4429,6 +4533,19 @@ paths:
         description: The project to read. Defaults to the project this credential
           is pinned to; any other must be one it can read — an id naming no readable
           project is refused with `invalid_parameter`, as on the lists.
+      - in: query
+        name: source_type
+        schema:
+          type: string
+          enum:
+          - field_xrf
+          - lab
+        description: 'Read one source: `lab` (laboratory results) or `field_xrf` (portable-XRF
+          readings). Omitted: both, each value labelled with its `source_type` and
+          merged within its source, never across (where one sample holds both for
+          an element, the laboratory value keeps its place and the field-XRF value
+          comes back beside it, with a `field_xrf_value_on_row` data warning). The
+          response states the sources it used (`sources_used`). Anything else is refused.'
       tags:
       - Drill Intervals
       security:
@@ -6690,6 +6807,17 @@ paths:
         description: 'Legacy: `true` merges with the project''s default merge settings.
           Prefer `merge_settings_id` or `assay_config_id`.'
       - in: query
+        name: source_type
+        schema:
+          type: string
+        description: 'On a merged read (`merge_settings_id`, `assay_config_id`, `merge_assays`):
+          `lab` (laboratory results) or `field_xrf` (portable-XRF readings). Omitted:
+          both — each merged value says its `source_type`, merged within its source,
+          never across (a sample with both for an element has two entries, the laboratory
+          value first, and a `field_xrf_value_on_row` data warning); the response
+          states `sources_used` (on this page). Not read by an unmerged read, which
+          returns every value of the assay record.'
+      - in: query
         name: name
         schema:
           type: string
@@ -6829,7 +6957,7 @@ paths:
     get:
       operationId: drill_samples_composited_retrieve
       description: |-
-        Sample intervals recombined to a uniform length, length-weighted. Needs `bhid` (the hole's id) and `assay_config_id` — the id of one of the project's assay range configurations with compositing on (`assay-range-configurations/`; each names the merge settings it uses, read at `assay-merge-settings/`). `merge_settings_id` merges with other settings. The answer states the settings it applied (`merge_settings`, with the values' `units`), and each composite's `coverage` — the share of its length that carried a value (0–1).
+        Sample intervals recombined to a uniform length, length-weighted. Needs `bhid` (the hole's id) and `assay_config_id` — the id of one of the project's assay range configurations with compositing on (`assay-range-configurations/`; each names the merge settings it uses, read at `assay-merge-settings/`). `merge_settings_id` merges with other settings. The answer states the settings it applied (`merge_settings`, with the values' `units`), and each composite's `coverage` — the share of its length that carried a value (0–1). Laboratory and field-XRF values are both read unless `source_type` (`lab` or `field_xrf`) names one; each composite states the sources it weighted (`sources_used`) and so does the answer. A field-XRF reading is a point (no length), so it weighs nothing in a composite.
 
         ⚠️ This is a COMPOSITE, not a selection: it does not apply a grade cutoff and does not choose which intervals are interesting.
       tags:
@@ -9228,12 +9356,15 @@ paths:
       description: 'Portable-XRF readings, one row per reading: the hole and the depth
         it was taken at, every element value with its units and a `below_detection`
         flag and the instrument / mode that produced it, and the reading session(s)
-        (certificates whose `source_type` is `field_xrf`). ⚠️ Field XRF is semi-quantitative
-        guidance for logging — never a reportable grade, never an input to a resource
-        estimate. geoDB leaves it out of lab-assay analytics, QC verdicts and intercepts,
-        and it never enters a combined value; present it beside lab results, labelled,
-        never merged into them. Ordered by hole, then depth.'
-      summary: Field (portable) XRF readings
+        (certificates whose `source_type` is `field_xrf`). Ordered by hole, then depth.
+        A reading-shaped convenience: the same values, one row per sample, element
+        and method, are `assay-results/?source_type=field_xrf`, and every other assay
+        read returns them beside laboratory values, labelled (`source_type`). ⚠️ Field
+        XRF is semi-quantitative; check its calibration against laboratory pairs before
+        treating it as grade, and never merge it into a laboratory value — say what
+        you mixed.'
+      summary: Field (portable) XRF, one row per reading; assay reads carry it too,
+        labelled
       parameters:
       - in: query
         name: bhid
@@ -11383,7 +11514,9 @@ paths:
         the target), in the target''s units. ⚠️ `opt` is troy ounces per SHORT ton.
         Sample reads already carry the computed value under the deck''s column key
         (e.g. `AuEq ppm`) with `metal_equivalent_config` naming the deck — read that
-        number; do not recompute it. A deck that is `complete: false` renders blanks,
+        number; do not recompute it. The computed value reads laboratory values only:
+        a field-XRF value is never one of its grades (merged sample reads return field
+        XRF beside it, labelled). A deck that is `complete: false` renders blanks,
         and `missing` says why (an unstated recovery is never assumed to be 100%).
         Each deck carries `url` (its page on the web); decks are changed through the
         records gate (model `MetalEquivalentConfig`).'
@@ -12673,6 +12806,17 @@ paths:
           type: string
         description: 'Legacy: `true` merges with the project''s default merge settings.
           Prefer `merge_settings_id` or `assay_config_id`.'
+      - in: query
+        name: source_type
+        schema:
+          type: string
+        description: 'On a merged read (`merge_settings_id`, `assay_config_id`, `merge_assays`):
+          `lab` (laboratory results) or `field_xrf` (portable-XRF readings). Omitted:
+          both — each merged value says its `source_type`, merged within its source,
+          never across (a sample with both for an element has two entries, the laboratory
+          value first, and a `field_xrf_value_on_row` data warning); the response
+          states `sources_used` (on this page). Not read by an unmerged read, which
+          returns every value of the assay record.'
       - in: query
         name: name
         schema:
@@ -14328,6 +14472,8 @@ paths:
         geoDB judges every QC reading (standard, blank, duplicate) with ONE engine — the one behind each certificate's QAQC page. This returns its verdicts: one row per reading with `status` (`pass` / `warn` / `fail` / `unknown` — `unknown` means no acceptance criterion resolved, which is neither a pass nor a fail), the measured and expected values, the Z-score and bias for standards (null on a reading reported below detection — the -1 is not a number; `z_score_reason` says why and the verdict stands), the detection-limit guard and the threshold that judged it (`threshold_source`, `threshold_reason`); plus, per certificate, the pass rates — each category counted `passed` / `warned` / `failed` (`failed` is fail verdicts only; a warn is not a pass, so `pass_rate` = passed over all three) — how many readings could be judged (`evaluability`) and the stored review decision (`approval`). Report these; never recompute a pass rate yourself — if you disagree with a verdict, say so and show why.
 
         Without `certificate`, the project's most recent certificates are read (up to 25). Certificates whose QAQC review REJECTED them (or a re-assay SUPERSEDED them) are left out of that population by default and listed under `withheld.certificates` with the reason — so a pass rate here is a pass rate over the certificates in use. Name a certificate, or send `include_rejected=true`, to read one. `group_by=standard` summarises standards per CRM, element, method comparability and unit.
+
+        Field-XRF reading sessions (CRMs and blanks shot on a portable XRF) are judged by the same engine and read beside laboratory certificates unless `source_type` names one: every certificate summary, row and `group_by` group says its `source_type`, and laboratory and field-XRF figures are never pooled — report them separately (`sources_used` says which the answer holds).
       summary: 'geoDB''s own QC verdicts per insertion: read these, never recompute'
       parameters:
       - in: query
@@ -14399,6 +14545,17 @@ paths:
         schema:
           type: string
         description: Earliest certificate analysis date (YYYY-MM-DD).
+      - in: query
+        name: source_type
+        schema:
+          type: string
+          enum:
+          - field_xrf
+          - lab
+        description: 'Read one source''s certificates: `lab` (laboratory certificates;
+          field-XRF sessions are then listed under `withheld`) or `field_xrf` (field-XRF
+          reading sessions). Omitted: both, each labelled with its `source_type` and
+          never pooled. Anything else is refused.'
       - in: query
         name: status
         schema:
@@ -15547,6 +15704,113 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/RecordsWrite'
+          description: ''
+        '400':
+          description: The request could not be understood (see `reason_code`).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 'No usable credential. `reason_code` distinguishes a revoked
+            grant from an expired, unknown or malformed one; the response carries
+            `WWW-Authenticate: Grant`.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: The credential is valid but not permitted this operation —
+            outside the grant surface, a write with a read-only grant, or outside
+            a room-pinned grant's room.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: No such resource inside this credential's scope. A row in another
+            project is indistinguishable from one that does not exist, by design.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: The grant's request rate was exceeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            Retry-After:
+              description: Seconds to wait before retrying. Sent on every throttled
+                response.
+              schema:
+                type: integer
+      x-geodb-extension: true
+  /api/v2/records/writes/{write_id}/changes/:
+    get:
+      operationId: records_write_changes
+      description: 'Every record the write touched, in projects this key can still
+        read: `kind` (created, updated, retracted, restored, purged); for `updated`,
+        `fields` = `{field: {old, new}}` as the history keeps them; values (an assay''s
+        results, a method''s limits) under their record, as `values` (`added`, `changed`,
+        `by_certificate`, and the first values with the certificate that produced
+        each) beside the record''s own `certificate`. Check every `updated` record
+        after a write: values from another certificate on a record mean the write
+        merged onto an existing sample. Paged with `limit` / `offset`; filter with
+        `model`, `kind`, `project`. A write id that is not this key''s is `not_found`.'
+      summary: What one write by this key changed, record by record
+      parameters:
+      - in: query
+        name: kind
+        schema:
+          type: string
+        description: 'Only changes of this kind: created, updated, retracted, restored
+          or purged.'
+      - in: query
+        name: limit
+        schema:
+          type: integer
+        description: Page size (default 500, at most 2000).
+      - in: query
+        name: model
+        schema:
+          type: string
+        description: Only records of this type (case does not matter).
+      - in: query
+        name: offset
+        schema:
+          type: integer
+        description: How many records to skip.
+      - in: query
+        name: project
+        schema:
+          type: string
+        description: 'Narrow to one project this credential can read, by its id or
+          its exact name (case does not matter). A value that names no readable project
+          is refused with `invalid_parameter` — never an empty list. The JSON natural
+          key some app endpoints take (`{"name": …, "company": …}`) is not a form
+          this parameter accepts: it is refused with `invalid_parameter` too — send
+          the id.'
+      - in: path
+        name: write_id
+        schema:
+          type: string
+          format: uuid
+        description: The `write_id` a write returned.
+        required: true
+      tags:
+      - Writing
+      security:
+      - knoxApiToken: []
+      - GrantAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
           description: ''
         '400':
           description: The request could not be understood (see `reason_code`).
@@ -20437,8 +20701,9 @@ components:
           allOf:
           - $ref: '#/components/schemas/AssayReadSourceTypeEnum'
           description: '`lab` — laboratory results. `field_xrf` — a portable-XRF reading
-            (field guidance, never a reportable grade; left out of lab analytics,
-            QC and intercepts by default).'
+            (field XRF; check its calibration against laboratory pairs before treating
+            it as grade). Returned beside laboratory results, labelled; never merged
+            into a laboratory value.'
           readOnly: true
         project_id:
           type: integer
@@ -20604,8 +20869,9 @@ components:
         source_type:
           type: string
           description: '`lab` — a laboratory result. `field_xrf` — a portable-XRF
-            reading (field guidance, never a reportable grade). Both are listed by
-            default; `source_type=lab` reads laboratory results only.'
+            reading (field XRF; check its calibration against laboratory pairs before
+            treating it as grade). Both are listed by default; `source_type=lab` reads
+            laboratory results only.'
         qaqc_status:
           type: string
           description: The producing certificate's QAQC review (`none` when not reviewed,
@@ -20810,6 +21076,48 @@ components:
       - upper_limit
       - value
       additionalProperties: false
+    AssaysWaiting:
+      type: object
+      properties:
+        project:
+          type: object
+          additionalProperties: {}
+        count:
+          type: integer
+        waiting:
+          type: integer
+        results:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+        see_guide:
+          type: array
+          description: The guide sections that change how this answer should be read
+            — read them before reporting from it. Each names the topic, the section,
+            its path (GET it, no key needed beyond this one) and why it matters here.
+          items:
+            type: object
+            properties:
+              topic:
+                type: string
+              section:
+                type: string
+              url:
+                type: string
+              why:
+                type: string
+            required:
+            - topic
+            - section
+            - url
+            - why
+      required:
+      - count
+      - project
+      - results
+      - waiting
+      additionalProperties: false
     BlankEnum:
       enum:
       - ''
@@ -20952,7 +21260,7 @@ components:
           - $ref: '#/components/schemas/CertificateReadSourceTypeEnum'
           readOnly: true
           description: |-
-            `lab` — a laboratory job. `field_xrf` — a portable-XRF reading session: field guidance, never a reportable grade. Field-XRF results are left out of geoDB's lab analytics, QC verdicts and intercepts, and never enter a combined value. Read them with `/api/v2/field-xrf/`.
+            `lab` — a laboratory job. `field_xrf` — a portable-XRF reading session (field XRF; check its calibration against laboratory pairs before treating it as grade). geoDB returns its values beside laboratory results, labelled, and never merges the two into one value; the assay reads, verdicts and intercepts take `source_type=lab|field_xrf` to read one.
 
             * `lab` - Laboratory
             * `field_xrf` - Field XRF
@@ -20962,6 +21270,26 @@ components:
           nullable: true
           description: Free-text notes on this certificate (as written by the user
             or through the records endpoint).
+        documents:
+          type: array
+          description: The documents attached to this certificate (the laboratory's
+            report), each by `id` (read or download it at `documents/<id>/`), `file_name`,
+            `title` and `category`. Only the documents this key may read.
+          items:
+            type: object
+            properties:
+              id:
+                type: integer
+              file_name:
+                type: string
+                nullable: true
+              title:
+                type: string
+                nullable: true
+              category:
+                type: string
+                nullable: true
+          readOnly: true
         date_created:
           type: string
           format: date
@@ -21021,6 +21349,7 @@ components:
       - batch_number
       - date_created
       - date_preliminary
+      - documents
       - id
       - laboratory
       - last_edited
@@ -21694,6 +22023,15 @@ components:
           items:
             type: object
             additionalProperties: {}
+        source_type:
+          type: string
+          nullable: true
+          description: 'The source filter applied (null: both).'
+        sources_used:
+          type: array
+          items:
+            type: string
+          description: The sources of the pairs listed (`lab`, `field_xrf`).
         see_guide:
           type: array
           description: The guide sections that change how this answer should be read
@@ -22757,6 +23095,15 @@ components:
           items:
             type: object
             additionalProperties: {}
+        source_type:
+          type: string
+          nullable: true
+          description: 'The source filter applied (null: both).'
+        sources_used:
+          type: array
+          items:
+            type: string
+          description: The sources the values read came from (`lab`, `field_xrf`).
         notes:
           type: array
           items:
@@ -24295,6 +24642,21 @@ components:
                 type: boolean
                 enum:
                 - true
+              source_type:
+                type: string
+                enum:
+                - lab
+                - field_xrf
+                - mixed
+                description: 'The sources of these merged values: `lab`, `field_xrf`,
+                  or `mixed` (both). Each value says its own.'
+              data_warnings:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DataWarning'
+                description: 'Present only when there is one: `field_xrf_value_on_row`
+                  — this sample holds both a laboratory and a field-XRF value for
+                  an element.'
               elements:
                 type: array
                 items:
@@ -24312,6 +24674,15 @@ components:
                       type: boolean
                       enum:
                       - true
+                    source_type:
+                      type: string
+                      enum:
+                      - lab
+                      - field_xrf
+                      description: 'Where the value comes from: `lab` (laboratory
+                        results) or `field_xrf` (portable-XRF readings). Merged within
+                        its source, never across: an element with both has two entries,
+                        the laboratory value first.'
         submittal:
           type: integer
           readOnly: true
@@ -25820,6 +26191,12 @@ components:
           type: boolean
           description: '`assay_results`: also ship the values of assays whose sample
             is in the Trash (left out by default; `sample_status` flags them).'
+        source_type:
+          type: string
+          minLength: 1
+          description: '`assay_results`: ship one source''s values — `lab` (laboratory
+            results) or `field_xrf` (portable-XRF readings). Omitted: both, each row
+            labelled with its `source_type`. Other tables refuse it.'
         set:
           type: string
           minLength: 1
@@ -33301,6 +33678,21 @@ components:
                 type: boolean
                 enum:
                 - true
+              source_type:
+                type: string
+                enum:
+                - lab
+                - field_xrf
+                - mixed
+                description: 'The sources of these merged values: `lab`, `field_xrf`,
+                  or `mixed` (both). Each value says its own.'
+              data_warnings:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DataWarning'
+                description: 'Present only when there is one: `field_xrf_value_on_row`
+                  — this sample holds both a laboratory and a field-XRF value for
+                  an element.'
               elements:
                 type: array
                 items:
@@ -33318,6 +33710,15 @@ components:
                       type: boolean
                       enum:
                       - true
+                    source_type:
+                      type: string
+                      enum:
+                      - lab
+                      - field_xrf
+                      description: 'Where the value comes from: `lab` (laboratory
+                        results) or `field_xrf` (portable-XRF readings). Merged within
+                        its source, never across: an element with both has two entries,
+                        the laboratory value first.'
         target_latitude:
           type: number
           format: double
@@ -34514,6 +34915,16 @@ components:
           type: array
           items:
             type: string
+        source_type:
+          type: string
+          nullable: true
+          description: 'The source filter applied (null: both).'
+        sources_used:
+          type: array
+          items:
+            type: string
+          description: The sources of the certificates read (`lab`, `field_xrf`);
+            their figures are never pooled.
         next_offset:
           type: integer
           nullable: true
@@ -38125,6 +38536,7 @@ components:
           - crs_implausible
           - depth_past_hole
           - dip_out_of_range
+          - field_xrf_value_on_row
           - interval_upside_down
           - invalid_geometry
           - missing_epsg
@@ -38143,7 +38555,10 @@ components:
             but its epsg is a projected system in metres or feet, so it sits near
             that grid''s origin (often at the equator on a map).; `depth_past_hole`:
             the depth lies beyond the hole''s total depth.; `dip_out_of_range`: dip
-            is outside -90..90 degrees.; `interval_upside_down`: depth_from is greater
+            is outside -90..90 degrees.; `field_xrf_value_on_row`: the row has both
+            a laboratory and a field-XRF value for one element; the merged value is
+            the laboratory one and the field-XRF value is returned beside it, labelled
+            (never merged together).; `interval_upside_down`: depth_from is greater
             than depth_to (an upside-down interval).; `invalid_geometry`: the stored
             geometry is not valid (for example a self-intersecting outline).; `missing_epsg`:
             the record has coordinates but no epsg, so their CRS is unknown.; `negative_value`:

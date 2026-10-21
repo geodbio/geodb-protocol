@@ -1,6 +1,6 @@
 # Working efficiently: large reads and imports
 
-Read counts first, reference records whole and data records only filtered; check a load with its dry run (one dataset for several record types), never with an export; a worked lab-certificate load.
+Read counts first, reference records whole and data records only filtered; check a load with its dry run (one dataset for several record types), never with an export; a worked lab-certificate load and a field (portable) XRF export.
 
 ### Reading efficiently: counts first, references whole, data filtered
 
@@ -77,7 +77,10 @@ so read what answers the question, never a copy of the database.
 laboratory's report formats on this surface. Read each report (a spreadsheet
 export, a CSV, a PDF) into long-form rows: one per sample, element and method,
 the value as the lab reported it (below detection is `-1`, its limit kept on
-the method: guide topic `assay-values`), its units and its certificate. If the
+the method: guide topic `assay-values`), its units and its certificate. Guide
+topic `assays` (its section on lab file layouts) lists the layout traps: metadata
+columns, lab duplicates, over-limit and re-run columns, limits in another
+unit, status codes, dates. If the
 user would rather not, geoDB's own assistant on the web reads certificates
 itself.
 
@@ -119,14 +122,22 @@ itself.
    `assay` block: values `linked` to samples by kind (drill, point, QC),
    certificates with something to decide (values already loaded, replaced or
    withheld), `unit_mismatches`, `missing_detection_limits` (by method and
-   element), `waiting_for_sample` (values whose sample is not in geoDB yet).
-   Then `before_writing`; the full list is `detail.download`. Nothing is
-   written yet.
+   element), `waiting_for_sample` (values whose sample is not in geoDB yet),
+   `other_certificate_rows` (samples whose record another certificate holds:
+   rows refused `other_certificate_row`, with the evidence). Those, and a
+   `sample_name_ambiguous` warning, mean a sample number may be reused: ask
+   the user re-assay or reused number before any acknowledgement. Then
+   `before_writing`; the full list is `detail.download`. Nothing is written
+   yet.
 5. **After the user's yes,** send the answer's `write` body exactly as it
    came. Each file commits in turn, re-checked against what was approved; a
    file that would land differently stops the write, and the answer names
    what landed and what did not (`stopped`; `rehearse_rest` rehearses the
-   rest). One `write_id` undoes the whole dataset.
+   rest). One `write_id` undoes the whole dataset, and
+   `records/writes/<write_id>/changes/` lists what it changed: check every
+   `updated` record before you report the load. Then read
+   `assays-waiting/?project=<id>`: the results still waiting for their
+   samples, by certificate (a misspelt name, or a sample file not loaded).
 6. **Attach each certificate's PDF** to its certificate: a document upload
    with `attach_to` `{"model": "Certificate", "id": <id>}`.
 
@@ -138,3 +149,53 @@ certs_df, "Assay": assays_df})` uploads the files and rehearses;
 `upload_document(path, project, attach_to={"model": "Certificate", "id":
 <id>})`. With an older client, make the HTTP calls above from your code with
 the session key.
+
+### Worked example: a field (portable) XRF export
+
+**Recognise it.** A hand-held analyser's export is one READING per row: a
+reading number, the mode, the count time, often the instrument serial and the
+operator, then per element a value column and a paired error column (`±`,
+`Err`, `2σ`), with `<LOD` where the element was not detected. It is not a
+laboratory certificate: loaded as one it reads as laboratory data. Parse it
+in your own sandbox and load it as ONE dataset (the steps above):
+
+1. **The session is a certificate** with `source_type` `field_xrf`: one per
+   instrument, day and operator, its name carrying all three (so loading the
+   same export again finds it instead of making a second), its date the day.
+2. **A method per instrument and mode** (a soil mode and a mining mode on one
+   gun are two methods), one row per element with its units: read ppm or %
+   from each column header. A method needs a laboratory: ask the user which
+   record to file the instrument under (an existing one, or a new one for the
+   field crew).
+3. **The readings are drill samples at one depth** (`depth_from` equal to
+   `depth_to`) in a sample set of kind `field_xrf`: the member's `set` is
+   `{"name": <name>, "create": true, "kind": "field_xrf"}` the first time,
+   then just its name. Name each reading `<hole>-XRF-<reading_no>` from the gun's
+   own reading number, so repeat shots at one depth stay distinct. The same
+   reading sent again (same name, hole and depth) is skipped as already
+   loaded; a name repeated in the file, the same name at another depth, or a
+   name another sample or session already holds is refused. When the file
+   does not say which hole and depth a reading belongs to, ask; never infer it.
+4. **Reference materials and blanks shot on the gun** are QC samples (the
+   reference material in `standard`), their values in the same session.
+5. **The values** are `Assay` rows under the session; send `<LOD` as it is
+   (stored below detection).
+6. **Keep everything the gun recorded, by default.** Every element's error
+   column and the reading's own details (reading number, date and time, count
+   time, mode, operator, instrument serial) are stored on each reading as
+   custom columns of drill samples: never ask whether to keep or drop them,
+   never recommend dropping any. Put them in the plan the user approves ("the
+   errors and reading details are kept on each reading"); that yes covers one
+   `records/` write of a `CustomFieldSchema` for `DrillSample` before the
+   dataset (`create` with the columns as its `fields`, or `update` adding them
+   when `custom-field-schemas/` lists one; type decimal for the errors and the
+   count time, text for the rest; keys that say what they hold, such as
+   "cu_err_ppm" and "reading_no"). Each reading row then carries those columns
+   under their keys. The reading number goes in its own column as well as in
+   the name.
+
+With the client: `validate_dataset(project, {"Method": methods_df,
+"Certificate": certs_df, "DrillSample": {"data": readings_df, "set":
+{"name": "<name>", "create": True, "kind": "field_xrf"}}, "Assay":
+assays_df})`. Say what you loaded as field XRF, and that reads return it
+beside laboratory values, labelled (guide topic `geochem`).

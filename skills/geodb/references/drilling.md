@@ -99,7 +99,9 @@ derivable from its members (the average of two Au values is not an ICP result). 
 "clean up" a second pass by deleting rows — that destroys assay values. Every drill
 sample belongs to exactly one pass (the project's `default` pass unless told
 otherwise); a pass carries a kind — primary / composite / metallurgical (bulk) /
-resample (re-split) / historic / other.
+resample (re-split) / historic / other / field XRF (`field_xrf`: hand-held XRF
+point readings, which belong in a pass of this kind and are refused anywhere else;
+a zero-length row loaded into another pass is flagged; never the default).
 
 **THE RULE, one sentence:** within one pass, in one hole, intervals must not overlap
 (1 mm); across passes anything goes; sample NAMES stay unique per project regardless

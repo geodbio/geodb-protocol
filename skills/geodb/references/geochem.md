@@ -83,16 +83,33 @@ it, and suggest fusion re-assay of a representative subset before anyone
 draws unit boundaries from Zr. Never plot fusion and four-acid values of one
 element as one population without saying so.
 
-**Field (portable) XRF is guidance, not a grade.** A reading taken on core or
-chips with a hand-held analyser is stored like an assay — a point down the
-hole with element values — under a reading session whose source is field XRF.
-geoDB keeps it OUT of lab-assay analytics, QC verdicts, intercepts and grade
-shells, and it never enters a combined value. Use it for what it is good
-at — logging decisions, picking intervals to send to the lab, a downhole
-pathfinder profile — and always label it as field XRF. Never average it with
-lab results, never report it as a grade, and never use it in a resource
-estimate. Anything you derive from it is a new set, never an edit to
-someone's logged set.
+**Field (portable) XRF: the client's data, returned as it is and labelled.** A
+reading taken on core or chips with a hand-held analyser is stored like an
+assay — a point down the hole, in a field-XRF sample set of its own, with
+element values — under a reading session whose source is field XRF. geoDB
+returns it beside laboratory results and never blends the two: every value
+says its `source_type` (`lab` or `field_xrf`), the reads and calculations
+take `source_type` to read one source (both when it is left out), and a
+combined value is never computed across sources (where one sample carries
+both for an element, the laboratory value keeps the column and the field
+value comes back beside it, labelled). A reading has no length, so it weighs
+nothing in a length-weighted interval or composite. QC on the gun is judged
+per reading session and reported apart from laboratory QC, never pooled. ODBC
+tables, sample-table exports, maps, the 3D viewer, grade shells and the web
+QAQC pages still show laboratory values only; some web views (the strip log,
+the sample grid, uncomposited sample lists, dashboard counts) already show
+readings, not yet labelled as field XRF.
+
+Whether field XRF is fit for a purpose is the client's call: it is good for
+logging decisions, picking intervals to send to the lab and a downhole
+pathfinder profile, and some operations run grade control on a calibrated
+instrument. Your part: say which source every number comes from; before you
+put field readings and laboratory values in one figure or one average,
+check them against laboratory pairs (below) and say what you mixed; never
+report a field reading as a laboratory grade. A resource estimate on field
+XRF needs a documented calibration its Qualified or Competent Person
+accepts: raise it, never decide it. Anything you derive from it is a new
+set, never an edit to someone's logged set.
 
 **What it measures well, and what it does not.** In a multi-instrument test
 on pulps (Hall, Bonham-Carter & Buchar 2014, *Geochemistry: Exploration,
@@ -130,13 +147,28 @@ on a consistent line; correct by that line and say so. Read reference
 materials and a blank through each session to watch drift. A published
 workflow, including QA/QC, for field XRF in exploration: Fisher et al. 2014, *Geochemistry:
 Exploration, Environment, Analysis* 14, 149–159. However good the fit, a
-field reading is never a grade.
+corrected field reading is still a field reading, never a laboratory grade:
+label it so. A field reading far from its lab pair is a signal, not a typing
+error: report it beside the lab value and say what it may mean (calibration, a
+vein or grain under the spot, sample preparation, moisture). Never offer to
+correct, rescale or delete either stored value: both are the record as
+measured.
 
-**Field readings in the flat assay table.** The flat `assay-results/` table
-carries field-XRF readings beside lab results, each marked `source_type`
-`field_xrf`: filter on it before you compare field with lab or compute
-anything from lab values. The `field-xrf/` read returns the readings on
-their own, with their sessions and instruments.
+**Field readings on the API.** Every assay read returns field-XRF readings
+beside laboratory results, each marked `source_type` `lab` or `field_xrf`,
+and takes `source_type=lab|field_xrf` to read one source: `assay-results/`
+(the flat table), the merged `drill-samples/` and `point-samples/` reads,
+`drill-samples/composited/`, `drill-intercepts/`, `detection-limits/`,
+`qaqc-verdicts/` and the `assay_results` export. A merged read labels every
+row and states `sources_used`; an element one sample holds from both sources
+comes back twice, laboratory first, with the warning `field_xrf_value_on_row`
+(`drill-intercepts/` puts the field value beside the column as
+`<column>_field_xrf`). Filter on `source_type` before you compare field
+with lab or compute anything from laboratory values. `qaqc-verdicts/` judges
+each reading session and reports the two sources separately; a session is
+approved or rejected like a certificate. The `field-xrf/` read returns the
+readings on their own, one row per reading, with their sessions and
+instruments.
 
 | Index | Formula | Attribution |
 |---|---|---|

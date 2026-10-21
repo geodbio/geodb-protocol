@@ -21,6 +21,10 @@
       "method": "GET",
       "path": "/api/v2/records/writes/{write_id}/"
     },
+    "write_changes": {
+      "method": "GET",
+      "path": "/api/v2/records/writes/{write_id}/changes/"
+    },
     "dataset_job": {
       "method": "GET",
       "path": "/api/v2/records/datasets/{job_id}/"
@@ -245,6 +249,12 @@
       "remedy": "Show the user the current system and the dry run; only after they say yes resend with \"acknowledge\": [\"change_project_crs\"].",
       "retry": "no"
     },
+    "changes_too_large": {
+      "http": 400,
+      "meaning": "The write touched more rows than the changes read lists in one request (`offending` gives the count and the limit).",
+      "remedy": "Narrow the read with model=<record type> (each type of the write is read on its own; GET records/writes/<write_id>/ names them in its summary), then page it with limit / offset.",
+      "retry": "no"
+    },
     "choice_not_in_list": {
       "http": 400,
       "meaning": "(per row) A value is not in its field's list (a custom field's choices, or the project's list of lithologies, alterations, … for a reference). Lists never grow silently.",
@@ -361,7 +371,7 @@
     },
     "dataset_plan_expired": {
       "http": 409,
-      "meaning": "The approved plan is more than 24 hours old; the data may have moved since. Nothing was written.",
+      "meaning": "The approved plan is more than 24 hours old, or was approved before geoDB recorded what each record held at the approval (`offending.sealed_without_fingerprints`); the data may have moved since. Nothing was written.",
       "remedy": "Rehearse the dataset again with the same files, show the user the new answer, and write that plan after they say yes.",
       "retry": "no"
     },
@@ -382,6 +392,18 @@
       "meaning": "Another write (someone else's edit, a field app's sync) was holding rows this dataset changes, so the rehearsal, or the member a write was landing, stopped after a few seconds rather than make that person wait (`offending.lock_timeout_ms`). Nothing of it was written; in a write, the members before it may have landed (the answer lists each one).",
       "remedy": "Send the same dataset request again in a minute; it needs no new files (a write lands only what has not landed yet). If it keeps happening, ask the user whether someone is editing this project right now.",
       "retry": "after"
+    },
+    "dataset_rows_changed": {
+      "http": 409,
+      "meaning": "Someone else (a person on the web, a field app's sync, another connection) changed records a member would overwrite after the user approved the rehearsal (`offending.records_changed` of `offending.records_approved`), so writing it would replace their newer values with older ones the user never saw. That member was not written and their edits stand; members before it may have landed (the answer lists each one).",
+      "remedy": "Tell the user how many records changed since they approved and that nothing of this member was written. Send the answer's \"rehearse_rest\" request: it compares the files with the records as they are now. Show the user that new rehearsal and write it only after they say yes.",
+      "retry": "no"
+    },
+    "dataset_rows_unverified": {
+      "http": 409,
+      "meaning": "The rehearsal found rows that would change stored records but could not record what those records hold now (`offending.members`: which member, how many rows), so the write could not check that nobody changed them after the user approved. No plan was issued and nothing was written. This is a geoDB fault, not a fault in the files.",
+      "remedy": "Tell the user nothing was written and that geoDB could not issue a safe plan for this dataset. Report it through POST /api/v2/feedback/ (kind \"bug_report\") naming the member's model from `offending.members`; do not send the same rehearsal again.",
+      "retry": "no"
     },
     "dataset_too_large": {
       "http": 400,
@@ -405,6 +427,12 @@
       "http": 400,
       "meaning": "(per row) An earlier row of the same request has the same identifying fields; the first one is kept.",
       "remedy": "Merge the duplicate rows into one, or correct the identifying fields of the second, and resend it.",
+      "retry": "no"
+    },
+    "duplicate_stored_key": {
+      "http": 409,
+      "meaning": "(per row) Two or more stored records share this row's identifying fields (`offending.ids` names them), so the row was not matched to any of them: it is never written onto one copy at random. Nothing was written for this row.",
+      "remedy": "Ask the user which copy is right (read both by id). Then either move the extra copy to the Trash (intent \"retract\" with its \"id\"), or send this row again with the \"id\" of the record it is meant for.",
       "retry": "no"
     },
     "feedback_rate_limited": {
@@ -475,7 +503,7 @@
     },
     "interval_overlap": {
       "http": 409,
-      "meaning": "(per row) The interval overlaps another interval of the SAME set in the same hole; within one set intervals may not overlap (never raised for alteration, whose rows overlap by design).",
+      "meaning": "(per row) The interval overlaps another interval of the SAME set in the same hole; within one set intervals may not overlap (never raised for alteration, veins or mineralization, whose rows overlap by design: one mineral / vein type / assemblage per row).",
       "remedy": "Ask the user: correct the depths, or put these intervals in a different (or new) set — across sets anything goes.",
       "retry": "no"
     },
@@ -489,6 +517,12 @@
       "http": 400,
       "meaning": "(per row) The coordinates or geometry cannot be a place: not numbers, half a pair, off the globe for a degree system, or a geometry that does not parse. The row is never counted as a clean create.",
       "remedy": "Correct the coordinates named in `offending` (or the epsg they are in) and resend the row; validate first with \"dry_run\": true.",
+      "retry": "no"
+    },
+    "key_shape_conflict": {
+      "http": 400,
+      "meaning": "(per row) Another row of the same request names the same interval (hole and start depth) of a model whose rows carry an optional type (a vein's type, a mineralization's assemblage), but one row sends that column and the other omits it. None of these rows was written.",
+      "remedy": "Send the type column on every row of this interval (null means no type), then resend the rows.",
       "retry": "no"
     },
     "landing_failed": {
@@ -555,6 +589,12 @@
       "http": 400,
       "meaning": "The local-grid origin is far outside the project's own ground (its holes and land holdings).",
       "remedy": "Leave the origin out (it is derived from the data), or offer the user the origin in offending.proposed.",
+      "retry": "no"
+    },
+    "other_certificate_row": {
+      "http": 409,
+      "meaning": "(per row) The sample name already has an assay row from ANOTHER certificate; this row would merge its values onto that row. Right for a re-assay of the same sample (a second laboratory, an umpire check), wrong for a REUSED sample number (two physical samples on one row). Nothing was written. `offending` (on the sample's first row) holds the evidence: both certificates with their dates, the samples the stored row is linked to, both weights, and how the values both certificates hold agree.",
+      "remedy": "Show the user the evidence and ASK which it is; never decide yourself. Same sample assayed again: resend with \"acknowledge\": [\"other_certificate_row\"]. A reused sample number: do not merge; ask the user how the two samples are to be told apart (usually one program's samples and results renamed, for example with its prefix) and send the results under the agreed name.",
       "retry": "no"
     },
     "out_of_scope": {
@@ -713,6 +753,12 @@
       "remedy": "Correct the row as `detail` describes (GET /api/v2/records/describe/<Model>/ lists fields, keys and choices) and resend it; validate first with \"dry_run\": true.",
       "retry": "no"
     },
+    "sample_name_case_variant": {
+      "http": 409,
+      "meaning": "(per row) The sample name differs ONLY by letter case from a sample already stored in the project (for example \"s-1\" sent, \"S-1\" stored). Letter case alone never decides whether two names are one sample, so the row was not written. The detail names the stored spelling.",
+      "remedy": "Ask the user. The same sample: resend the row with the stored spelling. A new sample (only after the user says so): resend with \"acknowledge\": [\"sample_name_case_variant\"]. An update or a retract never creates: send the stored spelling.",
+      "retry": "no"
+    },
     "sample_name_taken": {
       "http": 409,
       "meaning": "(per row) The sample name is already registered as a DIFFERENT kind of sample (a drill sample vs a QC or surface sample): two records would share one assay.",
@@ -729,6 +775,12 @@
       "http": 409,
       "meaning": "The report section changed since the revision you edited.",
       "remedy": "Re-read the section, merge your change into the current text, and resend with its current revision number.",
+      "retry": "no"
+    },
+    "set_cannot_be_default": {
+      "http": 409,
+      "meaning": "A field-XRF sample set (kind \"field_xrf\": portable-XRF readings) is never the project's default sample set, which is where new routine samples land. It may be the export set. Nothing was changed.",
+      "remedy": "Keep a lab sampling set as the default and tell the user why; to serve the readings, make the field-XRF set the export set ({\"intent\": \"make_export_set\", …}) or read it by name.",
       "retry": "no"
     },
     "set_is_default": {
@@ -783,6 +835,12 @@
       "http": 409,
       "meaning": "That plan is not offered for this company's projects (a single-price plan offers Drilling and Frozen; the per-project plans offer Holding, Field and Drilling; Frozen is a hold geoDB applies).",
       "remedy": "Offer the user one of the plans the project face lists for the company.",
+      "retry": "no"
+    },
+    "typed_onto_typeless": {
+      "http": 409,
+      "meaning": "(per row) The row sends a vein type / assemblage, and its interval (hole, start depth and set) holds a stored record with NO type (`offending.ids`) and none of the type sent. It may be that record with its type now known, or a new row beside it, so nothing was written for this row.",
+      "remedy": "Ask the user. A new row beside the stored one: resend with \"acknowledge\": [\"typed_onto_typeless\"]. The same record: retract the record with no type (intent \"retract\" with its \"id\"), then send this row again.",
       "retry": "no"
     },
     "undo_needs_company_reach": {
@@ -920,6 +978,11 @@
       "remedy": "Check the depth (and its unit) with the user; if the hole was drilled deeper than recorded, the hole's total depth needs correcting instead.",
       "retry": "no"
     },
+    "certificate_date_implausible": {
+      "meaning": "(per-row warning) The certificate's analysis date is in the future, or out of order with the same laboratory's job numbers (a later job number dated earlier than most of the lab's other jobs) — \"possible day/month swap\" when swapping the day and month puts it in order. The row still lands as sent.",
+      "remedy": "Check the date against the laboratory's report before the write. A date read day-first is the usual cause: parse ISO dates (YYYY-MM-DD) as they are and read the parsed table back. If the date is right, go on.",
+      "retry": "no"
+    },
     "crs_implausible": {
       "meaning": "(per-row warning) The coordinates look like degrees but the epsg is a projected system, and the writer acknowledged it (\"acknowledge\": [\"crs_implausible\"]). Stored exactly as sent; reads mark the row with the same code in `data_warnings`.",
       "remedy": "Check the epsg with the user; if it was wrong, resend the row with the right one (intent \"upsert\").",
@@ -975,6 +1038,11 @@
       "remedy": "If the lab reported detection limits, write them on the method first (model \"Method\", intent \"upsert\", with detection_limit and units), then the results. A method is shared by the whole company: a key that does not reach every project of it is refused out_of_scope, and then the user sets the limit on the web. Tell the user which pairs have none.",
       "retry": "no"
     },
+    "other_certificate_merge": {
+      "meaning": "(per-row warning) Acknowledged (\"other_certificate_row\"): this certificate's values land on a sample row another certificate holds, as one sample on two certificates. Said on every row of it, the evidence on the sample's first row.",
+      "remedy": "Report it to the user with the write: which samples now carry results from two certificates.",
+      "retry": "no"
+    },
     "pad_footprint_left_behind": {
       "meaning": "(batch warning) The write moves a drill pad that carries a drawn footprint polygon; the polygon is not moved or deleted and stays at the old spot. The pads are named in the detail.",
       "remedy": "Tell the user to redraw the footprint on the pad's page.",
@@ -998,6 +1066,11 @@
     "sample_link_changes": {
       "meaning": "(per-row warning, assay rename) An assay is linked to its sample by name, so renaming it moves its results: `from` is the sample of the old name, `to` the sample of the new one (null: no sample has that name and the assay is unlinked).",
       "remedy": "Tell the user which sample the results move to, or that they will be unlinked, before sending the rename; Undo puts the old name back.",
+      "retry": "no"
+    },
+    "sample_name_ambiguous": {
+      "meaning": "(per-row warning) The sample name is carried by more than one KIND of sample in the project (a drill sample and a surface sample, a drill sample and a QC insert); an assay of that name links to all of them, so its values describe two physical samples. The detail names each sample (a drill sample by hole and depths, a surface sample by its collection date).",
+      "remedy": "Tell the user which samples share the name and ask which one the result belongs to before writing; a reused sample number is usually told apart by renaming one program's samples. Never pick one yourself. GET sample-name-collisions/?project=<id> lists every such name in the project.",
       "retry": "no"
     },
     "sample_not_linked": {
@@ -1053,6 +1126,11 @@
     "view_target_unresolved": {
       "meaning": "(per-row warning) A saved 3D view names a target (a hole, a certificate, a set, a filter) that is not in its project — missing, deleted or another project's, the same answer for all three. A view built from `view` leaves it out; a whole `scene` keeps it, and it shows nothing when the view opens. `result.unresolved` lists them.",
       "remedy": "Tell the user which targets were left out; check the ids against your own reads.",
+      "retry": "no"
+    },
+    "weight_not_overwritten": {
+      "meaning": "(per-row warning) The sample's stored weight was kept: a merge fills an empty weight but never replaces a stored one with a different weight, and never with another certificate's. Both weights are named (stored in grams).",
+      "remedy": "Tell the user. If the stored weight is wrong and the sent one belongs to the same sample and certificate, correct it with an \"update\" of the assay's weight after their yes.",
       "retry": "no"
     },
     "write_not_recorded": {

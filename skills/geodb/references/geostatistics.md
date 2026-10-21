@@ -14,9 +14,12 @@ compute anything:
   project's substitute (half the detection limit by default), never `-1` and
   never by dropping the sample, and never substitute twice (merged tables
   already did). An over-range value is a floor, not a grade.
-- **Lab values only.** Field (portable) XRF readings are not grades and never
-  enter an estimate. A raw list of values can carry them beside lab results,
-  marked by their source (`field_xrf`): drop them first.
+- **One source, or say both.** Reads return field (portable) XRF readings
+  beside laboratory results, each value marked by its source (`lab` or
+  `field_xrf`). Estimate from one source (read `source_type=lab`, or drop
+  `field_xrf`). Field XRF in an estimate is the estimator's decision and
+  needs a documented calibration against laboratory pairs (guide topic
+  `geochem`): raise it, never decide it, and never mix the two unsaid.
 - **Withheld rows stay withheld.** Values from a certificate whose QAQC review
   rejected or superseded it are not data for an estimate; name them.
 - **Units.** Check each element against its method's detection limit and
@@ -125,8 +128,9 @@ inputs; it runs no estimation. Read:
 - **Samples and grades:** `drill-samples/` (each row names its sampling pass
   and carries its desurveyed from/to positions on the project local grid, in
   metres) and `assay-results/` (one row per value, with its below-detection
-  and over-range flags, its detection limit and its `source_type`: keep `lab`,
-  drop `field_xrf`).
+  and over-range flags, its detection limit and its `source_type`, `lab` or
+  `field_xrf`); both reads, the composites and the intercepts below take
+  `source_type=lab` to read laboratory values only.
 - **Fixed-length composites:** `drill-samples/composited/`, one hole at a
   time, at the length set in one of the project's assay configurations with
   compositing switched on, over ONE sampling pass (the project's export pass

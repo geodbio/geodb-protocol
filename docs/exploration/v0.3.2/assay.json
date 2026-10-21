@@ -275,13 +275,14 @@
                     "crs_implausible",
                     "depth_past_hole",
                     "dip_out_of_range",
+                    "field_xrf_value_on_row",
                     "interval_upside_down",
                     "invalid_geometry",
                     "missing_epsg",
                     "negative_value",
                     "sample_trashed"
                   ],
-                  "description": "`above_upper_limit_as_value`: an assay value is above its method's upper limit but is stored as a plain number, not flagged over range (\">UL\"); the true value is unknown, at least the limit — look for a re-assay by an ore-grade method.; `azimuth_out_of_range`: azimuth (or dip direction) is outside 0..360 degrees.; `below_detection_limit_as_value`: an assay value is below its method's detection limit but is stored as a plain number, not as a below-detection result (\"<DL\"); treat it as below detection.; `coordinate_outside_crs`: the coordinate cannot be in its epsg (degrees beyond ±90 latitude or ±180 longitude under EPSG:4326).; `crs_implausible`: the coordinate looks like degrees of longitude/latitude but its epsg is a projected system in metres or feet, so it sits near that grid's origin (often at the equator on a map).; `depth_past_hole`: the depth lies beyond the hole's total depth.; `dip_out_of_range`: dip is outside -90..90 degrees.; `interval_upside_down`: depth_from is greater than depth_to (an upside-down interval).; `invalid_geometry`: the stored geometry is not valid (for example a self-intersecting outline).; `missing_epsg`: the record has coordinates but no epsg, so their CRS is unknown.; `negative_value`: a depth, length or total depth is negative.; `sample_trashed`: the assay's sample is in the trash; the assay is kept (never deleted with its sample) and re-links if the sample is restored or re-imported — leave it out of statistics unless told otherwise."
+                  "description": "`above_upper_limit_as_value`: an assay value is above its method's upper limit but is stored as a plain number, not flagged over range (\">UL\"); the true value is unknown, at least the limit — look for a re-assay by an ore-grade method.; `azimuth_out_of_range`: azimuth (or dip direction) is outside 0..360 degrees.; `below_detection_limit_as_value`: an assay value is below its method's detection limit but is stored as a plain number, not as a below-detection result (\"<DL\"); treat it as below detection.; `coordinate_outside_crs`: the coordinate cannot be in its epsg (degrees beyond ±90 latitude or ±180 longitude under EPSG:4326).; `crs_implausible`: the coordinate looks like degrees of longitude/latitude but its epsg is a projected system in metres or feet, so it sits near that grid's origin (often at the equator on a map).; `depth_past_hole`: the depth lies beyond the hole's total depth.; `dip_out_of_range`: dip is outside -90..90 degrees.; `field_xrf_value_on_row`: the row has both a laboratory and a field-XRF value for one element; the merged value is the laboratory one and the field-XRF value is returned beside it, labelled (never merged together).; `interval_upside_down`: depth_from is greater than depth_to (an upside-down interval).; `invalid_geometry`: the stored geometry is not valid (for example a self-intersecting outline).; `missing_epsg`: the record has coordinates but no epsg, so their CRS is unknown.; `negative_value`: a depth, length or total depth is negative.; `sample_trashed`: the assay's sample is in the trash; the assay is kept (never deleted with its sample) and re-links if the sample is restored or re-imported — leave it out of statistics unless told otherwise."
                 },
                 "field": {
                   "type": "string",
@@ -366,7 +367,7 @@
         "lab",
         "field_xrf"
       ],
-      "description": "`lab` — laboratory results. `field_xrf` — a portable-XRF reading (field guidance, never a reportable grade; left out of lab analytics, QC and intercepts by default)."
+      "description": "`lab` — laboratory results. `field_xrf` — a portable-XRF reading (field XRF; check its calibration against laboratory pairs before treating it as grade). Returned beside laboratory results, labelled; never merged into a laboratory value."
     },
     "project_id": {
       "type": "integer",
@@ -423,13 +424,14 @@
               "crs_implausible",
               "depth_past_hole",
               "dip_out_of_range",
+              "field_xrf_value_on_row",
               "interval_upside_down",
               "invalid_geometry",
               "missing_epsg",
               "negative_value",
               "sample_trashed"
             ],
-            "description": "`above_upper_limit_as_value`: an assay value is above its method's upper limit but is stored as a plain number, not flagged over range (\">UL\"); the true value is unknown, at least the limit — look for a re-assay by an ore-grade method.; `azimuth_out_of_range`: azimuth (or dip direction) is outside 0..360 degrees.; `below_detection_limit_as_value`: an assay value is below its method's detection limit but is stored as a plain number, not as a below-detection result (\"<DL\"); treat it as below detection.; `coordinate_outside_crs`: the coordinate cannot be in its epsg (degrees beyond ±90 latitude or ±180 longitude under EPSG:4326).; `crs_implausible`: the coordinate looks like degrees of longitude/latitude but its epsg is a projected system in metres or feet, so it sits near that grid's origin (often at the equator on a map).; `depth_past_hole`: the depth lies beyond the hole's total depth.; `dip_out_of_range`: dip is outside -90..90 degrees.; `interval_upside_down`: depth_from is greater than depth_to (an upside-down interval).; `invalid_geometry`: the stored geometry is not valid (for example a self-intersecting outline).; `missing_epsg`: the record has coordinates but no epsg, so their CRS is unknown.; `negative_value`: a depth, length or total depth is negative.; `sample_trashed`: the assay's sample is in the trash; the assay is kept (never deleted with its sample) and re-links if the sample is restored or re-imported — leave it out of statistics unless told otherwise."
+            "description": "`above_upper_limit_as_value`: an assay value is above its method's upper limit but is stored as a plain number, not flagged over range (\">UL\"); the true value is unknown, at least the limit — look for a re-assay by an ore-grade method.; `azimuth_out_of_range`: azimuth (or dip direction) is outside 0..360 degrees.; `below_detection_limit_as_value`: an assay value is below its method's detection limit but is stored as a plain number, not as a below-detection result (\"<DL\"); treat it as below detection.; `coordinate_outside_crs`: the coordinate cannot be in its epsg (degrees beyond ±90 latitude or ±180 longitude under EPSG:4326).; `crs_implausible`: the coordinate looks like degrees of longitude/latitude but its epsg is a projected system in metres or feet, so it sits near that grid's origin (often at the equator on a map).; `depth_past_hole`: the depth lies beyond the hole's total depth.; `dip_out_of_range`: dip is outside -90..90 degrees.; `field_xrf_value_on_row`: the row has both a laboratory and a field-XRF value for one element; the merged value is the laboratory one and the field-XRF value is returned beside it, labelled (never merged together).; `interval_upside_down`: depth_from is greater than depth_to (an upside-down interval).; `invalid_geometry`: the stored geometry is not valid (for example a self-intersecting outline).; `missing_epsg`: the record has coordinates but no epsg, so their CRS is unknown.; `negative_value`: a depth, length or total depth is negative.; `sample_trashed`: the assay's sample is in the trash; the assay is kept (never deleted with its sample) and re-links if the sample is restored or re-imported — leave it out of statistics unless told otherwise."
           },
           "field": {
             "type": "string",

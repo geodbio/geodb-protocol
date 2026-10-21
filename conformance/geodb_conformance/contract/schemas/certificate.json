@@ -158,7 +158,7 @@
         "field_xrf"
       ],
       "type": "string",
-      "description": "`lab` — a laboratory job. `field_xrf` — a portable-XRF reading session: field guidance, never a reportable grade. Field-XRF results are left out of geoDB's lab analytics, QC verdicts and intercepts, and never enter a combined value. Read them with `/api/v2/field-xrf/`.\n\n* `lab` - Laboratory\n* `field_xrf` - Field XRF"
+      "description": "`lab` — a laboratory job. `field_xrf` — a portable-XRF reading session (field XRF; check its calibration against laboratory pairs before treating it as grade). geoDB returns its values beside laboratory results, labelled, and never merges the two into one value; the assay reads, verdicts and intercepts take `source_type=lab|field_xrf` to read one.\n\n* `lab` - Laboratory\n* `field_xrf` - Field XRF"
     },
     "notes": {
       "type": [
@@ -166,6 +166,36 @@
         "null"
       ],
       "description": "Free-text notes on this certificate (as written by the user or through the records endpoint)."
+    },
+    "documents": {
+      "type": "array",
+      "description": "The documents attached to this certificate (the laboratory's report), each by `id` (read or download it at `documents/<id>/`), `file_name`, `title` and `category`. Only the documents this key may read.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "file_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "title": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "category": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      }
     },
     "date_created": {
       "type": [
@@ -237,6 +267,7 @@
     "batch_number",
     "date_created",
     "date_preliminary",
+    "documents",
     "id",
     "laboratory",
     "last_edited",

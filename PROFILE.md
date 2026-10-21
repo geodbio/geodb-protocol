@@ -157,13 +157,13 @@ Whole tables, built in the background, as GeoParquet / Parquet / CSV. One POST i
 | `exports_retrieve` | `GET /api/v2/exports/{job_id}/` | Poll an export job |
 | `exports_download_retrieve` | `GET /api/v2/exports/{job_id}/download/` | Download a finished export |
 
-## geoDB extensions — 158 operations
+## geoDB extensions — 160 operations
 
 Supported, project-scoped, and outside the contract. Read them freely against geoDB; do not expect them from another implementation.
 
 | Family | Operations | What it is |
 |---|---|---|
-| Assays | 16 | Analytical method definitions and the per-project rules for merging several results for one sample and element. |
+| Assays | 17 | Analytical method definitions and the per-project rules for merging several results for one sample and element. |
 | Discovery | 16 | Custom-field definitions in their own right, and client-shaped rearrangements of the schema response. |
 | Documents | 3 |  |
 | Drill Holes | 7 | Pads, computed traces and their GeoJSON form. |
@@ -179,7 +179,7 @@ Supported, project-scoped, and outside the contract. Read them freely against ge
 | Samples | 7 | Fixed-length compositing of drill samples, and the assigned-to-a-user work queue. |
 | Surface Geology | 22 | Geology mapped at surface, plus the lookup vocabulary behind it (lithologies, alterations, minerals, formations, textures, vein types, field notes). |
 | Water | 10 | Water monitoring sites and the samples taken at them. |
-| Writing | 7 |  |
+| Writing | 8 |  |
 
 ## Notes on membership
 

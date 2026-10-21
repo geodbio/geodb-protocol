@@ -1,6 +1,6 @@
 # Assays: merged or raw, how geoDB combines them, and when to trust a number
 
-Read this first for any assay question. Which reads give the laboratory's own numbers and which give geoDB's combined ones, how to tell them apart, which merge settings combined them (strategy, units, below-detection substitute, over range), values outside their method's limits, results whose sample is gone, and how QC verdicts are reached.
+Read this first for any assay question. Which reads give the laboratory's own numbers and which give geoDB's combined ones, how to tell them apart, which merge settings combined them (strategy, units, below-detection substitute, over range), values outside their method's limits, results whose sample is gone, a sample number two certificates share (re-assay or reused tag), the traps of lab file layouts, and how QC verdicts are reached.
 
 ### Two kinds of assay number: raw and combined
 
@@ -55,8 +55,11 @@ became. Each set of settings says:
   (for example only fire-assay gold); results by other methods are then left
   out of that element's combined value.
 
-Field (portable XRF) readings never enter a combined value: the merged
-sample list, exports, the ODBC tables, intercepts and composites use
+A value's `source_type` says laboratory (`lab`) or field (portable) XRF
+(`field_xrf`), and a combined value never blends the two: merge settings
+combine results within one source. Reads that can carry field XRF return it
+beside laboratory values, labelled, and take `source_type` to read one
+source; the sample-table exports and the ODBC tables still combine
 laboratory results only. A result
 whose unit cannot be converted to the target unit is left out of every
 combined value.
@@ -76,6 +79,54 @@ can change with it. When a question turns on such a sample, give the raw
 results, the laboratories and certificates that reported them, the rule the
 project applies, and what the other rules would give. Never pick one result
 yourself and present it as geoDB's.
+
+### One sample number, two samples: re-assay or reused tag
+
+geoDB keeps one assay record per sample name in a project, and a result
+reaches its sample by that name. Sample numbers get reused: one tag book
+serves a drill hole's intervals and a surface program, a book is restarted
+years later, a laboratory QC insert takes a numbered slot inside a drill
+sequence. A later certificate carrying a reused number lands on the earlier
+sample's record, so one record holds two rocks, and the name links it to
+every sample that carries it.
+
+A second certificate on one sample is often right (a re-assay, an umpire or
+second laboratory). To tell which it is, compare:
+
+- **The values both certificates hold.** A re-assay of the same material
+  tracks: most shared elements agree within tens of percent. Two different
+  rocks rarely do.
+- **The dates.** A surface sample collected after the first certificate was
+  issued cannot be its re-assay.
+- **The kind of sample.** A drill interval and a surface sample, or a QC
+  insert and a routine sample, sharing one number are two samples.
+- **The weights.** Two samples rarely weigh the same.
+
+When geoDB reports a result landing on another certificate's sample, or a
+sample name carried by more than one kind of sample, stop: show the user the
+evidence and ask which it is. Never decide it yourself, in either direction.
+A reused number is fixed by telling the two samples apart (usually renaming
+one program's samples and results), never by merging them.
+
+### Lab file layouts: the traps when reading a report
+
+Read each laboratory file into one row per sample, element and method, and
+watch for these layouts:
+
+- **Trailing metadata columns are not elements.** A flat export often ends
+  in columns such as certificate, comments, date finalized or lab name.
+- **Lab duplicates are QC.** A row like `S-101-X` or `S-101 DUP` is the
+  laboratory's duplicate of sample `S-101`: map it as lab QC with that parent.
+- **A gravimetric over-limit column is its own method.** A column like
+  "Ag (G)" is a separate method from the column it re-runs.
+- **A limit printed in another unit is converted, never copied.** A
+  detection limit in oz/t beside values in ppm must be converted first.
+- **A re-run column labelled by grade, not by method** (for example "ORE
+  GRADE"): ask the user which of the laboratory's method codes it is.
+- **A status code in the weight column means no weight.** SNR there means
+  the sample was not received.
+- **Dates:** parse ISO dates (YYYY-MM-DD) as they are, never day-first, then
+  read your own table back against the report before you write.
 
 ### Over range survives only in the raw rows
 
