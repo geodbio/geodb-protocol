@@ -392,6 +392,7 @@ Read the topic before answering a question in its area; each is `references/<id>
 - `column-config` · Column configuration: how a record type's columns are named, ordered and shown
 - `coordinates` · Coordinates: the native numbers, their CRS, and the derived WGS84
 - `custom-columns` · Custom columns: a project's own fields on its records
+- `data-audit` · Auditing a project's data: what to read, in what order, and whose each problem is
 - `drilling` · Drilling: the programme, drill intercepts, and sampling passes
 - `geochem` · Lithogeochemistry: indices, element-native screens, pathfinder suites
 - `geostatistics` · Geostatistics: compositing, declustering, capping and variography

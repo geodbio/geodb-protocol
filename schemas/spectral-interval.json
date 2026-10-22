@@ -219,6 +219,16 @@
       "type": "integer",
       "description": "The project this record is in (a credential may read several; GET /api/v2/grant-context/ names them)."
     },
+    "origin": {
+      "type": "string",
+      "enum": [
+        "geodb_staff",
+        "member",
+        "connector",
+        "unknown"
+      ],
+      "description": "Who made this row, as a role (never a person): `geodb_staff` = loaded by a geoDB staff account, not the project's own team (a problem in such rows is geoDB's to fix: report it to geoDB, never as the customer's to-do); `member` = made by the project's own team (web, import or field app); `connector` = written through the API with a key (an AI or app); `unknown` = the account that made it is gone. Not sent on `compact=1` rows."
+    },
     "data_warnings": {
       "type": "array",
       "items": {

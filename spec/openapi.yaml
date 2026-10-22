@@ -8845,7 +8845,7 @@ paths:
             Refused for one of TWO reasons — read `reason_code`, they need opposite reactions:
 
             * `throttled` — the grant's request RATE was exceeded. Wait for `Retry-After` and resend.
-            * `export_concurrency` — this grant already holds the maximum number of export jobs that have not finished. Do NOT resend: poll the `status_url` of the jobs you already started, and a slot frees when one finishes. `offending` carries `in_flight` and `limit`.
+            * `export_concurrency` — this grant already holds the maximum number of export jobs that have not finished. Do NOT resend: poll the `status_url` of the jobs you already started, and a slot frees when one finishes. `offending` carries `in_flight`, `limit` and `jobs` (each `id`, `model`, `state` and `status_path`, the status read under /api/v2/).
 
             Both send `Retry-After`.
           content:
@@ -13490,6 +13490,97 @@ paths:
               schema:
                 type: integer
       summary: Fetch one map tile
+      x-geodb-extension: true
+  /api/v2/project-health/:
+    get:
+      operationId: project_health_retrieve
+      description: |-
+        geoDB's own checks of a project's stored data, as FINDINGS (it reports, never repairs, never refuses): collars (location, total depth, dip and azimuth range, empty holes), surveys, depths and units (a hole logged in feet stored as metres, a total depth that looks wrong), interval overlaps, gaps and past-depth rows, samples whose lab status lags their linked result, sample numbers reused across holes, assay values sitting exactly on half the detection limit or on the upper limit, QC integrity and empty sets. Start an audit here, then read `qaqc-verdicts/` for the QC verdicts and export only what is left to analyse.
+
+        Each finding: `code`, `severity` (`error` / `warning` / `info`), `title`, `subject` (the record type), `count`, up to 10 `examples` (record ids and the customer's own names and numbers) with `total_examples`, `origin` (who made the affected rows, as a ROLE count — `geodb_staff`, `member`, `connector`, `unknown` — never a person), `owner` (`geodb` = geoDB's to fix: a known product gap or a geoDB staff load, so tell the user it is geoDB's, never hand it to them as a to-do; `customer`; `ask` = ask the user), `remedy` and `see_guide`; assay-value findings add `breakdown` by element. `skipped_checks` names any check that could not run (say so; never read its absence as clean). Results are cached for a few minutes (`cached`, `computed_at`).
+      summary: Problems in a project's stored data, and whose to fix
+      parameters:
+      - in: query
+        name: code
+        schema:
+          type: array
+          items:
+            type: string
+        description: Only these finding codes (repeat or comma-separate).
+      - in: query
+        name: owner
+        schema:
+          type: array
+          items:
+            type: string
+        description: Only findings owned by `geodb`, `customer` or `ask`.
+      - in: query
+        name: project_id
+        schema:
+          type: integer
+        description: The project to read. Defaults to the project this credential
+          is pinned to; any other must be one it can read — an id naming no readable
+          project is refused with `invalid_parameter`, as on the lists.
+      - in: query
+        name: severity
+        schema:
+          type: array
+          items:
+            type: string
+        description: Only `error`, `warning` or `info` findings.
+      tags:
+      - Quality Control
+      security:
+      - knoxApiToken: []
+      - GrantAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectHealth'
+          description: ''
+        '400':
+          description: The request could not be understood (see `reason_code`).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 'No usable credential. `reason_code` distinguishes a revoked
+            grant from an expired, unknown or malformed one; the response carries
+            `WWW-Authenticate: Grant`.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: The credential is valid but not permitted this operation —
+            outside the grant surface, a write with a read-only grant, or outside
+            a room-pinned grant's room.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: No such resource inside this credential's scope. A row in another
+            project is indistinguishable from one that does not exist, by design.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: The grant's request rate was exceeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            Retry-After:
+              description: Seconds to wait before retrying. Sent on every throttled
+                response.
+              schema:
+                type: integer
       x-geodb-extension: true
   /api/v2/project-notes/:
     get:
@@ -22359,6 +22450,21 @@ components:
           readOnly: true
           description: The project this record is in (a credential may read several;
             GET /api/v2/grant-context/ names them).
+        origin:
+          type: string
+          readOnly: true
+          enum:
+          - geodb_staff
+          - member
+          - connector
+          - unknown
+          description: 'Who made this row, as a role (never a person): `geodb_staff`
+            = loaded by a geoDB staff account, not the project''s own team (a problem
+            in such rows is geoDB''s to fix: report it to geoDB, never as the customer''s
+            to-do); `member` = made by the project''s own team (web, import or field
+            app); `connector` = written through the API with a key (an AI or app);
+            `unknown` = the account that made it is gone. Not sent on `compact=1`
+            rows.'
         data_warnings:
           type: array
           readOnly: true
@@ -22772,6 +22878,21 @@ components:
           readOnly: true
           description: The project this record is in (a credential may read several;
             GET /api/v2/grant-context/ names them).
+        origin:
+          type: string
+          readOnly: true
+          enum:
+          - geodb_staff
+          - member
+          - connector
+          - unknown
+          description: 'Who made this row, as a role (never a person): `geodb_staff`
+            = loaded by a geoDB staff account, not the project''s own team (a problem
+            in such rows is geoDB''s to fix: report it to geoDB, never as the customer''s
+            to-do); `member` = made by the project''s own team (web, import or field
+            app); `connector` = written through the API with a key (an AI or app);
+            `unknown` = the account that made it is gone. Not sent on `compact=1`
+            rows.'
         data_warnings:
           type: array
           readOnly: true
@@ -22975,6 +23096,21 @@ components:
           readOnly: true
           description: The project this record is in (a credential may read several;
             GET /api/v2/grant-context/ names them).
+        origin:
+          type: string
+          readOnly: true
+          enum:
+          - geodb_staff
+          - member
+          - connector
+          - unknown
+          description: 'Who made this row, as a role (never a person): `geodb_staff`
+            = loaded by a geoDB staff account, not the project''s own team (a problem
+            in such rows is geoDB''s to fix: report it to geoDB, never as the customer''s
+            to-do); `member` = made by the project''s own team (web, import or field
+            app); `connector` = written through the API with a key (an AI or app);
+            `unknown` = the account that made it is gone. Not sent on `compact=1`
+            rows.'
         data_warnings:
           type: array
           readOnly: true
@@ -23276,6 +23412,21 @@ components:
           readOnly: true
           description: The project this record is in (a credential may read several;
             GET /api/v2/grant-context/ names them).
+        origin:
+          type: string
+          readOnly: true
+          enum:
+          - geodb_staff
+          - member
+          - connector
+          - unknown
+          description: 'Who made this row, as a role (never a person): `geodb_staff`
+            = loaded by a geoDB staff account, not the project''s own team (a problem
+            in such rows is geoDB''s to fix: report it to geoDB, never as the customer''s
+            to-do); `member` = made by the project''s own team (web, import or field
+            app); `connector` = written through the API with a key (an AI or app);
+            `unknown` = the account that made it is gone. Not sent on `compact=1`
+            rows.'
         data_warnings:
           type: array
           readOnly: true
@@ -23499,6 +23650,21 @@ components:
           readOnly: true
           description: The project this record is in (a credential may read several;
             GET /api/v2/grant-context/ names them).
+        origin:
+          type: string
+          readOnly: true
+          enum:
+          - geodb_staff
+          - member
+          - connector
+          - unknown
+          description: 'Who made this row, as a role (never a person): `geodb_staff`
+            = loaded by a geoDB staff account, not the project''s own team (a problem
+            in such rows is geoDB''s to fix: report it to geoDB, never as the customer''s
+            to-do); `member` = made by the project''s own team (web, import or field
+            app); `connector` = written through the API with a key (an AI or app);
+            `unknown` = the account that made it is gone. Not sent on `compact=1`
+            rows.'
         data_warnings:
           type: array
           readOnly: true
@@ -24227,6 +24393,21 @@ components:
           readOnly: true
           description: The project this record is in (a credential may read several;
             GET /api/v2/grant-context/ names them).
+        origin:
+          type: string
+          readOnly: true
+          enum:
+          - geodb_staff
+          - member
+          - connector
+          - unknown
+          description: 'Who made this row, as a role (never a person): `geodb_staff`
+            = loaded by a geoDB staff account, not the project''s own team (a problem
+            in such rows is geoDB''s to fix: report it to geoDB, never as the customer''s
+            to-do); `member` = made by the project''s own team (web, import or field
+            app); `connector` = written through the API with a key (an AI or app);
+            `unknown` = the account that made it is gone. Not sent on `compact=1`
+            rows.'
         data_warnings:
           type: array
           readOnly: true
@@ -24765,6 +24946,21 @@ components:
             assay a QAQC review withholds is left out of `assays/` and `assay-results/`
             by default, so this id may join to nothing there; their `withheld` counts
             say so. Ask with `include_excluded=true` to receive it, flagged.'
+        origin:
+          type: string
+          readOnly: true
+          enum:
+          - geodb_staff
+          - member
+          - connector
+          - unknown
+          description: 'Who made this row, as a role (never a person): `geodb_staff`
+            = loaded by a geoDB staff account, not the project''s own team (a problem
+            in such rows is geoDB''s to fix: report it to geoDB, never as the customer''s
+            to-do); `member` = made by the project''s own team (web, import or field
+            app); `connector` = written through the API with a key (an AI or app);
+            `unknown` = the account that made it is gone. Not sent on `compact=1`
+            rows.'
         data_warnings:
           type: array
           readOnly: true
@@ -25020,6 +25216,21 @@ components:
           readOnly: true
           description: The project this record is in (a credential may read several;
             GET /api/v2/grant-context/ names them).
+        origin:
+          type: string
+          readOnly: true
+          enum:
+          - geodb_staff
+          - member
+          - connector
+          - unknown
+          description: 'Who made this row, as a role (never a person): `geodb_staff`
+            = loaded by a geoDB staff account, not the project''s own team (a problem
+            in such rows is geoDB''s to fix: report it to geoDB, never as the customer''s
+            to-do); `member` = made by the project''s own team (web, import or field
+            app); `connector` = written through the API with a key (an AI or app);
+            `unknown` = the account that made it is gone. Not sent on `compact=1`
+            rows.'
         data_warnings:
           type: array
           readOnly: true
@@ -25388,6 +25599,21 @@ components:
           readOnly: true
           description: The project this record is in (a credential may read several;
             GET /api/v2/grant-context/ names them).
+        origin:
+          type: string
+          readOnly: true
+          enum:
+          - geodb_staff
+          - member
+          - connector
+          - unknown
+          description: 'Who made this row, as a role (never a person): `geodb_staff`
+            = loaded by a geoDB staff account, not the project''s own team (a problem
+            in such rows is geoDB''s to fix: report it to geoDB, never as the customer''s
+            to-do); `member` = made by the project''s own team (web, import or field
+            app); `connector` = written through the API with a key (an AI or app);
+            `unknown` = the account that made it is gone. Not sent on `compact=1`
+            rows.'
         data_warnings:
           type: array
           readOnly: true
@@ -25494,6 +25720,21 @@ components:
           readOnly: true
           description: The project this record is in (a credential may read several;
             GET /api/v2/grant-context/ names them).
+        origin:
+          type: string
+          readOnly: true
+          enum:
+          - geodb_staff
+          - member
+          - connector
+          - unknown
+          description: 'Who made this row, as a role (never a person): `geodb_staff`
+            = loaded by a geoDB staff account, not the project''s own team (a problem
+            in such rows is geoDB''s to fix: report it to geoDB, never as the customer''s
+            to-do); `member` = made by the project''s own team (web, import or field
+            app); `connector` = written through the API with a key (an AI or app);
+            `unknown` = the account that made it is gone. Not sent on `compact=1`
+            rows.'
         data_warnings:
           type: array
           readOnly: true
@@ -25896,6 +26137,21 @@ components:
           readOnly: true
           description: The project this record is in (a credential may read several;
             GET /api/v2/grant-context/ names them).
+        origin:
+          type: string
+          readOnly: true
+          enum:
+          - geodb_staff
+          - member
+          - connector
+          - unknown
+          description: 'Who made this row, as a role (never a person): `geodb_staff`
+            = loaded by a geoDB staff account, not the project''s own team (a problem
+            in such rows is geoDB''s to fix: report it to geoDB, never as the customer''s
+            to-do); `member` = made by the project''s own team (web, import or field
+            app); `connector` = written through the API with a key (an AI or app);
+            `unknown` = the account that made it is gone. Not sent on `compact=1`
+            rows.'
         data_warnings:
           type: array
           readOnly: true
@@ -33957,6 +34213,21 @@ components:
           readOnly: true
           description: The project this record is in (a credential may read several;
             GET /api/v2/grant-context/ names them).
+        origin:
+          type: string
+          readOnly: true
+          enum:
+          - geodb_staff
+          - member
+          - connector
+          - unknown
+          description: 'Who made this row, as a role (never a person): `geodb_staff`
+            = loaded by a geoDB staff account, not the project''s own team (a problem
+            in such rows is geoDB''s to fix: report it to geoDB, never as the customer''s
+            to-do); `member` = made by the project''s own team (web, import or field
+            app); `connector` = written through the API with a key (an AI or app);
+            `unknown` = the account that made it is gone. Not sent on `compact=1`
+            rows.'
         data_warnings:
           type: array
           readOnly: true
@@ -34313,6 +34584,60 @@ components:
         * `GR` - Georeferenced Map
         * `ZP` - Zip Archive
         * `OT` - Other
+    ProjectHealth:
+      type: object
+      properties:
+        project:
+          type: object
+          additionalProperties: {}
+        engine_version:
+          type: integer
+        computed_at:
+          type: string
+        cached:
+          type: boolean
+        summary:
+          type: object
+          additionalProperties: {}
+        findings:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+        skipped_checks:
+          type: array
+          items:
+            type: string
+        see_guide:
+          type: array
+          description: The guide sections that change how this answer should be read
+            — read them before reporting from it. Each names the topic, the section,
+            its path (GET it, no key needed beyond this one) and why it matters here.
+          items:
+            type: object
+            properties:
+              topic:
+                type: string
+              section:
+                type: string
+              url:
+                type: string
+              why:
+                type: string
+            required:
+            - topic
+            - section
+            - url
+            - why
+      required:
+      - cached
+      - computed_at
+      - engine_version
+      - findings
+      - project
+      - skipped_checks
+      - summary
+      additionalProperties: false
     ProjectNote:
       type: object
       properties:
@@ -34720,6 +35045,21 @@ components:
           readOnly: true
           description: The project this record is in (a credential may read several;
             GET /api/v2/grant-context/ names them).
+        origin:
+          type: string
+          readOnly: true
+          enum:
+          - geodb_staff
+          - member
+          - connector
+          - unknown
+          description: 'Who made this row, as a role (never a person): `geodb_staff`
+            = loaded by a geoDB staff account, not the project''s own team (a problem
+            in such rows is geoDB''s to fix: report it to geoDB, never as the customer''s
+            to-do); `member` = made by the project''s own team (web, import or field
+            app); `connector` = written through the API with a key (an AI or app);
+            `unknown` = the account that made it is gone. Not sent on `compact=1`
+            rows.'
         metal_equivalent_config:
           type: string
           nullable: true

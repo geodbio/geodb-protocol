@@ -316,7 +316,7 @@
     "export_concurrency": {
       "http": 429,
       "meaning": "This grant already holds the maximum number of export jobs that have not finished.",
-      "remedy": "Do NOT resend the same export. Poll the status_url of the jobs you already started; when one reaches a terminal state a slot frees. `offending` carries in_flight and limit.",
+      "remedy": "Do NOT start another export. Poll the jobs you already started (`offending.jobs`: each names its `status_path`) every Retry-After seconds; a slot frees when one finishes.",
       "retry": "after"
     },
     "export_failed": {
@@ -334,7 +334,7 @@
     "export_not_ready": {
       "http": 409,
       "meaning": "The export behind this download link is still building.",
-      "remedy": "Wait a few seconds (Retry-After) and download the same link again.",
+      "remedy": "Poll the export at `exports/<job_id>/` (its `status_path`) every Retry-After seconds; this link works once its state is done.",
       "retry": "after"
     },
     "feedback_rate_limited": {

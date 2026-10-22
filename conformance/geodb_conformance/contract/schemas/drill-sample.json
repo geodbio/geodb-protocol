@@ -591,6 +591,16 @@
       ],
       "description": "Id of the assay record (one per sample: `assays/{id}/`). An assay a QAQC review withholds is left out of `assays/` and `assay-results/` by default, so this id may join to nothing there; their `withheld` counts say so. Ask with `include_excluded=true` to receive it, flagged."
     },
+    "origin": {
+      "type": "string",
+      "enum": [
+        "geodb_staff",
+        "member",
+        "connector",
+        "unknown"
+      ],
+      "description": "Who made this row, as a role (never a person): `geodb_staff` = loaded by a geoDB staff account, not the project's own team (a problem in such rows is geoDB's to fix: report it to geoDB, never as the customer's to-do); `member` = made by the project's own team (web, import or field app); `connector` = written through the API with a key (an AI or app); `unknown` = the account that made it is gone. Not sent on `compact=1` rows."
+    },
     "data_warnings": {
       "type": "array",
       "items": {
