@@ -1731,6 +1731,76 @@ paths:
                 type: integer
       summary: Get one of the laboratory certificates
       x-protocol-core: true
+  /api/v2/claim-blocks/:
+    get:
+      operationId: claim_blocks_retrieve
+      description: |-
+        Every claim block on the project as its members see it on the web: `stage` on the proposed → approved → processing → staked → filed ladder (`stage_label`, `stage_note`), claim counts, package checklist progress, included access (`access_expires_at`), and the block's invoice (`invoice_state`, `invoice_label`, `invoice` = number, `amount_due` as a decimal string, the Stripe-hosted `pay_url`; `billed_elsewhere` when someone else pays). `company_invoices` = the company's open invoices. The money (the company's invoices; a block's number, amount and pay link) is the company's billing people's and the block's buyer's: for anyone else `invoice` is null while `invoice_state` stays, and `company_invoices` is null with a `money_note`.
+
+        On a block YOU placed, `buyer_order` adds that order's own page: phone, notes, `amount_cents`, `price_per_claim_cents`, the work package. A person's key only (a vendor key is refused).
+      summary: 'The claim blocks of a project: stage, claim counts and invoice'
+      parameters:
+      - in: query
+        name: project_id
+        schema:
+          type: integer
+        description: The project to read. Defaults to the project this credential
+          is pinned to; any other must be one it can read — an id naming no readable
+          project is refused with `invalid_parameter`, as on the lists.
+      tags:
+      - Claims
+      security:
+      - knoxApiToken: []
+      - GrantAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClaimBlocks'
+          description: ''
+        '400':
+          description: The request could not be understood (see `reason_code`).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 'No usable credential. `reason_code` distinguishes a revoked
+            grant from an expired, unknown or malformed one; the response carries
+            `WWW-Authenticate: Grant`.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: The credential is valid but not permitted this operation —
+            outside the grant surface, a write with a read-only grant, or outside
+            a room-pinned grant's room.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: No such resource inside this credential's scope. A row in another
+            project is indistinguishable from one that does not exist, by design.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: The grant's request rate was exceeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            Retry-After:
+              description: Seconds to wait before retrying. Sent on every throttled
+                response.
+              schema:
+                type: integer
+      x-geodb-extension: true
   /api/v2/claim-plots/preview/:
     get:
       operationId: claim_plot_preview
@@ -10879,12 +10949,22 @@ paths:
         Each piece is clipped to the area, with `acres_in_area` and `covers_whole_area`.
         ⚠️ Mineral withdrawals here are the Forest Service''s (National Forest System
         land only): BLM-administered withdrawals are not in the mirror. Ground with
-        no ownership piece is neither federal nor state land in the mirror. `geometry=false`
-        leaves the outlines out. A person''s own connection only, on a project whose
-        company pays for geoDB (its first free month counts); otherwise 403 `land_data_needs_paid_plan`
-        with the remedy. Read-only; never a whole layer. Every answer carries `mirror`
-        (each layer''s last sync and what it does not cover) and `not_a_clearance`:
-        an empty answer is NOT open ground.'
+        no ownership piece is neither federal nor state land in the mirror. `split_estate`:
+        federal minerals where the surface is not federal surface (private, state,
+        local or unknown) (all locatable minerals reserved, or some — check the Master
+        Title Plat), each piece clipped to the area with `label`, `mineral_class`,
+        `state` and the BLM office it came from. If the surface was patented under
+        the Stock-Raising Homestead Act, staking needs a Notice of Intent to Locate
+        and notice to the surface owner first (43 CFR 3838). Check the patent at glorecords.blm.gov.
+        It is NOT a designation and never a conflict, and its coverage is Wyoming,
+        Utah, Colorado, New Mexico, Oregon and Washington only. BLM publishes no federal-mineral
+        layer for other states, so an empty map elsewhere means no data, not no split
+        estate. `geometry=false` leaves the outlines out. A person''s own connection
+        only, on a project whose company pays for geoDB (its first free month counts);
+        otherwise 403 `land_data_needs_paid_plan` with the remedy. Read-only; never
+        a whole layer. Every answer carries `mirror` (each layer''s last sync and
+        what it does not cover) and `not_a_clearance`: an empty answer is NOT open
+        ground.'
       summary: Withdrawals, designations and surface ownership in an area
       parameters:
       - in: query
@@ -21474,6 +21554,34 @@ components:
         * `preliminary` - Preliminary
         * `finalized` - Finalized
         * `unverified` - Unverified (no certificate in source)
+    ClaimBlocks:
+      type: object
+      properties:
+        project:
+          type: object
+          additionalProperties: {}
+        claim_blocks:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+        company_invoices:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+          nullable: true
+        company_invoices_total:
+          type: string
+          nullable: true
+        money_note:
+          type: string
+      required:
+      - claim_blocks
+      - company_invoices
+      - company_invoices_total
+      - project
+      additionalProperties: false
     ClaimPlotPreview:
       type: object
       properties:
@@ -27972,6 +28080,11 @@ components:
           items:
             type: object
             additionalProperties: {}
+        split_estate:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
         truncated:
           type: array
           items:
@@ -28004,6 +28117,7 @@ components:
       - not_a_clearance
       - ownership
       - project
+      - split_estate
       - truncated
       additionalProperties: false
     LengthUnitsEnum:
@@ -34831,6 +34945,25 @@ components:
           allOf:
           - $ref: '#/components/schemas/CounterScopeEnum'
           readOnly: true
+        qc_due_enforcement:
+          allOf:
+          - $ref: '#/components/schemas/QcDueEnforcementEnum'
+          readOnly: true
+          description: |-
+            When a QC sample is due on a hole: "warn" shows the reminder; "block" stops NEW samples being added to that hole (phone sample entry and the web Quick Log) until the due QC sample is entered. Editing existing samples, other holes, and sync/upload are never blocked — this is an entry-screen rule only.
+
+            * `warn` - Warn (show the reminder)
+            * `block` - Hard stop (no new samples on the hole until the due QC is entered)
+        qc_due_enforcement_since:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+          description: When the hard stop was switched on (set by the protocol writer).
+        entry_baselines:
+          type: string
+          readOnly: true
+          nullable: true
         notes:
           type: string
           readOnly: true
@@ -34853,10 +34986,13 @@ components:
       - duplicates_enabled
       - duplicates_interval
       - duplicates_offset
+      - entry_baselines
       - id
       - insertion_mode
       - notes
       - project
+      - qc_due_enforcement
+      - qc_due_enforcement_since
       - round_robin_interval
       - round_robin_order
       - rules
@@ -35388,6 +35524,14 @@ components:
       - standards_thresholds
       - url
       additionalProperties: false
+    QcDueEnforcementEnum:
+      enum:
+      - warn
+      - block
+      type: string
+      description: |-
+        * `warn` - Warn (show the reminder)
+        * `block` - Hard stop (no new samples on the hole until the due QC is entered)
     RecordCounts:
       type: object
       properties:
