@@ -201,6 +201,12 @@
       "remedy": "Nothing to do; read the records to see their current state.",
       "retry": "no"
     },
+    "ambiguous_match": {
+      "http": 409,
+      "meaning": "(per row) An update or retract named a structure or field note only by a name that several records in the project carry (`offending.ids` names them). Their identity is the uuid, not the name, so the row was matched to none of them. Nothing was written for this row.",
+      "remedy": "Read the records `offending.ids` names, ask the user which one is meant, and send the row again with that record's \"id\" or \"uuid\".",
+      "retry": "no"
+    },
     "ambiguous_nd": {
       "http": 400,
       "meaning": "The result is \"N.D.\" (or \"N/D\"), which can mean not detected or not determined; nothing was stored for it.",
@@ -978,6 +984,11 @@
       "remedy": "Check the depth (and its unit) with the user; if the hole was drilled deeper than recorded, the hole's total depth needs correcting instead.",
       "retry": "no"
     },
+    "catalog_entry_created": {
+      "meaning": "(per-row warning) The row names an analytical method the company does not have, so the write adds it to the company's method list from the row's own wording (the dry run says it will). The detail names it. Undo of the write removes it unless another record uses it by then.",
+      "remedy": "Tell the user the method will be added, before the write. If it is a spelling of a method they already have, send that name instead; otherwise go on, and ask them to complete the method's digestion and finish on the web.",
+      "retry": "no"
+    },
     "certificate_date_implausible": {
       "meaning": "(per-row warning) The certificate's analysis date is in the future, or out of order with the same laboratory's job numbers (a later job number dated earlier than most of the lab's other jobs) — \"possible day/month swap\" when swapping the day and month puts it in order. The row still lands as sent.",
       "remedy": "Check the date against the laboratory's report before the write. A date read day-first is the usual cause: parse ISO dates (YYYY-MM-DD) as they are and read the parsed table back. If the date is right, go on.",
@@ -1031,6 +1042,11 @@
     "geometry_ring_closed": {
       "meaning": "(batch warning) A polygon's ring was not closed and was closed for it; the misclosure is reported.",
       "remedy": "If the misclosure is large, check the geometry with the user.",
+      "retry": "no"
+    },
+    "matched_in_other_set": {
+      "meaning": "(per-row warning) The row matched a record stored in a different set from the one this row writes into (a drill sample is identified by its hole and name across every set). The write acts on that stored record, in its own set; it is not moved or copied into the set named. The detail names the stored set.",
+      "remedy": "Tell the user which set the record is in before the write. A second sampling pass of the same interval uses new sample names; if this row was meant as a new sample, rename it and resend.",
       "retry": "no"
     },
     "method_detection_limit_missing": {
@@ -1131,6 +1147,11 @@
     "weight_not_overwritten": {
       "meaning": "(per-row warning) The sample's stored weight was kept: a merge fills an empty weight but never replaces a stored one with a different weight, and never with another certificate's. Both weights are named (stored in grams).",
       "remedy": "Tell the user. If the stored weight is wrong and the sent one belongs to the same sample and certificate, correct it with an \"update\" of the assay's weight after their yes.",
+      "retry": "no"
+    },
+    "weight_not_physical": {
+      "meaning": "(per-row warning) The sample's dry weight is not above its wet weight. The wet weight is the sample weighed SUBMERGED in water, which is always less than its dry weight, so no specific gravity can be computed from the pair. A damp-sample weight sent as the wet weight is the usual cause. Stored as sent.",
+      "remedy": "Check both weights with the user; if the wet weight is a damp weight, leave it out (or correct it with an update).",
       "retry": "no"
     },
     "write_not_recorded": {

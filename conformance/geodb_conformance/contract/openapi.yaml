@@ -9298,6 +9298,13 @@ paths:
           type: string
         description: Exact record name (as stored, case-sensitive); several names
           comma-separated. The quick way to find one record.
+      - in: query
+        name: uuid
+        schema:
+          type: string
+        description: Exact record uuid; several comma-separated. A structure or field
+          note is identified by its uuid (names repeat), so this finds the ones you
+          mean to write. A value that is not a UUID matches nothing.
       tags:
       - Surface Geology
       security:
@@ -17821,6 +17828,13 @@ paths:
           type: string
         description: Exact record name (as stored, case-sensitive); several names
           comma-separated. The quick way to find one record.
+      - in: query
+        name: uuid
+        schema:
+          type: string
+        description: Exact record uuid; several comma-separated. A structure or field
+          note is identified by its uuid (names repeat), so this finds the ones you
+          mean to write. A value that is not a UUID matches nothing.
       tags:
       - Surface Geology
       security:

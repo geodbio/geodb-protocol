@@ -1,5 +1,28 @@
 # Changelog
 
+## Regenerated 2026-10-24 from deployed geoDB `4770f5e14` (additive; `protocol_version` unchanged)
+
+Regenerated with prod's flags (MCP + READS + WRITES + MCP_STAFF_ONLY on) and
+`--publish-write-profile`. Nothing removed, renamed or retyped.
+
+- **Structures and field notes are identified by `uuid`.** One label repeats at
+  every station, so a row without a `uuid` is always a new record; send the
+  returned `uuid` (or an `external_id`) to change it or make a re-send a no-op.
+  Reads of both take `?uuid=` (several comma-separated). An update or retract
+  that names a record only by a name several records carry is refused
+  `ambiguous_match`, listing them.
+- New refusals `hole_not_found` and `sampling_pass_not_found` name the value
+  that matched nothing and offer up to five close matches from the holes the
+  key can reach.
+- New warnings `matched_in_other_set`, `catalog_entry_created` and
+  `weight_not_physical` (a dry weight above the wet weight; `wet_weight` is the
+  submerged specific-gravity weight).
+- The connector paragraph names where a person reads every call their AI made:
+  Settings → Connected AIs & keys → Activity.
+
+Checks: validate.py, regenerate.py --check, emit_agents.py --check,
+export_protocol_guide --check, conformance selftest (22/22 write break matrix).
+
 ## Regenerated 2026-10-14 from deployed geoDB `12f5d47c2` (additive; `protocol_version` stays 0.3.3)
 
 Regenerated with prod's flags (MCP + READS + WRITES + MCP_STAFF_ONLY on) and

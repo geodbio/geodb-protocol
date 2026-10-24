@@ -161,6 +161,13 @@ the write would. Fix your own rows, then send it with `"dry_run": false`.
   every write you might retry. The same key with a different body is refused
   `idempotency_key_reused`.
 
+A structure measurement or a field note is identified by its `uuid`, never
+its name (one label repeats at every station): a row without a `uuid` is
+always a new record, and the answer's `result.uuid` names it. Send that
+`uuid` (or an `external_id`) to change the record or to make a re-send a
+no-op; an update or retract naming it only by a name several records carry
+is refused `ambiguous_match`, listing them.
+
 **4 · Coordinates carry their CRS.** Send the original numbers with their
 `epsg` (easting/northing with the grid's code, or GPS degrees with `4326`);
 never pre-convert. A row with coordinates and no `epsg` is refused
