@@ -799,6 +799,12 @@
       "remedy": "Tell the person: an owner, or a manager who can make purchases, can switch the project to Drilling on the geoDB Billing page (it raises the monthly price). Resend once it is switched.",
       "retry": "maybe"
     },
+    "project_tier_unpaid": {
+      "http": 409,
+      "meaning": "(per row) The company's free month is over and billing is not set up (or an invoice is overdue), so nothing may be added, changed or removed in its projects. Reading and export keep working. Nothing in this row was written.",
+      "remedy": "Tell the person: an owner, or a manager who can make purchases, can set up billing on the geoDB Billing page (the row's remedy links it). Writing turns back on as soon as it is set up. Resend then.",
+      "retry": "maybe"
+    },
     "purchase_authority_required": {
       "http": 403,
       "meaning": "Creating a project is limited to the company's owner, a company manager with purchase authority, or geoDB staff (it can raise what the company pays); the person this key acts for is a member without it.",
@@ -1184,6 +1190,11 @@
       "remedy": "Check the date against the laboratory's report before the write. A date read day-first is the usual cause: parse ISO dates (YYYY-MM-DD) as they are and read the parsed table back. If the date is right, go on.",
       "retry": "no"
     },
+    "claim_outside_package": {
+      "meaning": "(per-row warning) The claim stake names a claim its claim package does not hold. The stake lands as sent, linked to that claim.",
+      "remedy": "Check with the user that the stake is in the right group's package; if the claim belongs to the group, add it to the package on the web.",
+      "retry": "no"
+    },
     "crs_implausible": {
       "meaning": "(per-row warning) The coordinates look like degrees but the epsg is a projected system, and the writer acknowledged it (\"acknowledge\": [\"crs_implausible\"]). Stored exactly as sent; reads mark the row with the same code in `data_warnings`.",
       "remedy": "Check the epsg with the user; if it was wrong, resend the row with the right one (intent \"upsert\").",
@@ -1287,6 +1298,11 @@
     "set_exists_derived_from_ignored": {
       "meaning": "(per-row warning) The request asked to create a set that already exists, so the rows went into that existing set and the \"derived_from\" sent with it was NOT recorded (an existing set's provenance is never rewritten).",
       "remedy": "If this is a new derived interpretation, send it into a NEW set name with \"create\": true and its \"derived_from\"; otherwise leave \"derived_from\" out.",
+      "retry": "no"
+    },
+    "stake_link_not_made": {
+      "meaning": "(per-row warning) The claim stake was saved, but one of the claim links it asked for was not made as sent: another stake took that corner between the check and the write, so the stake is linked without the corner number (or not linked to that claim). The claim and corner are named.",
+      "remedy": "Read the claim's stakes (claim-stakes/by-claim/<claim id>/), tell the user which corner is doubled, and have them settle it on the web.",
       "retry": "no"
     },
     "stored_differently": {

@@ -78,7 +78,7 @@
   "intents": {
     "create": {
       "does": "adds new records; an existing record is never overwritten",
-      "confirm_with_user_first": false,
+      "confirm_with_user_first": true,
       "row_statuses": [
         "created",
         "updated",
@@ -176,7 +176,7 @@
       ]
     }
   },
-  "confirm_note": "Before an update, upsert, retract or restore, tell the user exactly which records will change (a dry run shows them) and wait for their go-ahead — even when their request was explicit; they have not yet seen what it will change.",
+  "confirm_note": "Before any write but an undo, a create included, tell the user exactly which records it adds or changes (a dry run shows them) and wait for their go-ahead — even when their request was explicit; they have not yet seen what it will change.",
   "retract_confirm": "retract",
   "batch_limit": 1000,
   "rules": [
@@ -994,6 +994,11 @@
       "remedy": "Check the date against the laboratory's report before the write. A date read day-first is the usual cause: parse ISO dates (YYYY-MM-DD) as they are and read the parsed table back. If the date is right, go on.",
       "retry": "no"
     },
+    "claim_outside_package": {
+      "meaning": "(per-row warning) The claim stake names a claim its claim package does not hold. The stake lands as sent, linked to that claim.",
+      "remedy": "Check with the user that the stake is in the right group's package; if the claim belongs to the group, add it to the package on the web.",
+      "retry": "no"
+    },
     "crs_implausible": {
       "meaning": "(per-row warning) The coordinates look like degrees but the epsg is a projected system, and the writer acknowledged it (\"acknowledge\": [\"crs_implausible\"]). Stored exactly as sent; reads mark the row with the same code in `data_warnings`.",
       "remedy": "Check the epsg with the user; if it was wrong, resend the row with the right one (intent \"upsert\").",
@@ -1097,6 +1102,11 @@
     "set_exists_derived_from_ignored": {
       "meaning": "(per-row warning) The request asked to create a set that already exists, so the rows went into that existing set and the \"derived_from\" sent with it was NOT recorded (an existing set's provenance is never rewritten).",
       "remedy": "If this is a new derived interpretation, send it into a NEW set name with \"create\": true and its \"derived_from\"; otherwise leave \"derived_from\" out.",
+      "retry": "no"
+    },
+    "stake_link_not_made": {
+      "meaning": "(per-row warning) The claim stake was saved, but one of the claim links it asked for was not made as sent: another stake took that corner between the check and the write, so the stake is linked without the corner number (or not linked to that claim). The claim and corner are named.",
+      "remedy": "Read the claim's stakes (claim-stakes/by-claim/<claim id>/), tell the user which corner is doubled, and have them settle it on the web.",
       "retry": "no"
     },
     "stored_differently": {

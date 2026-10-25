@@ -1900,6 +1900,328 @@ paths:
               schema:
                 type: integer
       x-geodb-extension: true
+  /api/v2/claim-stakes/:
+    get:
+      operationId: claim_stakes_list
+      description: |-
+        The corner and monument posts of a project's claims: one row per physical post (a corner shared by several claims is ONE stake), its `claim_links` naming each claim it serves with the corner number (Idaho and New Mexico: the location monument is Corner 1). The PLANNED position is `target_easting` / `target_northing` in `target_epsg` (WGS84 in `target_latitude` / `target_longitude`); the STAKED position, when one was recorded, is `latitude` / `longitude` in `epsg` (WGS84 in `geometry`). `status` is the field workflow (planned, assigned, staked, skipped), never the claim's legal status.
+
+        Read only through a person's own connection; a vendor or organisation key is refused `person_key_required`.
+
+        Paged. Pass `modified_since` to fetch only what changed, and read `deleted_ids` to learn what was removed — that feed is how deletions reach you, since deleted rows simply stop appearing.
+
+        ⚠️ `modified_since` is DAY-granular: it returns everything changed on that day or later, so a repeated pull re-sends the current day's rows. Deduplicate by `id` rather than assuming a strict watermark.
+      parameters:
+      - name: limit
+        required: false
+        in: query
+        description: 'Rows per page: default 100, at most 500 (2,000 on `assay-results/`
+          and on `drill-samples/` rows without `expand=assay`, for an access grant).
+          A larger value is served at the cap and the envelope says so (`limit_clamped`).'
+        schema:
+          type: integer
+      - name: offset
+        required: false
+        in: query
+        description: The initial index from which to return the results.
+        schema:
+          type: integer
+      - in: query
+        name: modified_since
+        schema:
+          type: string
+        description: 'Incremental sync: only rows with last_edited >= the DATE part
+          of this ISO 8601 date/datetime. DAY-granular — rows already modified on
+          the same day are re-included; treat pulls as idempotent upserts keyed on
+          id. The same-day over-inclusion is deliberate: under-including would silently
+          lose an edit made after your previous pull on that day. Deletions are not
+          reflected here; keep using deleted_since / deleted_ids. A value that cannot
+          be parsed is REFUSED with 400 reason_code=invalid_parameter. When sent,
+          the response echoes modified_since_applied.'
+      - in: query
+        name: deleted_since
+        schema:
+          type: string
+        description: 'Deletion sync: restrict deleted_ids to records soft-deleted
+          on or after the DATE part of this ISO 8601 date/datetime. DAY-granular and
+          inclusive, for the same reason as modified_since — removal is idempotent,
+          so over-including a deletion is harmless and under-including leaves a ghost
+          record. Omit it on a first sync to receive every deleted id. The response
+          echoes deleted_since_applied, and sync_timestamp is the value to send next
+          time.'
+      - in: query
+        name: compact
+        schema:
+          type: string
+        description: 'compact=1: lean sync serialization — flat scalars with FK ids
+          (project_id, bhid_id, ...), raw extra_data dict, no nested natural keys
+          / derived fields / geometry columns. Same pagination envelope and deleted_ids
+          metadata. Assays inline their element values as flat dicts. Any other value
+          = default rich shape.'
+      - in: query
+        name: skip_count
+        schema:
+          type: string
+        description: 'skip_count=1: suppress the per-page COUNT(*). count is null;
+          next is present exactly while a full page was returned.'
+      - in: query
+        name: project_id
+        schema:
+          type: string
+        description: Narrow to one project this credential can read, by its id. An
+          id that names no readable project is refused with `invalid_parameter` —
+          never an empty list.
+      - in: query
+        name: project
+        schema:
+          type: string
+        description: 'Narrow to one project this credential can read, by its id or
+          its exact name (case does not matter). A value that names no readable project
+          is refused with `invalid_parameter` — never an empty list. The JSON natural
+          key some app endpoints take (`{"name": …, "company": …}`) is not a form
+          this parameter accepts: it is refused with `invalid_parameter` too — send
+          the id.'
+      - in: query
+        name: company_id
+        schema:
+          type: string
+        description: The company this read is about, by its id (see `company`).
+      - in: query
+        name: company
+        schema:
+          type: string
+        description: 'The company this read is about, by its id or its exact name
+          (case does not matter): a company-level table (laboratories, methods, standards,
+          QC types) answers that company; with `scope=company` a project-level list
+          answers every project of it this credential can read. A value that names
+          no company this credential can read is refused with `invalid_parameter`.'
+      - in: query
+        name: scope
+        schema:
+          type: string
+        description: 'scope=company: read every readable project of ONE company instead
+          of one project — `company=<id>` names it (a credential that reads one company
+          needs none; several companies and none named is `company_required`). Never
+          across companies. Each row carries `project_id`. Read-only.'
+      - in: query
+        name: status
+        schema:
+          type: string
+        description: 'Narrow to field-workflow status: one or more of `PL` planned,
+          `AS` assigned, `ST` staked, `SK` skipped, comma-separated.'
+      - in: query
+        name: stake_type
+        schema:
+          type: string
+        description: 'Narrow to one stake type: `WP` corner, `LM` location monument,
+          `SL` sideline, `EL` endline, `WT` witness.'
+      - in: query
+        name: land_holding_id
+        schema:
+          type: string
+        description: The stakes of one claim (its land-holding id).
+      - in: query
+        name: unassigned
+        schema:
+          type: string
+        description: '`true`: only stakes assigned to no one.'
+      - in: query
+        name: sequence_number
+        schema:
+          type: string
+        description: Exact stake name (as stored, case-sensitive); several comma-separated.
+          The quick way to find given stakes.
+      tags:
+      - Land Holdings
+      security:
+      - knoxApiToken: []
+      - GrantAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedClaimStakeReadList'
+          description: ''
+        '400':
+          description: The request could not be understood (see `reason_code`).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 'No usable credential. `reason_code` distinguishes a revoked
+            grant from an expired, unknown or malformed one; the response carries
+            `WWW-Authenticate: Grant`.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: The credential is valid but not permitted this operation —
+            outside the grant surface, a write with a read-only grant, or outside
+            a room-pinned grant's room.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: No such resource inside this credential's scope. A row in another
+            project is indistinguishable from one that does not exist, by design.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: The grant's request rate was exceeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            Retry-After:
+              description: Seconds to wait before retrying. Sent on every throttled
+                response.
+              schema:
+                type: integer
+      summary: List claim stakes
+      x-geodb-extension: true
+  /api/v2/claim-stakes/{id}/:
+    get:
+      operationId: claim_stakes_retrieve
+      description: |-
+        The corner and monument posts of a project's claims: one row per physical post (a corner shared by several claims is ONE stake), its `claim_links` naming each claim it serves with the corner number (Idaho and New Mexico: the location monument is Corner 1). The PLANNED position is `target_easting` / `target_northing` in `target_epsg` (WGS84 in `target_latitude` / `target_longitude`); the STAKED position, when one was recorded, is `latitude` / `longitude` in `epsg` (WGS84 in `geometry`). `status` is the field workflow (planned, assigned, staked, skipped), never the claim's legal status.
+
+        Read only through a person's own connection; a vendor or organisation key is refused `person_key_required`.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Claim Stake.
+        required: true
+      tags:
+      - Land Holdings
+      security:
+      - knoxApiToken: []
+      - GrantAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClaimStakeRead'
+          description: ''
+        '400':
+          description: The request could not be understood (see `reason_code`).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 'No usable credential. `reason_code` distinguishes a revoked
+            grant from an expired, unknown or malformed one; the response carries
+            `WWW-Authenticate: Grant`.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: The credential is valid but not permitted this operation —
+            outside the grant surface, a write with a read-only grant, or outside
+            a room-pinned grant's room.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: No such resource inside this credential's scope. A row in another
+            project is indistinguishable from one that does not exist, by design.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: The grant's request rate was exceeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            Retry-After:
+              description: Seconds to wait before retrying. Sent on every throttled
+                response.
+              schema:
+                type: integer
+      summary: Get one of the claim stakes
+      x-geodb-extension: true
+  /api/v2/claim-stakes/by-claim/{land_holding_id}/:
+    get:
+      operationId: claim_stakes_by_claim_retrieve
+      description: Every corner and monument post linked to one claim (by its land-holding
+        id), each with the corner number it holds on that claim. A shared corner post
+        also names the other claims it serves.
+      parameters:
+      - in: path
+        name: land_holding_id
+        schema:
+          type: string
+        required: true
+      tags:
+      - Land Holdings
+      security:
+      - knoxApiToken: []
+      - GrantAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClaimStakeRead'
+          description: ''
+        '400':
+          description: The request could not be understood (see `reason_code`).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 'No usable credential. `reason_code` distinguishes a revoked
+            grant from an expired, unknown or malformed one; the response carries
+            `WWW-Authenticate: Grant`.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: The credential is valid but not permitted this operation —
+            outside the grant surface, a write with a read-only grant, or outside
+            a room-pinned grant's room.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: No such resource inside this credential's scope. A row in another
+            project is indistinguishable from one that does not exist, by design.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: The grant's request rate was exceeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            Retry-After:
+              description: Seconds to wait before retrying. Sent on every throttled
+                response.
+              schema:
+                type: integer
+      summary: The stakes of one claim
+      x-geodb-extension: true
   /api/v2/column-configurations/:
     get:
       operationId: column_configurations_list
@@ -21700,6 +22022,451 @@ components:
       - status
       - warnings
       additionalProperties: false
+    ClaimStakeLinkRead:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        land_holding:
+          allOf:
+          - $ref: '#/components/schemas/LandHoldingMinimal'
+          readOnly: true
+        corner_number:
+          nullable: true
+          description: |-
+            Which corner of this claim (1-4), null for LM stakes
+
+            * `1` - Corner 1
+            * `2` - Corner 2
+            * `3` - Corner 3
+            * `4` - Corner 4
+          minimum: -2147483648
+          maximum: 2147483647
+          allOf:
+          - $ref: '#/components/schemas/CornerNumberEnum'
+      required:
+      - id
+      - land_holding
+      additionalProperties: false
+    ClaimStakeRead:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        sequence_number:
+          type: string
+          description: Waypoint reference ID from QClaims (e.g., WP 1, LM 3, SL 1,
+            EL 2)
+          maxLength: 50
+        stake_type:
+          allOf:
+          - $ref: '#/components/schemas/StakeTypeEnum'
+          description: |-
+            WP = corner, LM = discovery monument, SL = sideline (WY), EL = endline (AZ)
+
+            * `WP` - Corner Waypoint
+            * `LM` - Location Monument
+            * `SL` - Sideline Monument
+            * `EL` - Endline Monument
+            * `WT` - Witness Point
+        status:
+          $ref: '#/components/schemas/ClaimStakeReadStatusEnum'
+        status_notes:
+          type: string
+          nullable: true
+          description: Reason for skipping, access issues, etc.
+        project:
+          type: object
+          nullable: true
+          additionalProperties: true
+          description: 'Natural key of the project: `{"name", "company"}`.'
+          readOnly: true
+        claim_package_id:
+          type: integer
+          readOnly: true
+        claim_package_number:
+          type: string
+          readOnly: true
+          nullable: true
+        gpx_symbol:
+          type: string
+          nullable: true
+          description: Original GPX symbol (City Medium = corner, Navaid Green = LM)
+          maxLength: 50
+        qclaims_wpid:
+          type: string
+          nullable: true
+          description: WP_ID UUID from QClaims geopackage for deduplication
+          maxLength: 100
+        claim_links:
+          type: array
+          items:
+            $ref: '#/components/schemas/ClaimStakeLinkRead'
+          readOnly: true
+        claim_count:
+          type: integer
+          readOnly: true
+        target_latitude:
+          type: number
+          format: double
+          description: Planned latitude from QClaims waypoint
+        target_longitude:
+          type: number
+          format: double
+          description: Planned longitude from QClaims waypoint
+        target_elevation:
+          type: number
+          format: double
+          nullable: true
+        target_easting:
+          type: number
+          format: double
+          nullable: true
+          description: UTM easting from QClaims (for reference)
+        target_northing:
+          type: number
+          format: double
+          nullable: true
+          description: UTM northing from QClaims (for reference)
+        target_epsg:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
+          nullable: true
+          description: UTM zone EPSG from QClaims project
+        target_geometry:
+          type: string
+          readOnly: true
+          nullable: true
+          description: Planned location as PostGIS geometry (for spatial queries on
+            planned stakes)
+        latitude:
+          type: number
+          format: double
+          nullable: true
+          description: |-
+            ⚠️ NOT necessarily degrees. This is the ORIGINAL as-imported coordinate in the CRS named by `epsg`: for a projected CRS (UTM, State Plane, ...) `longitude` holds the EASTING and `latitude` holds the NORTHING. The values are true WGS84 degrees only when `epsg` is 4326.
+
+            The field names are historical and are kept for continuity. For an unambiguous form of the same values, read `source_coordinate`; for WGS84, read `geometry` (EWKT) or `geometry_geojson`.
+        longitude:
+          type: number
+          format: double
+          nullable: true
+          description: |-
+            ⚠️ NOT necessarily degrees. This is the ORIGINAL as-imported coordinate in the CRS named by `epsg`: for a projected CRS (UTM, State Plane, ...) `longitude` holds the EASTING and `latitude` holds the NORTHING. The values are true WGS84 degrees only when `epsg` is 4326.
+
+            The field names are historical and are kept for continuity. For an unambiguous form of the same values, read `source_coordinate`; for WGS84, read `geometry` (EWKT) or `geometry_geojson`.
+        epsg:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
+          nullable: true
+          description: EPSG code of the coordinate reference system that `latitude`,
+            `longitude` and `source_coordinate` are expressed in — the CRS the data
+            was imported in, preserved rather than normalised. Interpret those values
+            against this code; they are degrees only when it is 4326. The derived
+            WGS84 form is always in `geometry` / `geometry_geojson`.
+        elevation:
+          type: number
+          format: double
+          nullable: true
+          description: Elevation, in the record's `elevation_units` where it carries
+            one, else in its `length_units`. On a collar, see `elevation_source` for
+            whether it was surveyed, taken from a DEM, or entered by hand.
+        length_units:
+          $ref: '#/components/schemas/LengthUnitsEnum'
+          description: 'Units the record''s DEPTH and LENGTH values are stored in:
+            `M` (metres) or `FT` (feet). Stored units, not a display preference —
+            read every depth against this.'
+        gps_accuracy_meters:
+          type: number
+          format: double
+          nullable: true
+          description: Horizontal accuracy in meters at time of GPS capture
+        xy_units:
+          type: string
+          nullable: true
+          description: Get XY units for original coordinates (degrees, meters, feet,
+            us-feet).
+          readOnly: true
+        crs_easting:
+          type: number
+          format: double
+          nullable: true
+          description: |-
+            A DERIVED copy of the coordinate, reprojected into the PROJECT's
+            CRS (`crs_epsg`, units `crs_xy_units`) — not the original. The original
+            is `source_coordinate` (or `longitude`/`latitude` with `epsg`). On a
+            project with no CRS set this falls back to WGS84 degrees
+            (`crs_xy_units: degrees`).
+          readOnly: true
+        crs_northing:
+          type: number
+          format: double
+          nullable: true
+          description: |-
+            The northing (Y) of the DERIVED copy in the PROJECT's CRS — see
+            `crs_easting`. Never the original coordinate.
+          readOnly: true
+        crs_elevation:
+          type: number
+          format: double
+          nullable: true
+          description: |-
+            Elevation of the DERIVED copy in the PROJECT's CRS, in
+            `crs_elevation_units` — see `crs_easting`.
+          readOnly: true
+        crs_epsg:
+          type: integer
+          nullable: true
+          description: |-
+            EPSG code of the PROJECT's CRS the `crs_*` copy is reprojected into
+            (4326 when the project has none) — not the record's own `epsg`.
+          readOnly: true
+        crs_xy_units:
+          type: string
+          nullable: true
+          description: Get project CRS XY units (degrees, meters, feet, us-feet).
+          readOnly: true
+        crs_elevation_units:
+          type: string
+          nullable: true
+          description: Get project CRS elevation units (M or FT).
+          readOnly: true
+        proj4_easting:
+          type: number
+          format: double
+          nullable: true
+          description: Get local grid easting (X coordinate in custom Proj4 CRS).
+          readOnly: true
+        proj4_northing:
+          type: number
+          format: double
+          nullable: true
+          description: Get local grid northing (Y coordinate in custom Proj4 CRS).
+          readOnly: true
+        proj4_elevation:
+          type: number
+          format: double
+          nullable: true
+          description: Get local grid elevation (Z coordinate in custom Proj4 CRS).
+          readOnly: true
+        proj4_string:
+          type: string
+          nullable: true
+          description: Get project's Proj4 definition string.
+          readOnly: true
+        proj4_xy_units:
+          type: string
+          nullable: true
+          description: Get Proj4 local grid XY units (usually 'meters').
+          readOnly: true
+        proj4_elevation_units:
+          type: string
+          nullable: true
+          description: Get Proj4 local grid elevation units (M or FT).
+          readOnly: true
+        distance_from_target_meters:
+          type: number
+          format: double
+          readOnly: true
+        geometry:
+          type: string
+          readOnly: true
+          nullable: true
+          description: |-
+            The derived WGS84 location as an EWKT string: `SRID=4326;POINT Z (lon lat elev)` — longitude first, then latitude, then elevation in metres (`POINT` without `Z` when no elevation is recorded). Always EPSG 4326, whatever `epsg` says.
+
+            This is the reprojected value. The original coordinate the customer supplied is `source_coordinate`. For a parsed object rather than a string, read `geometry_geojson`.
+        monument_type:
+          nullable: true
+          oneOf:
+          - $ref: '#/components/schemas/MonumentTypeEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+        monument_material:
+          type: string
+          nullable: true
+          description: Wood, metal, stone, etc.
+          maxLength: 50
+        monument_height_inches:
+          type: number
+          format: double
+          nullable: true
+        witness_point_1:
+          type: string
+          nullable: true
+          description: Description of first witness point/bearing tree
+        witness_point_2:
+          type: string
+          nullable: true
+          description: Description of second witness point/bearing tree
+        assigned_to:
+          allOf:
+          - $ref: '#/components/schemas/UserMinimal'
+          readOnly: true
+        assigned_by:
+          allOf:
+          - $ref: '#/components/schemas/UserMinimal'
+          readOnly: true
+        assigned_date:
+          type: string
+          format: date-time
+          nullable: true
+        due_date:
+          type: string
+          format: date
+          nullable: true
+        date_staked:
+          type: string
+          format: date
+          nullable: true
+        staked_by:
+          type: string
+          nullable: true
+          maxLength: 100
+        status_reset_at:
+          type: string
+          format: date-time
+          nullable: true
+        staking_records:
+          type: string
+          readOnly: true
+          nullable: true
+        flight_line:
+          type: integer
+          readOnly: true
+          nullable: true
+          description: The flight line this stake belongs to (helicopter mode routing).
+        flight_sequence_index:
+          type: integer
+          readOnly: true
+          nullable: true
+          description: Order along the flight line (0-based). NULL when stake is not
+            part of any flight line.
+        helicopter_proximity_at_mark_m:
+          type: number
+          format: double
+          nullable: true
+          description: Distance (meters) from target to current GPS at the moment
+            helicopter mode fired auto-mark. NULL on manual marks.
+        helicopter_gps_accuracy_at_mark_m:
+          type: number
+          format: double
+          nullable: true
+          description: Horizontal GPS accuracy (meters) at the moment helicopter mode
+            fired auto-mark. NULL on manual marks.
+        notes:
+          type: string
+          nullable: true
+        images:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+          description: Attached records, each as an object carrying its id, its natural
+            key and display metadata. Soft-deleted attachments are omitted.
+          readOnly: true
+        date_created:
+          type: string
+          format: date
+          readOnly: true
+          nullable: true
+        last_edited:
+          type: string
+          format: date
+          readOnly: true
+          nullable: true
+        source_coordinate:
+          allOf:
+          - $ref: '#/components/schemas/SourceCoordinate'
+          nullable: true
+          readOnly: true
+        geometry_geojson:
+          allOf:
+          - $ref: '#/components/schemas/GeoJSONPoint'
+          nullable: true
+          readOnly: true
+        project_id:
+          type: integer
+          readOnly: true
+          description: The project this record is in (a credential may read several;
+            GET /api/v2/grant-context/ names them).
+        data_warnings:
+          type: array
+          readOnly: true
+          items:
+            $ref: '#/components/schemas/DataWarning'
+          description: Present only when this stored row has a problem geoDB can recognise
+            (an upside-down interval, a dip past 90°, coordinates with no CRS…). The
+            row is returned exactly as stored — never fixed or hidden; correct it
+            with an update.
+        coordinate_system_metadata:
+          type: object
+          additionalProperties: true
+          nullable: true
+          description: The project's coordinate-system settings (declared EPSG, optional
+            local-grid proj4 string, units). Present on every record whose model carries
+            a location. Advisory metadata for clients that reproject; the per-record
+            CRS is always the record's own `epsg`.
+      required:
+      - assigned_by
+      - assigned_to
+      - claim_count
+      - claim_links
+      - claim_package_id
+      - claim_package_number
+      - crs_easting
+      - crs_elevation
+      - crs_elevation_units
+      - crs_epsg
+      - crs_northing
+      - crs_xy_units
+      - date_created
+      - distance_from_target_meters
+      - flight_line
+      - flight_sequence_index
+      - geometry
+      - geometry_geojson
+      - id
+      - images
+      - last_edited
+      - proj4_easting
+      - proj4_elevation
+      - proj4_elevation_units
+      - proj4_northing
+      - proj4_string
+      - proj4_xy_units
+      - project
+      - sequence_number
+      - source_coordinate
+      - staking_records
+      - target_geometry
+      - target_latitude
+      - target_longitude
+      - xy_units
+      patternProperties:
+        ^cf_[a-z0-9_]+$:
+          description: 'Custom field. Any number of `cf_*` keys may be present: they
+            are the project''s user-defined fields, flattened to top level. The set
+            of keys and their types vary BY PROJECT and BY MODEL — discover them at
+            `/api/v2/model-schemas/?project_id=<id>`, never by assuming a fixed set.
+            Values are whatever the customer stored (string, number, boolean or null).
+            Calculated custom fields appear under the same prefix and are read-only.'
+      additionalProperties: false
+    ClaimStakeReadStatusEnum:
+      enum:
+      - PL
+      - AS
+      - ST
+      - SK
+      type: string
+      description: |-
+        * `PL` - Planned
+        * `AS` - Assigned
+        * `ST` - Staked
+        * `SK` - Skipped
     ClaimStatusEnum:
       enum:
       - PL
@@ -21796,6 +22563,18 @@ components:
         * `0` - No Orientation
         * `1` - Solid Line
         * `2` - Inferred Line
+    CornerNumberEnum:
+      enum:
+      - 1
+      - 2
+      - 3
+      - 4
+      type: integer
+      description: |-
+        * `1` - Corner 1
+        * `2` - Corner 2
+        * `3` - Corner 3
+        * `4` - Corner 4
     CounterScopeEnum:
       enum:
       - hole
@@ -27846,6 +28625,35 @@ components:
       - results
       - status
       additionalProperties: false
+    LandHoldingMinimal:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          readOnly: true
+          nullable: true
+        claim_status:
+          type: string
+          readOnly: true
+          nullable: true
+        claim_status_display:
+          type: string
+          readOnly: true
+          nullable: true
+        state:
+          type: string
+          readOnly: true
+          nullable: true
+      required:
+      - claim_status
+      - claim_status_display
+      - id
+      - name
+      - state
+      additionalProperties: false
     LandHoldingOutline:
       type: object
       properties:
@@ -28762,6 +29570,24 @@ components:
         * `GeophysicalSurvey` — records served by `/api/v2/geophysical-surveys/`
         * `GeophysicalSurveyLine` — carries custom fields, but is not readable with an access grant
         * `Road` — records served by `/api/v2/roads/`
+    MonumentTypeEnum:
+      enum:
+      - POST
+      - CAIRN
+      - PIPE
+      - REBAR
+      - CAP
+      - NOTICE
+      - OTHER
+      type: string
+      description: |-
+        * `POST` - Post
+        * `CAIRN` - Rock Cairn
+        * `PIPE` - Pipe
+        * `REBAR` - Rebar
+        * `CAP` - Survey Cap
+        * `NOTICE` - Post with Notice
+        * `OTHER` - Other
     OdbcSettings:
       type: object
       properties:
@@ -29268,6 +30094,106 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/CertificateRead'
+        deleted_ids:
+          type: array
+          items:
+            type: integer
+          description: Ids of records soft-deleted on the server, so a client can
+            remove them locally. Returned on the FIRST page (no `offset`, or `offset=0`)
+            and on any request that sends `deleted_since`; later pages carry an empty
+            array. Union them across pages — removal is idempotent.
+        deleted_since_applied:
+          type: string
+          nullable: true
+          description: Echo of the `deleted_since` value actually applied, or null
+            when none was applied.
+        sync_timestamp:
+          type: string
+          format: date-time
+          description: Server time this page was built. Pass it as the next pull's
+            `deleted_since` / `modified_since`.
+        modified_since_applied:
+          type: string
+          nullable: true
+          description: Echo of the `modified_since` value applied. Present only when
+            the request sent `modified_since`.
+        limit_clamped:
+          type: object
+          description: 'Present only when the request asked for more rows per page
+            than this list serves: `asked` is the `limit` sent, `served` the page
+            size used (500; 2,000 on `assay-results/` and on `drill-samples/` rows
+            without `expand=assay`). Page on with `next`, or by `offset` in steps
+            of `served`.'
+          properties:
+            asked:
+              type: integer
+            served:
+              type: integer
+          required:
+          - asked
+          - served
+        withheld:
+          type: object
+          nullable: true
+          additionalProperties:
+            type: integer
+          description: 'What this list''s DEFAULT filters left out, as counts, so
+            a gap is never silent. The counts cover the whole list, not one page:
+            they are sent on the FIRST page (no `offset`, or `offset=0`) and later
+            pages carry null. `soft_deleted`: rows deleted on the server (their ids
+            are in `deleted_ids`). `qaqc_excluded` (assays, QC samples): rows withheld
+            by a QAQC review — a rejected or superseded certificate, or one pending
+            approval where the project requires it; present only when this response
+            left them out (ask again with `include_excluded=true` to see them, each
+            flagged with why). `planned` (QC samples): planned bags not yet collected,
+            held back unless you filter by `lab_status`. `sample_trashed` (assays,
+            assay-results — in assay records): assays whose sample is in the Trash
+            (kept, re-linked on restore); ask again with `include_trashed_samples=true`
+            to see them, flagged. `qaqc_excluded_and_sample_trashed`: assays withheld
+            for BOTH reasons, counted here once and in neither bucket above (the buckets
+            add up to what the list left out). Mention these when you summarise: a
+            count or a pass rate over this list is a count over what is here.'
+          properties:
+            soft_deleted:
+              type: integer
+            qaqc_excluded:
+              type: integer
+            planned:
+              type: integer
+            sample_trashed:
+              type: integer
+            qaqc_excluded_and_sample_trashed:
+              type: integer
+          required:
+          - soft_deleted
+      additionalProperties: false
+    PaginatedClaimStakeReadList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+          nullable: true
+          description: Total rows the list answers. Null when the request sent `skip_count=1`,
+            and on `assay-results/` pages after the first (read the total from the
+            first page).
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?offset=400&limit=100
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?offset=200&limit=100
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ClaimStakeRead'
         deleted_ids:
           type: array
           items:
@@ -36636,6 +37562,20 @@ components:
       - name
       - project
       additionalProperties: false
+    StakeTypeEnum:
+      enum:
+      - WP
+      - LM
+      - SL
+      - EL
+      - WT
+      type: string
+      description: |-
+        * `WP` - Corner Waypoint
+        * `LM` - Location Monument
+        * `SL` - Sideline Monument
+        * `EL` - Endline Monument
+        * `WT` - Witness Point
     StandardRead:
       type: object
       properties:
