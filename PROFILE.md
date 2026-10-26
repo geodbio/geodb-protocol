@@ -157,7 +157,7 @@ Whole tables, built in the background, as GeoParquet / Parquet / CSV. One POST i
 | `exports_retrieve` | `GET /api/v2/exports/{job_id}/` | Poll an export job |
 | `exports_download_retrieve` | `GET /api/v2/exports/{job_id}/download/` | Download a finished export |
 
-## geoDB extensions — 165 operations
+## geoDB extensions — 166 operations
 
 Supported, project-scoped, and outside the contract. Read them freely against geoDB; do not expect them from another implementation.
 
@@ -175,7 +175,7 @@ Supported, project-scoped, and outside the contract. Read them freely against ge
 | Land Holdings | 6 | Mineral claims and other land holdings. A project chooses how much of this a grant may read. |
 | Map Layers | 8 | Vector layers, their features, and roads. |
 | Photos | 6 | Core photography and general project photographs. |
-| Public Land | 6 |  |
+| Public Land | 7 |  |
 | Quality Control | 11 | Certified reference materials, QC type lookups, and a project's QA/QC protocol and its status. |
 | Samples | 7 | Fixed-length compositing of drill samples, and the assigned-to-a-user work queue. |
 | Surface Geology | 22 | Geology mapped at surface, plus the lookup vocabulary behind it (lithologies, alterations, minerals, formations, textures, vein types, field notes). |

@@ -75,7 +75,7 @@ differ; this is not a title search.
 Every land read names the project it is for (`project_id`) and is served only
 for a project whose company pays for geoDB (its first free month counts);
 otherwise `land_data_needs_paid_plan` names the remedy. The reads are bounded: one
-area of interest per read (`bbox` as west, south, east, north; or `lat` and `lon`
+area of interest per read (except `land-recent-filings/`, below) (`bbox` as west, south, east, north; or `lat` and `lon`
 with `radius_m`; or a GeoJSON `polygon`; all WGS84 degrees, at most 260 km²), pages
 of at most 200 claims, lookups by serial or by township and section. There is no
 whole-layer read and no file export of these layers.
@@ -90,6 +90,18 @@ whole-layer read and no file export of these layers.
   (`state`, `township`, `range`, `section`, optional `meridian`) — an outline.
 - `land-status/` — designations and ownership clipped to the area, each with its
   acres in the area and whether it covers the whole area.
+- `land-recent-filings/` — the one read bounded by a state and a window instead
+  of an area: new claim blocks (claims filed under one lead file) in `state`
+  over the last `days` (at most 366) or `since`/`until`, with `min_claims` and
+  `order`. It needs a company that pays (its free month does not count) and
+  holds a Field or Drilling project, otherwise
+  `recent_filings_need_field_project` names the remedy. `date_basis=appeared`
+  (the default) is when BLM's records first showed the claims, never the day
+  they were staked: say "newly appeared in BLM's records". `date_basis=located`
+  is the legal staking date, and its latest weeks are incomplete because a
+  claimant has 90 days to file. `ungrouped` counts new claims BLM's serial index
+  has not been read for yet: say how many. Read a block's claims with
+  `land-claims/?lead_file=`.
 
 Every answer carries `mirror` (each layer's last sync and what it does not cover)
 and `not_a_clearance`; pass both on in plain words.

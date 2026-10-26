@@ -835,6 +835,12 @@
       "remedy": "Add \"qc_mapping\" to the request \u2014 per certificate: \"markers\" (marker, kind STD / BLK / DUP, runs, parent), \"dropped_rows\" (each with why), \"qc_policy\" (replace | append) \u2014 dry run it, show the user the read its before_writing states, then send the write with the \"confirm\" it returns.",
       "retry": "no"
     },
+    "recent_filings_need_field_project": {
+      "http": 403,
+      "meaning": "The statewide recent-filings read is part of a company that pays for geoDB (its free month does not count) and holds at least one Field or Drilling project; the company of the project this read names does not.",
+      "remedy": "Tell the user what it needs and pass on the remedy and its link. Claims near their own ground are still readable with land-claims/.",
+      "retry": "no"
+    },
     "record_busy": {
       "http": 503,
       "meaning": "Another write (for example a large import being checked) was holding records this request changes, so it stopped after a few seconds instead of waiting. Nothing of the request was saved.",

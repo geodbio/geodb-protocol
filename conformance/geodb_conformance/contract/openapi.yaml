@@ -11192,6 +11192,141 @@ paths:
               schema:
                 type: integer
       x-geodb-extension: true
+  /api/v2/land-recent-filings/:
+    get:
+      operationId: land_recent_filings
+      description: 'New mining claim BLOCKS (claims filed together under one BLM lead
+        file) in ONE state, newest first: e.g. every new block in Idaho in the last
+        90 days of 10 claims or more (`state=ID&days=90&min_claims=10`). `days` (the
+        last N days, at most 366; default 30) or `since` (+ `until`), YYYY-MM-DD.
+        `date_basis`: `appeared` (default) windows on when BLM''s records first showed
+        the claims, which is NOT the staking date; `located` windows on BLM''s Date
+        of Location (the legal staking date), incomplete for its most recent weeks
+        because a claimant has 90 days to file. A block is new when its earliest claim
+        falls in the window. `order`: newest, claims or acres. Each block: lead file,
+        claim count, recorded acres, types, first and last claim name, claimants,
+        dates, PLSS townships, county and a WGS84 point (the centroid of its aliquot
+        footprints). `ungrouped` counts claims not yet groupable (no lead file read
+        yet). A block''s claims are read with `land-claims/?lead_file=`. Needs a company
+        that pays for geoDB (its free month does not count) and holds at least one
+        Field or Drilling project, else 403 `recent_filings_need_field_project` with
+        the remedy. Every answer carries `mirror` and `not_a_clearance`.'
+      summary: New BLM claim blocks in one state over a window
+      parameters:
+      - in: query
+        name: date_basis
+        schema:
+          type: string
+          enum:
+          - appeared
+          - located
+      - in: query
+        name: days
+        schema:
+          type: integer
+        description: The last N days, today included (1 to 366; default 30).
+      - in: query
+        name: limit
+        schema:
+          type: integer
+        description: Blocks per page (default 50, at most 200).
+      - in: query
+        name: min_claims
+        schema:
+          type: integer
+        description: Only blocks of at least this many claims (default 1).
+      - in: query
+        name: offset
+        schema:
+          type: integer
+        description: Blocks to skip (paging).
+      - in: query
+        name: order
+        schema:
+          type: string
+          enum:
+          - acres
+          - claims
+          - newest
+      - in: query
+        name: project_id
+        schema:
+          type: integer
+        description: The project to read. Defaults to the project this credential
+          is pinned to; any other must be one it can read — an id naming no readable
+          project is refused with `invalid_parameter`, as on the lists.
+      - in: query
+        name: since
+        schema:
+          type: string
+          format: date
+        description: The window's first day, instead of days.
+      - in: query
+        name: state
+        schema:
+          type: string
+        description: 'Two letters, e.g. ID: the claims'' BLM serial prefix.'
+        required: true
+      - in: query
+        name: until
+        schema:
+          type: string
+          format: date
+        description: The window's last day (default today).
+      tags:
+      - Public Land
+      security:
+      - knoxApiToken: []
+      - GrantAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LandRecentFilings'
+          description: ''
+        '400':
+          description: The request could not be understood (see `reason_code`).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 'No usable credential. `reason_code` distinguishes a revoked
+            grant from an expired, unknown or malformed one; the response carries
+            `WWW-Authenticate: Grant`.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: The credential is valid but not permitted this operation —
+            outside the grant surface, a write with a read-only grant, or outside
+            a room-pinned grant's room.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: No such resource inside this credential's scope. A row in another
+            project is indistinguishable from one that does not exist, by design.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: The grant's request rate was exceeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            Retry-After:
+              description: Seconds to wait before retrying. Sent on every throttled
+                response.
+              schema:
+                type: integer
+      x-geodb-extension: true
   /api/v2/land-sections/:
     get:
       operationId: land_plss_section
@@ -28954,6 +29089,82 @@ components:
       - not_a_clearance
       - project
       additionalProperties: false
+    LandRecentFilings:
+      type: object
+      properties:
+        project:
+          type: object
+          additionalProperties: {}
+        mirror:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+        not_a_clearance:
+          type: string
+        window:
+          type: object
+          additionalProperties: {}
+        count:
+          type: integer
+        next:
+          type: string
+          nullable: true
+        previous:
+          type: string
+          nullable: true
+        results:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+        ungrouped:
+          type: object
+          additionalProperties: {}
+        serial_index_read_at:
+          type: string
+          nullable: true
+        notices:
+          type: array
+          items:
+            type: string
+        not_an_export:
+          type: string
+        see_guide:
+          type: array
+          description: The guide sections that change how this answer should be read
+            — read them before reporting from it. Each names the topic, the section,
+            its path (GET it, no key needed beyond this one) and why it matters here.
+          items:
+            type: object
+            properties:
+              topic:
+                type: string
+              section:
+                type: string
+              url:
+                type: string
+              why:
+                type: string
+            required:
+            - topic
+            - section
+            - url
+            - why
+      required:
+      - count
+      - mirror
+      - next
+      - not_a_clearance
+      - not_an_export
+      - notices
+      - previous
+      - project
+      - results
+      - serial_index_read_at
+      - ungrouped
+      - window
+      additionalProperties: false
     LandStatus:
       type: object
       properties:
@@ -40289,9 +40500,11 @@ tags:
   description: 'geoDB''s mirror of the agencies'' public land layers, read a neighbourhood
     at a time: BLM mining claims (by area, or one by its serial), the PLSS township
     / section / aliquot at a point (and a township or section outline), and withdrawals,
-    designations and surface ownership in an area. For a person''s own connection
-    on a paying project. Every answer says when each layer was last synced and what
-    it does not cover: an empty answer is NOT open ground and never a title search.'
+    designations and surface ownership in an area; and new claim blocks in one state
+    over a window (a company with a Field or Drilling project). For a person''s own
+    connection on a paying project. Every answer says when each layer was last synced
+    and what it does not cover: an empty answer is NOT open ground and never a title
+    search.'
 - name: Map Layers
   description: Vector map layers and their features, plus roads — the cartographic
     layers a project carries, as opposed to its measurements.
