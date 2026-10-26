@@ -84,9 +84,10 @@ paths:
       operationId: root_retrieve
       description: 'What an AI reads first: every operation this API serves, grouped
         by task with one line each — generated from this document''s own tags, so
-        it cannot disagree with it — and the instructions the connector sends when
-        a session starts. Holds no project data; any credential, or none, may read
-        it.'
+        it cannot disagree with it — and the full rules for working here (every trap
+        in full, sets, how to act and confirm, the guide topics); the instructions
+        the connector sends when a session starts are a short header that points here.
+        Holds no project data; any credential, or none, may read it.'
       summary: The operation map and the instructions
       security:
       - knoxApiToken: []
@@ -10276,6 +10277,8 @@ paths:
       description: |-
         What the credential you are using is allowed to read: its companies and their projects (`companies`; the same projects flat in `projects`, each with its company and how many sets each interval family holds in `sets`), how to name the project a read is about (`choosing_a_project` — geoDB keeps no current project; `default_project` is set only when the credential reads exactly one), its limits, and the protocol version this server speaks.
 
+        `company=<id>` lists one company's projects only (a connection that reaches many projects reads much less). The scope is read live on every call: `as_of` says when, and a change saved on the web shows on the next call.
+
         The cheapest first call an integration can make — it confirms the credential works and names its scope without fetching any data.
       tags:
       - Grant
@@ -10884,12 +10887,17 @@ paths:
         The footprint is BLM''s ALIQUOT footprint (the quarter-sections the claim
         touches), never the claim boundary — use `recorded_acres` for size. A claim
         BLM ships with no footprint is found by its legal description''s sections
-        (`matched_by: section`). `status`: active (default), closed or all. A person''s
-        own connection only, on a project whose company pays for geoDB (its first
-        free month counts); otherwise 403 `land_data_needs_paid_plan` with the remedy.
-        Read-only; never a whole layer. Every answer carries `mirror` (each layer''s
-        last sync and what it does not cover) and `not_a_clearance`: an empty answer
-        is NOT open ground.'
+        (`matched_by: section`). `status`: active (default), closed or all. Narrow
+        the answer with `name` (the claim name starts with it), `claimant` (the published
+        claimant contains it) or `lead_file` (BLM''s lead file serial, read like any
+        serial: spaces and dashes are fine, and a legacy serial finds its claim),
+        all ignoring case; `name` and `claimant` narrow an area, while `lead_file`
+        may also be read on its own, with no area (every claim filed under it). A
+        person''s own connection only, on a project whose company pays for geoDB (its
+        first free month counts); otherwise 403 `land_data_needs_paid_plan` with the
+        remedy. Read-only; never a whole layer. Every answer carries `mirror` (each
+        layer''s last sync and what it does not cover) and `not_a_clearance`: an empty
+        answer is NOT open ground.'
       summary: BLM mining claims in an area
       parameters:
       - in: query
@@ -10899,11 +10907,23 @@ paths:
         description: The area of interest as west,south,east,north in WGS84 degrees
           (EPSG:4326, longitude first).
       - in: query
+        name: claimant
+        schema:
+          type: string
+        description: Only claims whose published claimant contains this (ignoring
+          case).
+      - in: query
         name: lat
         schema:
           type: number
         description: A point's latitude, WGS84 degrees (with lon and radius_m, instead
           of bbox).
+      - in: query
+        name: lead_file
+        schema:
+          type: string
+        description: Only claims filed under this BLM lead file serial. May be sent
+          with no area.
       - in: query
         name: limit
         schema:
@@ -10914,6 +10934,12 @@ paths:
         schema:
           type: number
         description: A point's longitude, WGS84 degrees.
+      - in: query
+        name: name
+        schema:
+          type: string
+        description: Only claims whose name starts with this (ignoring case), e.g.
+          a block's prefix.
       - in: query
         name: offset
         schema:
@@ -14243,7 +14269,7 @@ paths:
         the link carries only what differs from the project''s default view, looking
         north-east 30° down); pass on `notices` (traces or terrain still building).
         Writes nothing; the link grants nothing.'
-      summary: A link to a view of the project (3D or the map)
+      summary: 'A link to a view of the project: surface=3d (default) or surface=map'
       parameters:
       - in: query
         name: angle
@@ -14304,9 +14330,11 @@ paths:
         name: surface
         schema:
           type: string
-        description: '`3d` (default) or `map` (the 2D project map: map targets `claim_block:<id>`,
-          `programme:<id>`, `plotted_claims:<ids>`, `lead_file:<id>` too; layers are
-          map layer keys; `color` colours the point samples).'
+        description: '`3d` (default; when 3D is off for the project and no surface
+          is named, the link opens the map and says so in `fallback`) or `map` (the
+          2D project map: map targets `claim_block:<id>`, `programme:<id>`, `plotted_claims:<ids>`,
+          `lead_file:<id>` too; layers are map layer keys; `color` colours the point
+          samples).'
       - in: query
         name: targets
         schema:
@@ -28572,6 +28600,11 @@ components:
           additionalProperties: {}
         status:
           type: string
+        filters:
+          type: object
+          additionalProperties: {}
+          description: The name / claimant / lead_file this answer was narrowed by,
+            as sent.
         footprintless_searched:
           type: boolean
         notices:
@@ -29630,6 +29663,7 @@ components:
           description: 'The map as text: one line per operation, by task.'
         instructions:
           type: string
+          description: The full rules for working here, as text.
         groups:
           type: array
           items:
@@ -35799,6 +35833,10 @@ components:
         scene:
           type: object
           additionalProperties: {}
+        fallback:
+          type: string
+          description: 'Present only when no surface was named and 3D is off: why
+            the link opens the map.'
       required:
       - notices
       - opens_on
@@ -36636,7 +36674,12 @@ components:
             type: object
             additionalProperties: {}
           description: '{name, type, required, choices?, choice_labels?, references?,
-            resolves_by?, note?}'
+            resolves_by?, note?, default?, default_rule?, required_when?, only_when?}.
+            `choices` lists only the values a row may land with. `default`: what a
+            blank cell lands as; `default_rule`: the same in words when it is not
+            one value. `required_when` / `only_when`: [{when: {field: stored code},
+            rule}] — the field is required when every `when` holds / may be sent only
+            when every `when` holds.'
         custom_fields:
           type: array
           items:
@@ -36680,6 +36723,12 @@ components:
           additionalProperties: {}
           description: 'Assay only: {rule, example} — the shape of the request''s
             QC read (lab QC rows need it).'
+        coordinates:
+          type: object
+          additionalProperties: {}
+          description: '{fields, rule, geometry?, planned?: {fields, rule}} — the
+            coordinate columns and their CRS rule; `planned` is a planned position
+            the model carries beside the actual one (its own fields and CRS).'
       required:
       - batch_limit
       - confirm_note

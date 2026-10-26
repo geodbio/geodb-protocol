@@ -35,8 +35,12 @@ or quarter-quarters) it touches. A standard 20-acre lode claim can show as a
 A claim is identified by its **BLM serial** (the case number, e.g. two state
 letters and digits). BLM's internal row numbers change whenever it republishes a
 layer, so never carry one. Claims filed together share a **lead file** serial.
-The claimant, location date and fee dates come from BLM's serial register: an
-empty claimant means not yet read or redacted by BLM, never "nobody holds it".
+The claimant, location date and fee dates come from BLM's own case records:
+its serial register (`serial_register_read_at` says when it was read for this
+claim), its case page (`case_read_at`), or its bulk serial-number index, which
+is how a claim can name a claimant while both stamps are empty. An empty
+claimant means none of them has published one yet, or BLM redacted it (closed
+cases), never "nobody holds it".
 A closed claim is history, not a holding.
 
 ### PLSS: state, meridian, township, range, section, aliquot
@@ -78,7 +82,9 @@ whole-layer read and no file export of these layers.
 
 - `land-claims/` — claims in the area (`status`: active, closed or all), each
   with its serial, name, type, claimants, lead file, dates and footprint;
-  `land-claims/<serial>/` — one claim.
+  `land-claims/<serial>/` — one claim. To find a block's claims, narrow the
+  area by `name` (the start of the claim name) or `claimant`, or read one lead
+  file's whole group with `lead_file`, which needs no area.
 - `land-plss/` with `lat` and `lon` — the divisions a point is in, with the
   aliquot where it can be placed; `land-townships/` and `land-sections/`
   (`state`, `township`, `range`, `section`, optional `meridian`) — an outline.
