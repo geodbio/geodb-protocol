@@ -25,13 +25,31 @@ Targets are ids from what you have already read, never a place on the ground:
   assays" is the certificate that just came back;
 - a **submittal**: the holes of the samples sent in that batch;
 - a **logging set** (lithology, alteration, a sampling pass…): the holes logged in
-  that pass. "The new logging" is its set, or the list of holes just logged;
+  that pass. "The new logging" is its set, or the list of holes just logged. A
+  logging-set target also **draws** that set (next section);
 - a **grid filter**: the same filter the user would type on the drill-hole or
   sample grid (a hole-name pattern, a grade range on an element).
 
 A target that is not in the project, was deleted, or never existed gets the same
 answer, and it is left out of the view. Check the ids against your own reads and
 tell the user what was left out.
+
+### Which logging set the drilling draws
+
+A project can keep several logging sets per kind of interval (a first logging and
+a relog, two sampling passes). The viewer draws ONE set per kind: lithology,
+alteration, the sampling pass the assays come from, and custom intervals. With no
+choice it draws the project's export set (Project Settings), else the default set.
+A project whose default set is empty and whose logging sits in another set draws
+grey traces with no lithology: that is the set, not the rendering.
+
+Choose the set in the view, never by changing the project's export set (that
+moves every export and every connected tool too): a logging-set target draws its
+set and frames its holes; to keep the whole project in view and only choose what
+draws, name the set as a **set to draw** instead. One per kind; a choice is part
+of the view, so a saved view keeps it. In the viewer the user switches it from the
+part's style menu, which lists each set with its interval count and says when the
+drawn set is empty and which sets hold rows.
 
 ### Angle, not coordinates
 
@@ -73,7 +91,10 @@ traces and terrain land, usually within minutes.
 `GET /api/v2/projects/{id}/view-link/` builds the link and writes nothing:
 `targets` (`holes:12,13;certificate:5;submittal:7;logging_set:lithology:9`, or a
 JSON list of target objects, grid filters included), `focus`
-(highlight · isolate · hide), `angle`, `color`, `layers`, `hide`, `title`. Hand the
+(highlight · isolate · hide), `angle`, `color`, `layers`, `hide`, `title`, and
+`sets` (the set each kind DRAWS, nothing framed: `lithset:9;altset:4`,
+`sampleset:12`, `logging_set:custom_interval:3`; read each one's answer in
+`sets`). Hand the
 user `url`; `opens_on` says in one sentence what it shows. Read `unresolved` (what was left out, and why) and `notices` (what is
 still building) and tell the user both. A project whose company does not have the
 3D views yet answers `view_surface_unavailable`: say so, in words.

@@ -14265,9 +14265,10 @@ paths:
         `submittal:7`, `logging_set:lithology:9` (`;`-separated), or a JSON list of
         target objects (grid filters too). A target outside this project, deleted
         or never existing is `unresolved` — the same answer for all three — and is
-        left out of the link. Hand the user `url` (`opens_on` says what it shows:
-        the link carries only what differs from the project''s default view, looking
-        north-east 30° down); pass on `notices` (traces or terrain still building).
+        left out of the link. A logging-set target also DRAWS that set (3D); `sets`
+        draws a set without framing it. Hand the user `url` (`opens_on` says what
+        it shows: the link carries only what differs from the project''s default view,
+        looking north-east 30° down); pass on `notices` (traces or terrain still building).
         Writes nothing; the link grants nothing.'
       summary: 'A link to a view of the project: surface=3d (default) or surface=map'
       parameters:
@@ -14326,6 +14327,15 @@ paths:
           enum:
           - orthographic
           - perspective
+      - in: query
+        name: sets
+        schema:
+          type: string
+        description: '3D: the logging set each drilling family DRAWS, one per family,
+          `;`-separated: `lithset:9` · `altset:4` · `sampleset:12` · `logging_set:custom_interval:3`.
+          The whole project stays in view (nothing is framed or highlighted); absent,
+          a family draws the project''s export set. A set outside this project, deleted
+          or never existing reads the same and is not drawn.'
       - in: query
         name: surface
         schema:
@@ -20711,6 +20721,16 @@ components:
           readOnly: true
           description: The project this record is in (a credential may read several;
             GET /api/v2/grant-context/ names them).
+        color:
+          type: string
+          readOnly: true
+          nullable: true
+          description: '#RRGGBB: the colour every map, strip log, 3D view and plot
+            draws this entry in (restyle it with an update through records/).'
+        hidden:
+          type: boolean
+          readOnly: true
+          description: 'True: hidden from the logging pickers for new rows.'
       required:
       - date_created
       - fgdc_pattern_id
@@ -26278,6 +26298,16 @@ components:
           readOnly: true
           description: The project this record is in (a credential may read several;
             GET /api/v2/grant-context/ names them).
+        color:
+          type: string
+          readOnly: true
+          nullable: true
+          description: '#RRGGBB: the colour every map, strip log, 3D view and plot
+            draws this entry in (restyle it with an update through records/).'
+        hidden:
+          type: boolean
+          readOnly: true
+          description: 'True: hidden from the logging pickers for new rows.'
       required:
       - code
       - date_created
@@ -28043,6 +28073,21 @@ components:
           readOnly: true
           description: The project this record is in (a credential may read several;
             GET /api/v2/grant-context/ names them).
+        color:
+          type: string
+          readOnly: true
+          nullable: true
+          description: '#RRGGBB: the colour every map, strip log, 3D view and plot
+            draws this entry in (restyle it with an update through records/).'
+        fgdc_pattern_id:
+          type: integer
+          readOnly: true
+          nullable: true
+          description: The FGDC pattern drawn over the colour, or null (none).
+        hidden:
+          type: boolean
+          readOnly: true
+          description: 'True: hidden from the logging pickers for new rows.'
       required:
       - date_created
       - id
@@ -29057,6 +29102,16 @@ components:
           readOnly: true
           description: The project this record is in (a credential may read several;
             GET /api/v2/grant-context/ names them).
+        color:
+          type: string
+          readOnly: true
+          nullable: true
+          description: '#RRGGBB: the colour every map, strip log, 3D view and plot
+            draws this entry in (restyle it with an update through records/).'
+        hidden:
+          type: boolean
+          readOnly: true
+          description: 'True: hidden from the logging pickers for new rows.'
       required:
       - date_created
       - fgdc_pattern_id
@@ -29379,6 +29434,16 @@ components:
           readOnly: true
           description: The project this record is in (a credential may read several;
             GET /api/v2/grant-context/ names them).
+        color:
+          type: string
+          readOnly: true
+          nullable: true
+          description: '#RRGGBB: the colour every map, strip log, 3D view and plot
+            draws this entry in (restyle it with an update through records/).'
+        hidden:
+          type: boolean
+          readOnly: true
+          description: 'True: hidden from the logging pickers for new rows.'
       required:
       - date_created
       - id
@@ -29479,6 +29544,16 @@ components:
           readOnly: true
           description: The project this record is in (a credential may read several;
             GET /api/v2/grant-context/ names them).
+        color:
+          type: string
+          readOnly: true
+          nullable: true
+          description: '#RRGGBB: the colour every map, strip log, 3D view and plot
+            draws this entry in (restyle it with an update through records/).'
+        hidden:
+          type: boolean
+          readOnly: true
+          description: 'True: hidden from the logging pickers for new rows.'
       required:
       - date_created
       - id
@@ -35837,6 +35912,13 @@ components:
           type: string
           description: 'Present only when no surface was named and 3D is off: why
             the link opens the map.'
+        sets:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+          description: 'Present only when `sets` was sent: each set judged (status,
+            message, row count).'
       required:
       - notices
       - opens_on
@@ -37543,6 +37625,12 @@ components:
           readOnly: true
           description: The project this record is in (a credential may read several;
             GET /api/v2/grant-context/ names them).
+        color:
+          type: string
+          readOnly: true
+          nullable: true
+          description: '#RRGGBB: the colour every map, strip log, 3D view and plot
+            draws this entry in (restyle it with an update through records/).'
       required:
       - code
       - id
@@ -38611,6 +38699,16 @@ components:
           readOnly: true
           description: The project this record is in (a credential may read several;
             GET /api/v2/grant-context/ names them).
+        color:
+          type: string
+          readOnly: true
+          nullable: true
+          description: '#RRGGBB: the colour every map, strip log, 3D view and plot
+            draws this entry in (restyle it with an update through records/).'
+        hidden:
+          type: boolean
+          readOnly: true
+          description: 'True: hidden from the logging pickers for new rows.'
       required:
       - date_created
       - id
@@ -39006,6 +39104,16 @@ components:
           readOnly: true
           description: The project this record is in (a credential may read several;
             GET /api/v2/grant-context/ names them).
+        color:
+          type: string
+          readOnly: true
+          nullable: true
+          description: '#RRGGBB: the colour every map, strip log, 3D view and plot
+            draws this entry in (restyle it with an update through records/).'
+        hidden:
+          type: boolean
+          readOnly: true
+          description: 'True: hidden from the logging pickers for new rows.'
       required:
       - date_created
       - default_assemblage

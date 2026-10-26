@@ -15,8 +15,8 @@
     },
     "ambiguous_match": {
       "http": 409,
-      "meaning": "(per row) An update or retract named a structure or field note only by a name that several records in the project carry (`offending.ids` names them). Their identity is the uuid, not the name, so the row was matched to none of them. Nothing was written for this row.",
-      "remedy": "Read the records `offending.ids` names, ask the user which one is meant, and send the row again with that record's \"id\" or \"uuid\".",
+      "meaning": "(per row) An update or retract named a record only by a key that several records in the project carry (`offending.ids` names them): a structure or field note by a name (their identity is the uuid, not the name), or a catalog entry by a name several entries share. The row was matched to none of them. Nothing was written for this row.",
+      "remedy": "Read the records `offending.ids` names, ask the user which one is meant, and send the row again with that record's \"id\" (a structure or field note: or its \"uuid\"; a catalog entry: or the column its describe names to split a shared name).",
       "retry": "no"
     },
     "ambiguous_nd": {

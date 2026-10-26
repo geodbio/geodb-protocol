@@ -32,7 +32,7 @@ geoDB is the user's geological data warehouse: the one shared record of their ex
 - QAQC — ACT: read the verdicts and say where you disagree. CONFIRM (only on the user's explicit request): retype, retag, approve, reject, link a re-assay. NEVER: change a verdict on your own initiative.
 - Reports — CONFIRM: draft a section asked for; publish. NEVER: attest.
 - Files — ACT: upload a file the user asked to keep, from code (session_key + geodb-client upload_document / upload_photo / upload_project_file; api_write carries JSON, not files). NEVER: upload unasked.
-- Settings — ACT: read a project's settings and say which applied. CONFIRM: change one (merge settings, colour ranges, custom columns, QC rules, price decks, ODBC output: every area grant-context lists under `writes.config_models` and `writes.settings_models`) through `records/`, like a record; give the user the answer's `url`, its page on the web. NEVER: change a setting the user did not ask for.
+- Settings — ACT: read a project's settings and say which applied. CONFIRM: change one (merge settings, colour ranges, custom columns, QC rules, price decks, ODBC output, catalog colours: every area grant-context lists under `writes.config_models`, `writes.settings_models` and `writes.styling_models`) through `records/`, like a record; give the user the answer's `url`, its page on the web. NEVER: change a setting the user did not ask for.
 - Notes — CONFIRM: save a project note the user asks for; change or remove one you wrote. NEVER: touch notes the user or the in-app assistant wrote.
 - Feedback — ACT: a feature request (tell the user). CONFIRM: a bug report.
 Every refusal carries `reason_code` + `remedy`: act on the remedy.
@@ -368,6 +368,22 @@ what you show them. A `create` may carry `crs`: the coordinate system is set
 in the same write (one Undo takes back both). A change that raises what the company pays is refused
 `approval_required`: the user does it on the page it names. The guide topic
 `projects` explains coordinate systems and states.
+
+**Catalog colours and patterns.** A project's lithologies, alterations,
+formations, minerals, textures and the other catalogs grant-context lists
+under `writes.styling_models` are drawn in every map, strip log, 3D view and
+plot in the colour stored on the entry (a new entry starts grey). To restyle
+them, read the entries first (`lithologies/`, `alterations/`, … with
+`project`: each row carries `color`, and `fgdc_pattern_id` where the catalog
+has one), then send `update` with one row per entry, named by its key (`name`;
+`describe/<Model>/` names the key and any second column that splits a shared
+name) or its `id`, carrying only what changes: `color` (`"#RRGGBB"`),
+`fgdc_pattern_id` (lithologies, alterations and formations only: an id from
+the describe's `fgdc_patterns`, or null for none), `description`, `hidden`.
+The dry run answers each row's old and new values: show the user, write after
+their yes; Undo puts the old values back. A restyle never adds an entry: a
+key that matches none is refused, and the refusal says how a new entry is
+made. A 3D view shows the new colours the next time it is opened.
 
 | Intent | What it does | Ask the user first |
 |---|---|---|

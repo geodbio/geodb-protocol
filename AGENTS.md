@@ -405,7 +405,7 @@ These rules are generated from geoDB's domain guide: the same source the connect
 - QAQC — ACT: read the verdicts and say where you disagree. CONFIRM (only on the user's explicit request): retype, retag, approve, reject, link a re-assay. NEVER: change a verdict on your own initiative.
 - Reports — CONFIRM: draft a section asked for; publish. NEVER: attest.
 - Files — ACT: upload a file the user asked to keep, from code (session_key + geodb-client upload_document / upload_photo / upload_project_file; api_write carries JSON, not files). NEVER: upload unasked.
-- Settings — ACT: read a project's settings and say which applied. CONFIRM: change one (merge settings, colour ranges, custom columns, QC rules, price decks, ODBC output: every area grant-context lists under `writes.config_models` and `writes.settings_models`) through `records/`, like a record; give the user the answer's `url`, its page on the web. NEVER: change a setting the user did not ask for.
+- Settings — ACT: read a project's settings and say which applied. CONFIRM: change one (merge settings, colour ranges, custom columns, QC rules, price decks, ODBC output, catalog colours: every area grant-context lists under `writes.config_models`, `writes.settings_models` and `writes.styling_models`) through `records/`, like a record; give the user the answer's `url`, its page on the web. NEVER: change a setting the user did not ask for.
 - Notes — CONFIRM: save a project note the user asks for; change or remove one you wrote. NEVER: touch notes the user or the in-app assistant wrote.
 - Feedback — ACT: a feature request (tell the user). CONFIRM: a bug report.
 Every refusal carries `reason_code` + `remedy`: act on the remedy.
@@ -708,6 +708,22 @@ what you show them. A `create` may carry `crs`: the coordinate system is set
 in the same write (one Undo takes back both). A change that raises what the company pays is refused
 `approval_required`: the user does it on the page it names. The guide topic
 `projects` explains coordinate systems and states.
+
+**Catalog colours and patterns.** A project's lithologies, alterations,
+formations, minerals, textures and the other catalogs grant-context lists
+under `writes.styling_models` are drawn in every map, strip log, 3D view and
+plot in the colour stored on the entry (a new entry starts grey). To restyle
+them, read the entries first (`lithologies/`, `alterations/`, … with
+`project`: each row carries `color`, and `fgdc_pattern_id` where the catalog
+has one), then send `update` with one row per entry, named by its key (`name`;
+`describe/<Model>/` names the key and any second column that splits a shared
+name) or its `id`, carrying only what changes: `color` (`"#RRGGBB"`),
+`fgdc_pattern_id` (lithologies, alterations and formations only: an id from
+the describe's `fgdc_patterns`, or null for none), `description`, `hidden`.
+The dry run answers each row's old and new values: show the user, write after
+their yes; Undo puts the old values back. A restyle never adds an entry: a
+key that matches none is refused, and the refusal says how a new entry is
+made. A 3D view shows the new colours the next time it is opened.
 
 | Intent | What it does | Ask the user first |
 |---|---|---|
@@ -1044,7 +1060,7 @@ to do. `offending` names the thing at fault when there is one. Branch on
 | `serial_not_in_mirror` | 404 | no | No claim with that serial is in geoDB's BLM mirror. That is not proof the claim does not exist: it may be newer than the last sync, or mistyped. | Check the serial against the user's source, and say the mirror's sync date. |
 | `method_not_allowed` | 405 | no | The HTTP method is not supported on this endpoint. | Use a method the spec declares for this path. The read surface is GET-only apart from POST /api/v2/exports/. |
 | `already_undone` | 409 | no | This write has already been undone. | Nothing to do; read the records to see their current state. |
-| `ambiguous_match` | 409 | no | (per row) An update or retract named a structure or field note only by a name that several records in the project carry (`offending.ids` names them). Their identity is the uuid, not the name, so the row was matched to none of them. Nothing was written for this row. | Read the records `offending.ids` names, ask the user which one is meant, and send the row again with that record's "id" or "uuid". |
+| `ambiguous_match` | 409 | no | (per row) An update or retract named a record only by a key that several records in the project carry (`offending.ids` names them): a structure or field note by a name (their identity is the uuid, not the name), or a catalog entry by a name several entries share. The row was matched to none of them. Nothing was written for this row. | Read the records `offending.ids` names, ask the user which one is meant, and send the row again with that record's "id" (a structure or field note: or its "uuid"; a catalog entry: or the column its describe names to split a shared name). |
 | `approved_certificate` | 409 | no | (per row) The values belong to a certificate whose QAQC review is approved; they change only with an explicit acknowledgement. | Confirm with the user, then resend with "acknowledge": ["approved_certificate"]. The certificate is named in `offending`. |
 | `certificate_unreject_conflict` | 409 | no | Un-rejecting this certificate would collide with sample names another certificate now holds (named in `offending`). | Ask the user which certificate is right; resolve the colliding names first, then retry the verdict change. |
 | `change_project_crs` | 409 | no | The project already has a coordinate system; changing it re-derives every project-frame copy of every point and recomputes every drill trace (records keep their own native coordinates). | Show the user the current system and the dry run; only after they say yes resend with "acknowledge": ["change_project_crs"]. |
