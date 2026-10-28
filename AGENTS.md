@@ -27,6 +27,7 @@ Who can connect today: Connecting an AI assistant is open to geoDB staff and to 
 1. Free, Pro or Max: open Customize → Connectors, choose "+ Add" → "Add custom connector", name it geoDB, paste https://api.geodb.io/mcp, then continue and Add.
 2. Team or Enterprise: an owner adds it once under Organization settings → Connectors → Add → Custom → Web (same URL); each member then finds it under Customize → Connectors and clicks Connect.
 3. Sign in to geoDB when asked and tick the projects the assistant may reach.
+4. So Claude's own code can reach geoDB (big tables, photos, files): on a Free, Pro or Max plan, open Settings → Capabilities and turn on "Allow network egress" (under "Code execution and file creation"). On a Team or Enterprise plan only an owner can change it: Organization settings → Capabilities → "Allow network egress to package managers and specific domains", then add api.geodb.io and geodbstorage.blob.core.windows.net (or choose "All domains"); Team plans start at package managers only and Enterprise with it off.
    A Free plan holds one custom connector.
 
 **Claude Code**
