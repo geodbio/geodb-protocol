@@ -665,6 +665,8 @@ changed by writing it again: that adds a copy ("Name (2)"), and the answer's
 `layer.warning` says so. A draft goes live when the user promotes it on the
 web in Display settings → Map data. The answer's `layer` gives its id and where
 you and the user can read the draft. Undo removes the layer with its features.
+Traced it from a field sketch or a georeferenced image (a `project-files/` row with
+`is_field_sketch`, or a raster)? Send that file's id as `"traced_from"` in the layer.
 
 **Uploading files.** A file goes in from CODE that holds a key acting for a
 person (a `session_key` in a sandbox, or an agent key on the user's own machine:

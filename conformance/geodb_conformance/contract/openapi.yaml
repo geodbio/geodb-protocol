@@ -19310,6 +19310,17 @@ paths:
       description: The features belonging to this layer — homogeneous in geometry
         type and attribute set, unlike the flat cross-layer list.
       parameters:
+      - in: query
+        name: geometry
+        schema:
+          type: string
+          enum:
+          - original
+          - wgs84
+        description: '''original'' adds each feature''s ORIGINAL geometry: `manual_geometry`
+          (WKT exactly as stored, in `epsg`, Z and single parts kept) and `has_z`,
+          beside the derived WGS84 `geometry`. The input for an edit round trip that
+          keeps the source CRS. Default ''wgs84'' (no extra keys).'
       - in: path
         name: id
         schema:
@@ -39081,6 +39092,14 @@ components:
           type: string
           readOnly: true
           nullable: true
+        manual_geometry:
+          type: string
+          nullable: true
+          description: 'The ORIGINAL geometry as stored: WKT in `epsg`, Z kept, single
+            parts kept. Only with ?geometry=original.'
+        has_z:
+          type: boolean
+          description: The original geometry carries Z. Only with ?geometry=original.
         project_id:
           type: integer
           readOnly: true
@@ -39165,6 +39184,23 @@ components:
         has_patterns:
           type: boolean
           readOnly: true
+        traced_from_id:
+          type: integer
+          readOnly: true
+          nullable: true
+          description: The field sketch or georeferenced image (a project file) this
+            layer was traced from, or null.
+        earlier_versions:
+          type: array
+          items:
+            type: integer
+          description: 'Retrieve only: the layers this version replaced, nearest first.'
+        traced_from_name:
+          type: string
+          readOnly: true
+          nullable: true
+          description: That file's name; null when there is none or the file is in
+            the Trash.
         catalog_legend:
           type: array
           items:
@@ -39189,6 +39225,8 @@ components:
       - opacity
       - style
       - style_mode
+      - traced_from_id
+      - traced_from_name
       - visible
       additionalProperties: false
     VeinMineralContentNested:
