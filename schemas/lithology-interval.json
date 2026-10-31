@@ -247,14 +247,14 @@
         "string",
         "null"
       ],
-      "description": "The full name of the person who made this row; \"a project member\" when no name is on file; \"geoDB staff\" for a geoDB staff account; null when no one is on file. Never an email. Not sent on `compact=1` rows."
+      "description": "The full name of the person who made this row; \"a project member\" when no name is on file; \"geoDB staff\" for a geoDB staff account; null when no one is on file. Sent only to a person's own connection: null on an organisation key. Never an email. Not sent on `compact=1` rows."
     },
     "last_edited_by_name": {
       "type": [
         "string",
         "null"
       ],
-      "description": "The full name of the person who last edited this row; \"a project member\" when no name is on file; \"geoDB staff\" for a geoDB staff account; null when no one is on file. Never an email. Not sent on `compact=1` rows."
+      "description": "The full name of the person who last edited this row; \"a project member\" when no name is on file; \"geoDB staff\" for a geoDB staff account; null when no one is on file. Sent only to a person's own connection: null on an organisation key. Never an email. Not sent on `compact=1` rows."
     },
     "data_warnings": {
       "type": "array",

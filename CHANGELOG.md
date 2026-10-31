@@ -1,5 +1,18 @@
 # Changelog
 
+## Regenerated 2026-10-31 from deployed geoDB `4bb9ee9a6`: people's names go only to a person's own connection (`protocol_version` unchanged)
+
+Regenerated with prod's flags (MCP + READS + WRITES on, MCP_STAFF_ONLY off) and `--publish-write-profile`.
+
+- **`created_by_name` / `last_edited_by_name`** are now sent only to a person's own connection (their own AI
+  connector, session key or agent key). An **organisation (vendor) key** receives both keys as **null**; the
+  row's role-level `origin` is unchanged. The descriptions say so.
+- **The record-history read's `changed_by`** follows the same rule: a display name to a person's own
+  connection, null on an organisation key.
+- **Exports carry no names** (they never shipped in this repo's contract): one export file is shared across
+  keys, so it carries only what every key may read.
+- ADDITIVE-SAFE: no field added or removed, no reason code moved (`errors.json` unchanged).
+
 ## Regenerated 2026-10-31 from deployed geoDB `118eca253`: rows say who made them, by name (`protocol_version` unchanged)
 
 Regenerated with prod's flags (MCP + READS + WRITES on, MCP_STAFF_ONLY off) and `--publish-write-profile`.

@@ -147,9 +147,10 @@ paths:
     get:
       operationId: history_retrieve
       description: 'Who changed what on this record, when: one row per changed field
-        with the old and new value, newest first, and the person by display name.
-        ⚠️ The history records EDITS: a record''s creation is not a row here, and
-        a few bulk paths write without one — so an "earliest old value" is the original
+        with the old and new value, newest first, and the person by display name (`changed_by`:
+        sent only to a person''s own connection; null on an organisation key). ⚠️
+        The history records EDITS: a record''s creation is not a row here, and a few
+        bulk paths write without one — so an "earliest old value" is the original
         only if the chain is contiguous (each row''s `old` equals the previous row''s
         `new`). `contiguous` says whether it is; when it is not, say so rather than
         presenting the earliest value as the original.'
@@ -23564,16 +23565,18 @@ components:
           type: string
           readOnly: true
           nullable: true
-          description: The full name of the person who made this row; "a project member"
-            when no name is on file; "geoDB staff" for a geoDB staff account; null
-            when no one is on file. Never an email. Not sent on `compact=1` rows.
+          description: 'The full name of the person who made this row; "a project
+            member" when no name is on file; "geoDB staff" for a geoDB staff account;
+            null when no one is on file. Sent only to a person''s own connection:
+            null on an organisation key. Never an email. Not sent on `compact=1` rows.'
         last_edited_by_name:
           type: string
           readOnly: true
           nullable: true
-          description: The full name of the person who last edited this row; "a project
+          description: 'The full name of the person who last edited this row; "a project
             member" when no name is on file; "geoDB staff" for a geoDB staff account;
-            null when no one is on file. Never an email. Not sent on `compact=1` rows.
+            null when no one is on file. Sent only to a person''s own connection:
+            null on an organisation key. Never an email. Not sent on `compact=1` rows.'
         data_warnings:
           type: array
           readOnly: true
@@ -24006,16 +24009,18 @@ components:
           type: string
           readOnly: true
           nullable: true
-          description: The full name of the person who made this row; "a project member"
-            when no name is on file; "geoDB staff" for a geoDB staff account; null
-            when no one is on file. Never an email. Not sent on `compact=1` rows.
+          description: 'The full name of the person who made this row; "a project
+            member" when no name is on file; "geoDB staff" for a geoDB staff account;
+            null when no one is on file. Sent only to a person''s own connection:
+            null on an organisation key. Never an email. Not sent on `compact=1` rows.'
         last_edited_by_name:
           type: string
           readOnly: true
           nullable: true
-          description: The full name of the person who last edited this row; "a project
+          description: 'The full name of the person who last edited this row; "a project
             member" when no name is on file; "geoDB staff" for a geoDB staff account;
-            null when no one is on file. Never an email. Not sent on `compact=1` rows.
+            null when no one is on file. Sent only to a person''s own connection:
+            null on an organisation key. Never an email. Not sent on `compact=1` rows.'
         data_warnings:
           type: array
           readOnly: true
@@ -24238,16 +24243,18 @@ components:
           type: string
           readOnly: true
           nullable: true
-          description: The full name of the person who made this row; "a project member"
-            when no name is on file; "geoDB staff" for a geoDB staff account; null
-            when no one is on file. Never an email. Not sent on `compact=1` rows.
+          description: 'The full name of the person who made this row; "a project
+            member" when no name is on file; "geoDB staff" for a geoDB staff account;
+            null when no one is on file. Sent only to a person''s own connection:
+            null on an organisation key. Never an email. Not sent on `compact=1` rows.'
         last_edited_by_name:
           type: string
           readOnly: true
           nullable: true
-          description: The full name of the person who last edited this row; "a project
+          description: 'The full name of the person who last edited this row; "a project
             member" when no name is on file; "geoDB staff" for a geoDB staff account;
-            null when no one is on file. Never an email. Not sent on `compact=1` rows.
+            null when no one is on file. Sent only to a person''s own connection:
+            null on an organisation key. Never an email. Not sent on `compact=1` rows.'
         data_warnings:
           type: array
           readOnly: true
@@ -24568,16 +24575,18 @@ components:
           type: string
           readOnly: true
           nullable: true
-          description: The full name of the person who made this row; "a project member"
-            when no name is on file; "geoDB staff" for a geoDB staff account; null
-            when no one is on file. Never an email. Not sent on `compact=1` rows.
+          description: 'The full name of the person who made this row; "a project
+            member" when no name is on file; "geoDB staff" for a geoDB staff account;
+            null when no one is on file. Sent only to a person''s own connection:
+            null on an organisation key. Never an email. Not sent on `compact=1` rows.'
         last_edited_by_name:
           type: string
           readOnly: true
           nullable: true
-          description: The full name of the person who last edited this row; "a project
+          description: 'The full name of the person who last edited this row; "a project
             member" when no name is on file; "geoDB staff" for a geoDB staff account;
-            null when no one is on file. Never an email. Not sent on `compact=1` rows.
+            null when no one is on file. Sent only to a person''s own connection:
+            null on an organisation key. Never an email. Not sent on `compact=1` rows.'
         data_warnings:
           type: array
           readOnly: true
@@ -24820,16 +24829,18 @@ components:
           type: string
           readOnly: true
           nullable: true
-          description: The full name of the person who made this row; "a project member"
-            when no name is on file; "geoDB staff" for a geoDB staff account; null
-            when no one is on file. Never an email. Not sent on `compact=1` rows.
+          description: 'The full name of the person who made this row; "a project
+            member" when no name is on file; "geoDB staff" for a geoDB staff account;
+            null when no one is on file. Sent only to a person''s own connection:
+            null on an organisation key. Never an email. Not sent on `compact=1` rows.'
         last_edited_by_name:
           type: string
           readOnly: true
           nullable: true
-          description: The full name of the person who last edited this row; "a project
+          description: 'The full name of the person who last edited this row; "a project
             member" when no name is on file; "geoDB staff" for a geoDB staff account;
-            null when no one is on file. Never an email. Not sent on `compact=1` rows.
+            null when no one is on file. Sent only to a person''s own connection:
+            null on an organisation key. Never an email. Not sent on `compact=1` rows.'
         data_warnings:
           type: array
           readOnly: true
@@ -25577,16 +25588,18 @@ components:
           type: string
           readOnly: true
           nullable: true
-          description: The full name of the person who made this row; "a project member"
-            when no name is on file; "geoDB staff" for a geoDB staff account; null
-            when no one is on file. Never an email. Not sent on `compact=1` rows.
+          description: 'The full name of the person who made this row; "a project
+            member" when no name is on file; "geoDB staff" for a geoDB staff account;
+            null when no one is on file. Sent only to a person''s own connection:
+            null on an organisation key. Never an email. Not sent on `compact=1` rows.'
         last_edited_by_name:
           type: string
           readOnly: true
           nullable: true
-          description: The full name of the person who last edited this row; "a project
+          description: 'The full name of the person who last edited this row; "a project
             member" when no name is on file; "geoDB staff" for a geoDB staff account;
-            null when no one is on file. Never an email. Not sent on `compact=1` rows.
+            null when no one is on file. Sent only to a person''s own connection:
+            null on an organisation key. Never an email. Not sent on `compact=1` rows.'
         data_warnings:
           type: array
           readOnly: true
@@ -26144,16 +26157,18 @@ components:
           type: string
           readOnly: true
           nullable: true
-          description: The full name of the person who made this row; "a project member"
-            when no name is on file; "geoDB staff" for a geoDB staff account; null
-            when no one is on file. Never an email. Not sent on `compact=1` rows.
+          description: 'The full name of the person who made this row; "a project
+            member" when no name is on file; "geoDB staff" for a geoDB staff account;
+            null when no one is on file. Sent only to a person''s own connection:
+            null on an organisation key. Never an email. Not sent on `compact=1` rows.'
         last_edited_by_name:
           type: string
           readOnly: true
           nullable: true
-          description: The full name of the person who last edited this row; "a project
+          description: 'The full name of the person who last edited this row; "a project
             member" when no name is on file; "geoDB staff" for a geoDB staff account;
-            null when no one is on file. Never an email. Not sent on `compact=1` rows.
+            null when no one is on file. Sent only to a person''s own connection:
+            null on an organisation key. Never an email. Not sent on `compact=1` rows.'
         data_warnings:
           type: array
           readOnly: true
@@ -26428,16 +26443,18 @@ components:
           type: string
           readOnly: true
           nullable: true
-          description: The full name of the person who made this row; "a project member"
-            when no name is on file; "geoDB staff" for a geoDB staff account; null
-            when no one is on file. Never an email. Not sent on `compact=1` rows.
+          description: 'The full name of the person who made this row; "a project
+            member" when no name is on file; "geoDB staff" for a geoDB staff account;
+            null when no one is on file. Sent only to a person''s own connection:
+            null on an organisation key. Never an email. Not sent on `compact=1` rows.'
         last_edited_by_name:
           type: string
           readOnly: true
           nullable: true
-          description: The full name of the person who last edited this row; "a project
+          description: 'The full name of the person who last edited this row; "a project
             member" when no name is on file; "geoDB staff" for a geoDB staff account;
-            null when no one is on file. Never an email. Not sent on `compact=1` rows.
+            null when no one is on file. Sent only to a person''s own connection:
+            null on an organisation key. Never an email. Not sent on `compact=1` rows.'
         data_warnings:
           type: array
           readOnly: true
@@ -26835,16 +26852,18 @@ components:
           type: string
           readOnly: true
           nullable: true
-          description: The full name of the person who made this row; "a project member"
-            when no name is on file; "geoDB staff" for a geoDB staff account; null
-            when no one is on file. Never an email. Not sent on `compact=1` rows.
+          description: 'The full name of the person who made this row; "a project
+            member" when no name is on file; "geoDB staff" for a geoDB staff account;
+            null when no one is on file. Sent only to a person''s own connection:
+            null on an organisation key. Never an email. Not sent on `compact=1` rows.'
         last_edited_by_name:
           type: string
           readOnly: true
           nullable: true
-          description: The full name of the person who last edited this row; "a project
+          description: 'The full name of the person who last edited this row; "a project
             member" when no name is on file; "geoDB staff" for a geoDB staff account;
-            null when no one is on file. Never an email. Not sent on `compact=1` rows.
+            null when no one is on file. Sent only to a person''s own connection:
+            null on an organisation key. Never an email. Not sent on `compact=1` rows.'
         data_warnings:
           type: array
           readOnly: true
@@ -26970,16 +26989,18 @@ components:
           type: string
           readOnly: true
           nullable: true
-          description: The full name of the person who made this row; "a project member"
-            when no name is on file; "geoDB staff" for a geoDB staff account; null
-            when no one is on file. Never an email. Not sent on `compact=1` rows.
+          description: 'The full name of the person who made this row; "a project
+            member" when no name is on file; "geoDB staff" for a geoDB staff account;
+            null when no one is on file. Sent only to a person''s own connection:
+            null on an organisation key. Never an email. Not sent on `compact=1` rows.'
         last_edited_by_name:
           type: string
           readOnly: true
           nullable: true
-          description: The full name of the person who last edited this row; "a project
+          description: 'The full name of the person who last edited this row; "a project
             member" when no name is on file; "geoDB staff" for a geoDB staff account;
-            null when no one is on file. Never an email. Not sent on `compact=1` rows.
+            null when no one is on file. Sent only to a person''s own connection:
+            null on an organisation key. Never an email. Not sent on `compact=1` rows.'
         data_warnings:
           type: array
           readOnly: true
@@ -27401,16 +27422,18 @@ components:
           type: string
           readOnly: true
           nullable: true
-          description: The full name of the person who made this row; "a project member"
-            when no name is on file; "geoDB staff" for a geoDB staff account; null
-            when no one is on file. Never an email. Not sent on `compact=1` rows.
+          description: 'The full name of the person who made this row; "a project
+            member" when no name is on file; "geoDB staff" for a geoDB staff account;
+            null when no one is on file. Sent only to a person''s own connection:
+            null on an organisation key. Never an email. Not sent on `compact=1` rows.'
         last_edited_by_name:
           type: string
           readOnly: true
           nullable: true
-          description: The full name of the person who last edited this row; "a project
+          description: 'The full name of the person who last edited this row; "a project
             member" when no name is on file; "geoDB staff" for a geoDB staff account;
-            null when no one is on file. Never an email. Not sent on `compact=1` rows.
+            null when no one is on file. Sent only to a person''s own connection:
+            null on an organisation key. Never an email. Not sent on `compact=1` rows.'
         data_warnings:
           type: array
           readOnly: true
@@ -35771,16 +35794,18 @@ components:
           type: string
           readOnly: true
           nullable: true
-          description: The full name of the person who made this row; "a project member"
-            when no name is on file; "geoDB staff" for a geoDB staff account; null
-            when no one is on file. Never an email. Not sent on `compact=1` rows.
+          description: 'The full name of the person who made this row; "a project
+            member" when no name is on file; "geoDB staff" for a geoDB staff account;
+            null when no one is on file. Sent only to a person''s own connection:
+            null on an organisation key. Never an email. Not sent on `compact=1` rows.'
         last_edited_by_name:
           type: string
           readOnly: true
           nullable: true
-          description: The full name of the person who last edited this row; "a project
+          description: 'The full name of the person who last edited this row; "a project
             member" when no name is on file; "geoDB staff" for a geoDB staff account;
-            null when no one is on file. Never an email. Not sent on `compact=1` rows.
+            null when no one is on file. Sent only to a person''s own connection:
+            null on an organisation key. Never an email. Not sent on `compact=1` rows.'
         data_warnings:
           type: array
           readOnly: true
@@ -36650,16 +36675,18 @@ components:
           type: string
           readOnly: true
           nullable: true
-          description: The full name of the person who made this row; "a project member"
-            when no name is on file; "geoDB staff" for a geoDB staff account; null
-            when no one is on file. Never an email. Not sent on `compact=1` rows.
+          description: 'The full name of the person who made this row; "a project
+            member" when no name is on file; "geoDB staff" for a geoDB staff account;
+            null when no one is on file. Sent only to a person''s own connection:
+            null on an organisation key. Never an email. Not sent on `compact=1` rows.'
         last_edited_by_name:
           type: string
           readOnly: true
           nullable: true
-          description: The full name of the person who last edited this row; "a project
+          description: 'The full name of the person who last edited this row; "a project
             member" when no name is on file; "geoDB staff" for a geoDB staff account;
-            null when no one is on file. Never an email. Not sent on `compact=1` rows.
+            null when no one is on file. Sent only to a person''s own connection:
+            null on an organisation key. Never an email. Not sent on `compact=1` rows.'
         metal_equivalent_config:
           type: string
           nullable: true
