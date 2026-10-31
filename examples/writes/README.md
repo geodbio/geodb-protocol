@@ -1,9 +1,10 @@
 # Write examples — one per intent
 
-> **Staff only for now.** geoDB's production servers serve the write half to
-> geoDB staff connections only while API writing opens (any other key is
-> refused `writes_staff_only` — the public demo write key too, until then);
-> these run against a server that accepts your key's writes.
+> **Who can write.** geoDB's production servers accept writes from the AI
+> connections people make for themselves, acting as them; an organisation or
+> vendor key reads but does not write yet (refused `org_key_writes_closed` —
+> the public demo write key too). These run against a server that accepts your
+> key's writes.
 
 **Read [AGENTS.md](../../AGENTS.md), "Managing data", first** — these examples
 show the calls; the rules they follow are stated there. Three you must not

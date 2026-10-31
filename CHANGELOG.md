@@ -1,5 +1,27 @@
 # Changelog
 
+## Regenerated 2026-10-31 from deployed geoDB `cb1df35a5`: AI connections open to everyone (`protocol_version` unchanged)
+
+geoDB's production servers now accept AI connections from every geoDB user, not
+only staff and the beta companies. Regenerated with prod's flags (MCP + READS +
+WRITES on, MCP_STAFF_ONLY **off**) and `--publish-write-profile`.
+
+- **Anyone can connect an AI assistant** at `https://api.geodb.io/mcp` and
+  write through it, acting as themselves and within their own permissions.
+- **Organisation and vendor keys still read but do not write** (the public demo
+  write key included). They are now refused **`org_key_writes_closed`**.
+- **Four reason codes are retired** because the server no longer sends them:
+  `connector_staff_only`, `writes_staff_only`, `company_not_in_beta`,
+  `beta_access_ended`. A client that matches on them keeps working; it just
+  never sees them. 192 → 189 codes.
+- Also carried (deployed since the last regen): a map layer's style carries
+  `show_on_phones`, the office's default for whether crew phones show the layer.
+- Hand-written passages updated to match: README, AGENTS.md, the write
+  examples, the conformance README.
+
+Checks: validate.py, regenerate.py --check, emit_agents.py --check,
+export_protocol_guide --check, conformance selftest (22/22 write break matrix).
+
 ## Regenerated 2026-10-24 from deployed geoDB `4770f5e14` (additive; `protocol_version` unchanged)
 
 Regenerated with prod's flags (MCP + READS + WRITES + MCP_STAFF_ONLY on) and

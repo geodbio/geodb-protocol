@@ -61,12 +61,6 @@
       "remedy": "Split the records into batches of at most the limit and send each batch as its own request.",
       "retry": "no"
     },
-    "beta_access_ended": {
-      "http": 401,
-      "meaning": "This connection was made during an early-access period for the user's company, and that early access has ended, so the connection cannot be used any more (checked on every call).",
-      "remedy": "Tell the user their company's early access to AI connections has ended and nothing about their data changed; they can keep working in the geoDB web app, or ask geoDB about access. Do not retry.",
-      "retry": "no"
-    },
     "billing_permission_required": {
       "http": 403,
       "meaning": "Moving a project between states (or restoring one) changes what the company pays; only the company owner, a company manager who can make purchases, or geoDB staff may do it.",
@@ -107,12 +101,6 @@
       "http": 403,
       "meaning": "The person this key acts for cannot create projects in the company named (they are not its owner, a confirmed manager or a member), or it does not exist.",
       "remedy": "Ask the user which of their companies to use: a create without \"company\" lists them in offending.companies.",
-      "retry": "no"
-    },
-    "company_not_in_beta": {
-      "http": 403,
-      "meaning": "AI connections are in early access for a few companies. The project this record names belongs to a company that is not in early access, so this connection may not read or change it, even though the user can on the web.",
-      "remedy": "Work only with the projects GET /api/v2/grant-context/ lists (they are the early access ones); tell the user this project can be changed in the geoDB web app. Do not retry.",
       "retry": "no"
     },
     "company_required": {
@@ -167,12 +155,6 @@
       "http": 409,
       "meaning": "The request conflicts with the current state of the record.",
       "remedy": "Read the record again, then resend the change against what is stored now.",
-      "retry": "no"
-    },
-    "connector_staff_only": {
-      "http": 401,
-      "meaning": "Connecting an AI assistant is open to geoDB staff and to members of companies in the geoDB protocol beta for now. The person this connection acts as is neither (checked on every call).",
-      "remedy": "Tell the user that AI connections are not open to their account yet; nothing about their data changed. To join the beta, contact geoDB: https://geodb.io/contact-us/. Do not retry.",
       "retry": "no"
     },
     "crs_geographic": {
@@ -635,6 +617,12 @@
       "http": 401,
       "meaning": "The OAuth access token has expired or was revoked.",
       "remedy": "Refresh the access token with the refresh token (connectors do this automatically), or connect again.",
+      "retry": "no"
+    },
+    "org_key_writes_closed": {
+      "http": 403,
+      "meaning": "Writing through the API is open to the AI connections people make for themselves, acting as them; an organisation or vendor key reads but does not write yet, whatever write access it was given. This key is not a person's own AI connection (it is an organisation or vendor key, or a key made by hand), so it reads but does not write.",
+      "remedy": "Read with this key. To change data, the user connects their own AI assistant to geoDB, or makes the change in the geoDB web app. Do not retry.",
       "retry": "no"
     },
     "origin_outside_project": {
@@ -1145,12 +1133,6 @@
       "http": 403,
       "meaning": "This credential may read but not write records (its write access is below \"records\").",
       "remedy": "Ask the project owner for a key with records write access (or reconnect the app and allow writing). Reads keep working.",
-      "retry": "no"
-    },
-    "writes_staff_only": {
-      "http": 403,
-      "meaning": "Writing through the API is open to the AI connections of geoDB staff and of members of companies in the geoDB protocol beta for now. Every other key (an organisation or vendor key, anyone else's connection) reads but does not write, whatever write access it was given.",
-      "remedy": "Read with this key, or make the change in the geoDB web app. To join the beta, contact geoDB: https://geodb.io/contact-us/.",
       "retry": "no"
     },
     "writes_switched_off": {

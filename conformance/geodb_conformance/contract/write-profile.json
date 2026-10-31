@@ -591,6 +591,12 @@
       "remedy": "Send a value (GET /api/v2/records/describe/<Model>/ lists the choices), or leave the field out to keep it as it is.",
       "retry": "no"
     },
+    "org_key_writes_closed": {
+      "http": 403,
+      "meaning": "Writing through the API is open to the AI connections people make for themselves, acting as them; an organisation or vendor key reads but does not write yet, whatever write access it was given. This key is not a person's own AI connection (it is an organisation or vendor key, or a key made by hand), so it reads but does not write.",
+      "remedy": "Read with this key. To change data, the user connects their own AI assistant to geoDB, or makes the change in the geoDB web app. Do not retry.",
+      "retry": "no"
+    },
     "origin_outside_project": {
       "http": 400,
       "meaning": "The local-grid origin is far outside the project's own ground (its holes and land holdings).",
@@ -943,12 +949,6 @@
       "http": 403,
       "meaning": "This credential may read but not write records (its write access is below \"records\").",
       "remedy": "Ask the project owner for a key with records write access (or reconnect the app and allow writing). Reads keep working.",
-      "retry": "no"
-    },
-    "writes_staff_only": {
-      "http": 403,
-      "meaning": "Writing through the API is open to the AI connections of geoDB staff and of members of companies in the geoDB protocol beta for now. Every other key (an organisation or vendor key, anyone else's connection) reads but does not write, whatever write access it was given.",
-      "remedy": "Read with this key, or make the change in the geoDB web app. To join the beta, contact geoDB: https://geodb.io/contact-us/.",
       "retry": "no"
     },
     "writes_switched_off": {

@@ -55,14 +55,15 @@ Authorization: Grant gdbg_<token>
   several names one on every read (`project=`); there is no current project.
 - It is **read-only unless it was given write access**. Writes go through one
   endpoint, `POST /api/v2/records/`: answered per row, every write can be
-  dry-run first and undone afterwards, and nothing is ever hard-deleted. On geoDB's own servers, writing is open for
-  now to the AI connections of geoDB staff and of members of companies in the
-  geoDB protocol beta; any other key reads and is refused `writes_staff_only`.
+  dry-run first and undone afterwards, and nothing is ever hard-deleted. On geoDB's own servers, writing is open
+  to the AI connections people make for themselves, acting as them; an
+  organisation or vendor key reads but does not write yet (refused
+  `org_key_writes_closed`).
   `POST /api/v2/exports/` creates an export *job* and changes no data.
 - **An AI assistant connects without a key to copy**, through the remote MCP
   connector at `https://api.geodb.io/mcp`: the person signs in and ticks the
-  projects it may reach. Open for now to the same staff and beta companies;
-  [AGENTS.md](AGENTS.md) has the steps for each assistant.
+  projects it may reach. [AGENTS.md](AGENTS.md) has the steps for each
+  assistant.
 - Every request made with a grant lands in a **customer-visible access log**, served or not: the owner sees each endpoint pulled, per hour, with request counts, and every refusal — a revoked or expired token still polling, a write attempt, an off-surface probe, a throttle — with its reason code. Requests whose token matches no grant cannot be attributed to one and are counted per IP-hour instead.
 - Asset downloads are **short-lived signed redirects** (302 → a ~5-minute URL);
   no long-lived links are ever embedded in the catalog JSON.

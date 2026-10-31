@@ -39175,6 +39175,13 @@ components:
           type: object
           additionalProperties: {}
           readOnly: true
+          description: The style spec. Also carries `show_on_phones` (the same value
+            as the top-level key) for clients that cache the spec as one blob.
+        show_on_phones:
+          type: boolean
+          readOnly: true
+          description: 'The office''s default for crew phones: false = the layer downloads
+            but starts hidden in the phone layer list.'
         visible:
           type: boolean
           readOnly: true
@@ -39223,6 +39230,7 @@ components:
       - kind_label
       - name
       - opacity
+      - show_on_phones
       - style
       - style_mode
       - traced_from_id

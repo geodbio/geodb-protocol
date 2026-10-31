@@ -113,8 +113,8 @@ Every refusal carries `reason_code` + `remedy`: act on the remedy.
 Your key writes only if `GET /api/v2/grant-context/` says `"read_only":
 false` (its `writes` block names the endpoint, the models and the intents);
 a read-only key is refused `grant_write_forbidden`. On geoDB's own servers:
-Writing through the API is open to the AI connections of geoDB staff and of members of companies in the geoDB protocol beta for now. Every other key — the public demo write
-key included — is refused `writes_staff_only` there. The write contract below
+Writing through the API is open to the AI connections people make for themselves, acting as them; an organisation or vendor key reads but does not write yet, whatever write access it was given. Such a key — the public demo write
+key included — is refused `org_key_writes_closed` there. The write contract below
 is the protocol's; a server that opens writes to your key answers it exactly so.
 
 **One endpoint.** Every write is `POST /api/v2/records/` with `model`,
