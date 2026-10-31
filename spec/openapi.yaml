@@ -23560,6 +23560,20 @@ components:
             app); `connector` = written through the API with a key (an AI or app);
             `unknown` = the account that made it is gone. Not sent on `compact=1`
             rows.'
+        created_by_name:
+          type: string
+          readOnly: true
+          nullable: true
+          description: The full name of the person who made this row; "a project member"
+            when no name is on file; "geoDB staff" for a geoDB staff account; null
+            when no one is on file. Never an email. Not sent on `compact=1` rows.
+        last_edited_by_name:
+          type: string
+          readOnly: true
+          nullable: true
+          description: The full name of the person who last edited this row; "a project
+            member" when no name is on file; "geoDB staff" for a geoDB staff account;
+            null when no one is on file. Never an email. Not sent on `compact=1` rows.
         data_warnings:
           type: array
           readOnly: true
@@ -23988,6 +24002,20 @@ components:
             app); `connector` = written through the API with a key (an AI or app);
             `unknown` = the account that made it is gone. Not sent on `compact=1`
             rows.'
+        created_by_name:
+          type: string
+          readOnly: true
+          nullable: true
+          description: The full name of the person who made this row; "a project member"
+            when no name is on file; "geoDB staff" for a geoDB staff account; null
+            when no one is on file. Never an email. Not sent on `compact=1` rows.
+        last_edited_by_name:
+          type: string
+          readOnly: true
+          nullable: true
+          description: The full name of the person who last edited this row; "a project
+            member" when no name is on file; "geoDB staff" for a geoDB staff account;
+            null when no one is on file. Never an email. Not sent on `compact=1` rows.
         data_warnings:
           type: array
           readOnly: true
@@ -24206,6 +24234,20 @@ components:
             app); `connector` = written through the API with a key (an AI or app);
             `unknown` = the account that made it is gone. Not sent on `compact=1`
             rows.'
+        created_by_name:
+          type: string
+          readOnly: true
+          nullable: true
+          description: The full name of the person who made this row; "a project member"
+            when no name is on file; "geoDB staff" for a geoDB staff account; null
+            when no one is on file. Never an email. Not sent on `compact=1` rows.
+        last_edited_by_name:
+          type: string
+          readOnly: true
+          nullable: true
+          description: The full name of the person who last edited this row; "a project
+            member" when no name is on file; "geoDB staff" for a geoDB staff account;
+            null when no one is on file. Never an email. Not sent on `compact=1` rows.
         data_warnings:
           type: array
           readOnly: true
@@ -24522,6 +24564,20 @@ components:
             app); `connector` = written through the API with a key (an AI or app);
             `unknown` = the account that made it is gone. Not sent on `compact=1`
             rows.'
+        created_by_name:
+          type: string
+          readOnly: true
+          nullable: true
+          description: The full name of the person who made this row; "a project member"
+            when no name is on file; "geoDB staff" for a geoDB staff account; null
+            when no one is on file. Never an email. Not sent on `compact=1` rows.
+        last_edited_by_name:
+          type: string
+          readOnly: true
+          nullable: true
+          description: The full name of the person who last edited this row; "a project
+            member" when no name is on file; "geoDB staff" for a geoDB staff account;
+            null when no one is on file. Never an email. Not sent on `compact=1` rows.
         data_warnings:
           type: array
           readOnly: true
@@ -24760,6 +24816,20 @@ components:
             app); `connector` = written through the API with a key (an AI or app);
             `unknown` = the account that made it is gone. Not sent on `compact=1`
             rows.'
+        created_by_name:
+          type: string
+          readOnly: true
+          nullable: true
+          description: The full name of the person who made this row; "a project member"
+            when no name is on file; "geoDB staff" for a geoDB staff account; null
+            when no one is on file. Never an email. Not sent on `compact=1` rows.
+        last_edited_by_name:
+          type: string
+          readOnly: true
+          nullable: true
+          description: The full name of the person who last edited this row; "a project
+            member" when no name is on file; "geoDB staff" for a geoDB staff account;
+            null when no one is on file. Never an email. Not sent on `compact=1` rows.
         data_warnings:
           type: array
           readOnly: true
@@ -25503,6 +25573,20 @@ components:
             app); `connector` = written through the API with a key (an AI or app);
             `unknown` = the account that made it is gone. Not sent on `compact=1`
             rows.'
+        created_by_name:
+          type: string
+          readOnly: true
+          nullable: true
+          description: The full name of the person who made this row; "a project member"
+            when no name is on file; "geoDB staff" for a geoDB staff account; null
+            when no one is on file. Never an email. Not sent on `compact=1` rows.
+        last_edited_by_name:
+          type: string
+          readOnly: true
+          nullable: true
+          description: The full name of the person who last edited this row; "a project
+            member" when no name is on file; "geoDB staff" for a geoDB staff account;
+            null when no one is on file. Never an email. Not sent on `compact=1` rows.
         data_warnings:
           type: array
           readOnly: true
@@ -26056,6 +26140,20 @@ components:
             app); `connector` = written through the API with a key (an AI or app);
             `unknown` = the account that made it is gone. Not sent on `compact=1`
             rows.'
+        created_by_name:
+          type: string
+          readOnly: true
+          nullable: true
+          description: The full name of the person who made this row; "a project member"
+            when no name is on file; "geoDB staff" for a geoDB staff account; null
+            when no one is on file. Never an email. Not sent on `compact=1` rows.
+        last_edited_by_name:
+          type: string
+          readOnly: true
+          nullable: true
+          description: The full name of the person who last edited this row; "a project
+            member" when no name is on file; "geoDB staff" for a geoDB staff account;
+            null when no one is on file. Never an email. Not sent on `compact=1` rows.
         data_warnings:
           type: array
           readOnly: true
@@ -26326,6 +26424,20 @@ components:
             app); `connector` = written through the API with a key (an AI or app);
             `unknown` = the account that made it is gone. Not sent on `compact=1`
             rows.'
+        created_by_name:
+          type: string
+          readOnly: true
+          nullable: true
+          description: The full name of the person who made this row; "a project member"
+            when no name is on file; "geoDB staff" for a geoDB staff account; null
+            when no one is on file. Never an email. Not sent on `compact=1` rows.
+        last_edited_by_name:
+          type: string
+          readOnly: true
+          nullable: true
+          description: The full name of the person who last edited this row; "a project
+            member" when no name is on file; "geoDB staff" for a geoDB staff account;
+            null when no one is on file. Never an email. Not sent on `compact=1` rows.
         data_warnings:
           type: array
           readOnly: true
@@ -26719,6 +26831,20 @@ components:
             app); `connector` = written through the API with a key (an AI or app);
             `unknown` = the account that made it is gone. Not sent on `compact=1`
             rows.'
+        created_by_name:
+          type: string
+          readOnly: true
+          nullable: true
+          description: The full name of the person who made this row; "a project member"
+            when no name is on file; "geoDB staff" for a geoDB staff account; null
+            when no one is on file. Never an email. Not sent on `compact=1` rows.
+        last_edited_by_name:
+          type: string
+          readOnly: true
+          nullable: true
+          description: The full name of the person who last edited this row; "a project
+            member" when no name is on file; "geoDB staff" for a geoDB staff account;
+            null when no one is on file. Never an email. Not sent on `compact=1` rows.
         data_warnings:
           type: array
           readOnly: true
@@ -26840,6 +26966,20 @@ components:
             app); `connector` = written through the API with a key (an AI or app);
             `unknown` = the account that made it is gone. Not sent on `compact=1`
             rows.'
+        created_by_name:
+          type: string
+          readOnly: true
+          nullable: true
+          description: The full name of the person who made this row; "a project member"
+            when no name is on file; "geoDB staff" for a geoDB staff account; null
+            when no one is on file. Never an email. Not sent on `compact=1` rows.
+        last_edited_by_name:
+          type: string
+          readOnly: true
+          nullable: true
+          description: The full name of the person who last edited this row; "a project
+            member" when no name is on file; "geoDB staff" for a geoDB staff account;
+            null when no one is on file. Never an email. Not sent on `compact=1` rows.
         data_warnings:
           type: array
           readOnly: true
@@ -27257,6 +27397,20 @@ components:
             app); `connector` = written through the API with a key (an AI or app);
             `unknown` = the account that made it is gone. Not sent on `compact=1`
             rows.'
+        created_by_name:
+          type: string
+          readOnly: true
+          nullable: true
+          description: The full name of the person who made this row; "a project member"
+            when no name is on file; "geoDB staff" for a geoDB staff account; null
+            when no one is on file. Never an email. Not sent on `compact=1` rows.
+        last_edited_by_name:
+          type: string
+          readOnly: true
+          nullable: true
+          description: The full name of the person who last edited this row; "a project
+            member" when no name is on file; "geoDB staff" for a geoDB staff account;
+            null when no one is on file. Never an email. Not sent on `compact=1` rows.
         data_warnings:
           type: array
           readOnly: true
@@ -35613,6 +35767,20 @@ components:
             app); `connector` = written through the API with a key (an AI or app);
             `unknown` = the account that made it is gone. Not sent on `compact=1`
             rows.'
+        created_by_name:
+          type: string
+          readOnly: true
+          nullable: true
+          description: The full name of the person who made this row; "a project member"
+            when no name is on file; "geoDB staff" for a geoDB staff account; null
+            when no one is on file. Never an email. Not sent on `compact=1` rows.
+        last_edited_by_name:
+          type: string
+          readOnly: true
+          nullable: true
+          description: The full name of the person who last edited this row; "a project
+            member" when no name is on file; "geoDB staff" for a geoDB staff account;
+            null when no one is on file. Never an email. Not sent on `compact=1` rows.
         data_warnings:
           type: array
           readOnly: true
@@ -36478,6 +36646,20 @@ components:
             app); `connector` = written through the API with a key (an AI or app);
             `unknown` = the account that made it is gone. Not sent on `compact=1`
             rows.'
+        created_by_name:
+          type: string
+          readOnly: true
+          nullable: true
+          description: The full name of the person who made this row; "a project member"
+            when no name is on file; "geoDB staff" for a geoDB staff account; null
+            when no one is on file. Never an email. Not sent on `compact=1` rows.
+        last_edited_by_name:
+          type: string
+          readOnly: true
+          nullable: true
+          description: The full name of the person who last edited this row; "a project
+            member" when no name is on file; "geoDB staff" for a geoDB staff account;
+            null when no one is on file. Never an email. Not sent on `compact=1` rows.
         metal_equivalent_config:
           type: string
           nullable: true

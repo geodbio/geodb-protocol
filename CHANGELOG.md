@@ -1,5 +1,16 @@
 # Changelog
 
+## Regenerated 2026-10-31 from deployed geoDB `118eca253`: rows say who made them, by name (`protocol_version` unchanged)
+
+Regenerated with prod's flags (MCP + READS + WRITES on, MCP_STAFF_ONLY off) and `--publish-write-profile`.
+
+- **Collar, survey, sample, QC and logging-interval rows** (the 13 row types that already carry `origin`) now
+  also carry **`created_by_name`** and **`last_edited_by_name`**: the full name of the person who made / last
+  edited the row, `"a project member"` when no name is on file, `"geoDB staff"` for a geoDB staff load, null
+  when no one is on file. Read-only, nullable, **never an email or an id**, not sent on `compact=1` rows. The
+  same columns are in exports. ADDITIVE: no field removed, no reason code moved (`errors.json` unchanged).
+- The `data-audit` guide topic names the two fields.
+
 ## Regenerated 2026-10-31 from deployed geoDB `cb1df35a5`: AI connections open to everyone (`protocol_version` unchanged)
 
 geoDB's production servers now accept AI connections from every geoDB user, not

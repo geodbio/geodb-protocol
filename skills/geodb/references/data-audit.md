@@ -31,9 +31,10 @@ Every finding carries `owner` and `origin`.
 - `origin` counts who made the affected rows, as a ROLE: `geodb_staff` (a
   geoDB staff load), `member` (the customer's own people, field app
   included), `connector` (a connected AI or client) or `unknown`. It never
-  names a person, and neither do you: never guess who did it.
+  names a person; never guess who did it.
 - Rows carry `origin` too, not only findings: each collar, survey, sample and
-  logging row says who made it, in the same words.
+  logging row says who made it, in the same words, and by name in
+  `created_by_name` / `last_edited_by_name` ("geoDB staff" for a staff load).
 - `owner` `geodb`: a known geoDB product gap, or rows that mostly came from a
   geoDB staff load. Report it as **geoDB's to fix: tell geoDB support**. Never
   hand it to the user as their to-do, and never ask the user about it (whether
