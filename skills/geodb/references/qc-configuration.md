@@ -18,7 +18,10 @@ Beside its protocol, every project has one set of QC judging settings:
 - **Duplicate RPD limits**, per element, replacing the default relative
   difference a duplicate pair may show.
 - **Elements left out of pass rates**: their QC results are still recorded
-  and shown, but do not count towards a certificate's pass rate.
+  and shown, but do not count towards a certificate's pass rate and get no
+  verdict row, so a multi-element CRM with every element left out has no verdict
+  at all (the verdict read says so). That is the project's own setting, not a
+  fault. It is also the answer when someone asks to judge only certain elements.
 - **Results wait for QAQC approval**: when on, a certificate's results are
   held back from reads, maps and connected tools until a person has reviewed
   the certificate. Exports and the ODBC tables follow the merge settings' QAQC

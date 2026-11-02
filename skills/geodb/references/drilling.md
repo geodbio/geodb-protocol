@@ -136,6 +136,21 @@ wrong label forever), an EXISTING non-default pass, or fix the file. An unknown 
 name is refused, never created silently. Ask the user what the pass IS before naming
 it. ⛔ Never answer the ask by dropping rows into the default pass.
 
+**Renaming a drill hole.** A hole named wrong is corrected in place: logging, samples
+and assays point at the hole by id, so they follow it. ⛔ Never delete it and create it
+again under the right name; that risks splitting its logging across two records. The
+web page: open the hole from the Name or ID column of the drill collars table, then
+**Edit Collar Data**. Say what a rename reaches: a field phone takes the new name at
+its next download, but one holding unsynced edits under the old name can re-create the
+old hole when it uploads, so crews sync first; tools outside geoDB that hold the old
+name read it as a new hole. A name another hole holds, the Trash included, is refused:
+ask which hole is right.
+
+Through the records gate: `update` on `DrillCollar` with the hole's `id` and the new
+`name` (dry run, the user's yes, the write; Undo puts the old name back). The result
+carries a `hole_rename_effects` warning: say it. Only a hole renames this way; every
+other record's identifying fields stay `rekey_refused`.
+
 **Moving EXISTING rows into their own pass** ("put my composites in a Composites
 pass") is a staff-run PROPOSAL: a dry run sweeps the default pass for rows that
 CONTAIN ≥2 others in the same hole, reports each with the NAME convention that matched

@@ -1049,6 +1049,11 @@
       "remedy": "If the misclosure is large, check the geometry with the user.",
       "retry": "no"
     },
+    "hole_rename_effects": {
+      "meaning": "(per-row warning, drill hole rename) What a rename reaches beyond the row: logging, samples and assays follow the hole; a field phone with unsynced edits under the old name can re-create the old hole; tools outside geoDB read the new name as a new hole.",
+      "remedy": "Say this to the user before the write.",
+      "retry": "no"
+    },
     "matched_in_other_set": {
       "meaning": "(per-row warning) The row matched a record stored in a different set from the one this row writes into (a drill sample is identified by its hole and name across every set). The write acts on that stored record, in its own set; it is not moved or copied into the set named. The detail names the stored set.",
       "remedy": "Tell the user which set the record is in before the write. A second sampling pass of the same interval uses new sample names; if this row was meant as a new sample, rename it and resend.",

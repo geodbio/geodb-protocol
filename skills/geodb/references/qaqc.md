@@ -346,6 +346,11 @@ written, the checkbox stays the user's, and the result lists every skipped
   judged on z and bias as usual). Only that physically impossible pair is
   excused; a below-detection reading of a value the method CAN resolve is
   still a real failure.
+  ⭐ **A project can leave elements out of QC.** A left-out element gets no
+  verdict row and no pass rate, so a multi-element CRM with every element on
+  that list has no verdict at all. That is the project's own setting: the read
+  says so, so check it before calling an empty result a fault. It is also the
+  answer when someone asks to judge only certain elements.
   Duplicates: a TWO-REGIME verdict — both results ≥
   the project's duplicate DL multiple × DL ⇒ RPD against the tier threshold
   (field 20%/30%, **coarse 20%/30% on its own rung**, pulp+lab 10%/15%);
