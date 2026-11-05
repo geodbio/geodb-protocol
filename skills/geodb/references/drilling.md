@@ -121,6 +121,22 @@ PURPOSE: the table serves the export pass, the grid lists every pass. Which pass
 for them silently. Length-weighting refuses overlapping input, so scope to ONE pass
 before compositing.
 
+**A table of samples with their assays takes the export pass**, unless the user asks
+for another pass or for every pass; say which passes you left out. The list reads
+return every pass, so a density or metallurgical pass read into an assay table looks
+like samples with missing results.
+
+**Specific gravity is calculated, never stored.** A drill sample's specific gravity
+comes from its `dry_weight` and `wet_weight` (dry / (dry - wet)) whenever it is read.
+To record it, send the two weights. A value on its own cannot be kept, even when the
+project has a custom field of that name, so say that instead of offering to save it.
+A density measurement on a short piece of core is a very short interval in its own
+pass, which keeps it clear of the assay intervals.
+
+**A blank grade is not no recovery.** A sample with no assay may be collected and not
+yet sent, or at the lab. Read its lab status, and ask the user before you mark, flag or
+code any row as no recovery: only they know which intervals recovered nothing.
+
 The export pass is set in ONE place: **Project settings → Data Export & ODBC →
 "Drill Sample Set"**, the customer's own choice (it decides what Leapfrog, the 3D
 viewer, the map and every composite READ). It is NOT on Assay Merge Settings: that

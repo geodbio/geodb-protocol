@@ -271,6 +271,12 @@ moving an interval is a `retract` + a `create` (both after the user's yes),
 never an update of its depths. Dry-run, send, then tell the user what changed
 and the `write_id` that undoes it.
 
+**Depths and elevations are metres on every read and write**, whatever unit the
+project displays, so a row read and sent back does not move. Before loading a
+file in feet, convert it (× 0.3048, at full precision) and tell the user you
+did. If a file does not state its unit, ask; never guess. A `beyond_total_depth`
+warning on the dry run often means a depth still in feet.
+
 **Ask before every write.** Every intent but `undo` adds to or changes the
 user's data or what the project shows, a `create` too. Dry-run it, tell
 the user exactly what will change, and send it only after their yes — even

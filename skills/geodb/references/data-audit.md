@@ -87,8 +87,8 @@ total depth while other logging goes deeper, suggests metres entered as feet,
 but a partly logged hole looks the same: ask. When several kinds of interval
 all run past the same total depth, the data cannot say which is wrong: the
 total depth, or every interval of the hole entered in feet (likelier near
-3.28 times). Ask, with both fixes. Never convert on a guess: convert that
-hole's rows from the original file.
+3.28 times). Ask, with both fixes. Never convert on a guess: reload that
+hole's rows from the original file, in the unit the file really is.
 
 ### Intervals
 

@@ -40,8 +40,8 @@ The field measurements on a water sample are stored in metres:
 metres and `flow_rate` in cubic metres per second. Every read returns them
 in those units whatever unit the project displays. Through the API a
 record is taken in the same units, so convert feet before sending; a file
-import converts for you, from the unit the import states (the project's
-unless another is chosen). Leave `cross_sectional_area`
+import converts for you, from the unit stated for the import. Leave
+`cross_sectional_area`
 and `flow_rate` out and they are filled in when the sample is created:
 depth × width, and velocity × depth × width × the correction factor
 (0.80 unless sent). `field_temp` is stored as sent, in the project's

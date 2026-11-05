@@ -21,7 +21,27 @@ PLANNED position is `target_easting` / `target_northing` in `target_epsg`; the
 STAKED position, when one was recorded, is `latitude` / `longitude` in `epsg`
 (a staked stake without one was staked before positions were recorded). To
 hand the user one consolidated file of corners and monuments, read the stakes
-and the claims (`landholdings/`) and build it yourself.
+and the claims (`landholdings/`) and build it yourself, and say which claims it
+leaves out and why, dropped claims and claims with no posts alike.
+
+**What a stake record can confirm.** A stake row says what geoDB records, not
+what was built on the ground or what a filing says. In Idaho and New Mexico the
+location monument IS Corner 1: a claim has no separate monument record, so
+comparing its Corner 1 post with a notice monument type can never disagree, and
+each claim having one Corner 1 is a database rule. `Staked` with no position is
+a recorded status, not a field reading. Asked to confirm a monument, a corner
+or a position, say what geoDB records and what that record rests on (a claim's
+`notes` may name its source). Say "confirmed" only for what you checked against
+an independent source you read, such as the location notice. If you read none,
+say so and offer that check.
+
+**Compass names on an angled claim.** A corner name such as "NE corner", in a
+notice or a note, belongs to the claim's own layout. On a block turned away
+from north the named corner may not lie north-east of the claim's centre, and
+with a long axis near NW-SE no corner does. Before reporting a conflict, read
+the names in the claim's own frame: treat its long axis as east-west or
+north-south and see whether each name lands on the same corner across the
+block. Report only what still disagrees, as a question for the location notice.
 
 ### Landing a claim's stakes
 

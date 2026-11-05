@@ -11438,24 +11438,26 @@ paths:
         BLM wilderness study areas and mineral withdrawals (`designations`), and surface
         management — the federal agency or, in Alaska, the state land category (`ownership`).
         Each piece is clipped to the area, with `acres_in_area` and `covers_whole_area`.
-        ⚠️ Mineral withdrawals here are the Forest Service''s (National Forest System
-        land only): BLM-administered withdrawals are not in the mirror. Ground with
-        no ownership piece is neither federal nor state land in the mirror. `split_estate`:
-        federal minerals where the surface is not federal surface (private, state,
-        local or unknown) (all locatable minerals reserved, or some — check the Master
-        Title Plat), each piece clipped to the area with `label`, `mineral_class`,
-        `state` and the BLM office it came from. If the surface was patented under
-        the Stock-Raising Homestead Act, staking needs a Notice of Intent to Locate
-        and notice to the surface owner first (43 CFR 3838). Check the patent at glorecords.blm.gov.
-        It is NOT a designation and never a conflict, and its coverage is Wyoming,
-        Utah, Colorado, New Mexico, Oregon and Washington only. BLM publishes no federal-mineral
-        layer for other states, so an empty map elsewhere means no data, not no split
-        estate. `geometry=false` leaves the outlines out. A person''s own connection
-        only, on a project whose company pays for geoDB (its first free month counts);
-        otherwise 403 `land_data_needs_paid_plan` with the remedy. Read-only; never
-        a whole layer. Every answer carries `mirror` (each layer''s last sync and
-        what it does not cover) and `not_a_clearance`: an empty answer is NOT open
-        ground.'
+        ⚠️ Mineral withdrawals are the Forest Service''s (National Forest System land
+        only) and, where loaded, BLM''s MLRS case records (`coarse_footprint: true`):
+        a case mapped onto PLSS parts, so a lead to read against the case, not a boundary;
+        `minerals_segregated` is what the record says and is often empty. Each answer''s
+        `mirror` says which are loaded. Ground with no ownership piece is neither
+        federal nor state land in the mirror. `split_estate`: federal minerals where
+        the surface is not federal surface (private, state, local or unknown) (all
+        locatable minerals reserved, or some — check the Master Title Plat), each
+        piece clipped to the area with `label`, `mineral_class`, `state` and the BLM
+        office it came from. If the surface was patented under the Stock-Raising Homestead
+        Act, staking needs a Notice of Intent to Locate and notice to the surface
+        owner first (43 CFR 3838). Check the patent at glorecords.blm.gov. It is NOT
+        a designation and never a conflict, and its coverage is Wyoming, Utah, Colorado,
+        New Mexico, Oregon and Washington only. BLM publishes no federal-mineral layer
+        for other states, so an empty map elsewhere means no data, not no split estate.
+        `geometry=false` leaves the outlines out. A person''s own connection only,
+        on a project whose company pays for geoDB (its first free month counts); otherwise
+        403 `land_data_needs_paid_plan` with the remedy. Read-only; never a whole
+        layer. Every answer carries `mirror` (each layer''s last sync and what it
+        does not cover) and `not_a_clearance`: an empty answer is NOT open ground.'
       summary: Withdrawals, designations and surface ownership in an area
       parameters:
       - in: query
@@ -30774,6 +30776,27 @@ components:
               type: integer
           required:
           - soft_deleted
+        see_guide:
+          type: array
+          description: The guide sections that change how this answer should be read
+            — read them before reporting from it. Each names the topic, the section,
+            its path (GET it, no key needed beyond this one) and why it matters here.
+          items:
+            type: object
+            properties:
+              topic:
+                type: string
+              section:
+                type: string
+              url:
+                type: string
+              why:
+                type: string
+            required:
+            - topic
+            - section
+            - url
+            - why
       additionalProperties: false
     PaginatedColumnConfigurationReadList:
       type: object
