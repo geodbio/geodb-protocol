@@ -18,6 +18,7 @@ geoDB is the user's geological data warehouse: the one shared record of their ex
 6. **Say what is withheld.** Rows from a rejected or superseded certificate, assays held back while a project's QAQC approval is pending, and deleted rows are left out of these reads by default; each list's `withheld` counts what its default left out. Before telling the user something is missing, read those counts and say what hid it (a rejected or superseded certificate, a pending approval, a deletion). Ask for the QAQC-withheld rows with `include_excluded=true`: each comes back flagged `excluded` with its `excluded_reason`; quote it to explain an absence, never as a result.
 7. **Read geoDB's QAQC verdicts; never recompute one and present it as geoDB's.** `qc_type` is the QC field, never `sample_type`. If you disagree with a verdict, say so and show why; the verdict stays geoDB's. Never invent a threshold.
 8. **Intercepts are never a grade cutoff you choose.** Propose boundaries the way a geologist draws them and say why; length-weight them (stating coverage below 1.0); report every element asked for; downhole length is not true width.
+9. **Depths are metres.** Every depth, length and elevation is stored and served in metres, whatever unit the project displays; the `*_display` fields and `display_units` carry the project's unit. Quote every depth with its unit, and never read a metre value as feet. On a write, state the unit your numbers ARE IN once per request: `"depth_units": "M"` or `"FT"` (`"elevation_units"` only when elevations are in another unit). geoDB converts, so never multiply them yourself; a number copied from a read is `"M"`. A row's `length_units` is a stored label, never the unit. If a file does not state its unit, ask. The dry run's `units` shows each depth as it will display: show it to the user.
 
 ## Sets
 
@@ -271,11 +272,15 @@ moving an interval is a `retract` + a `create` (both after the user's yes),
 never an update of its depths. Dry-run, send, then tell the user what changed
 and the `write_id` that undoes it.
 
-**Depths and elevations are metres on every read and write**, whatever unit the
-project displays, so a row read and sent back does not move. Before loading a
-file in feet, convert it (× 0.3048, at full precision) and tell the user you
-did. If a file does not state its unit, ask; never guess. A `beyond_total_depth`
-warning on the dry run often means a depth still in feet.
+**State the unit your depths are in; geoDB converts.** Depths and elevations
+are stored and read in metres, whatever unit the project displays. Send
+`"depth_units": "M"` or `"FT"` on every request that carries a depth
+(`"elevation_units"` only when elevations are in another unit) and never
+multiply the numbers yourself. A number copied from a read is `"M"`, so a row
+read and sent back does not move. A row's `length_units` is a stored label,
+never the unit. If a file does not state its unit, ask; never guess. The dry
+run's `units` shows a few of your numbers as they will display: show the user
+before writing. A `beyond_total_depth` warning often means the unit is wrong.
 
 **Ask before every write.** Every intent but `undo` adds to or changes the
 user's data or what the project shows, a `create` too. Dry-run it, tell
@@ -373,9 +378,31 @@ Each is dry run first and its real request needs the `confirm` that dry run
 returned. A `create` needs `company`: always ask the user which company (a
 create without one lists them), even when only one is listed, and name it in
 what you show them. A `create` may carry `crs`: the coordinate system is set
-in the same write (one Undo takes back both). A change that raises what the company pays is refused
-`approval_required`: the user does it on the page it names. The guide topic
-`projects` explains coordinate systems and states.
+in the same write (one Undo takes back both). The guide topic `projects`
+explains coordinate systems and states.
+
+**Plans and price.** To create a project, or to move one to a higher plan, ask
+the user which plan, then read `billing/plans/` (`company`: the company's id)
+for the plans offered and their prices: never quote a price or an allowance
+from memory. A create names its plan in `state`. Dry run first: a change that
+raises what the company pays answers `approval_required`, and its
+`offending.approval` carries a one-time link (`id`, `url`, `expires_at`). Tell
+the user exactly what `offending.effect` says: the amount due today and the
+dates it covers, the new monthly total and, when it names one, the date the
+commitment ends (`commitment_end`); name the company; then hand over the link. It works until `expires_at`, and only
+the person who opens it can approve: the user does, on the page, never you.
+Never say anything was charged or changed until the approval says so. When the
+user says they approved, read `approvals/<id>/`. On `approved`, carry on with
+the `project` it returns. On any other status say why (`reason`) and give its
+`remedy`: a link that ran out or a refused payment means a new dry run for a
+new link and the price as it is then. Say that undoing the project later does
+not refund today's charge. `charged_not_moved` means the card was charged but
+the change did not land: tell the user, and that geoDB staff will refund it.
+A create that needs approval cannot carry `crs` (it is refused): set the
+coordinate system after the approval, on the new project. Moving to a LOWER
+plan needs no approval but is a confirm: the project keeps the higher plan's
+access and billing until the billing cycle ends, or until its commitment ends
+when the dry run names one; say so before the user says yes.
 
 **Catalog colours and patterns.** A project's lithologies, alterations,
 formations, minerals, textures and the other catalogs grant-context lists
@@ -440,3 +467,4 @@ Read the topic before answering a question in its area; each is `references/<id>
 - `views` · Views: showing the user their data in 3D, and handing them the link
 - `water` · Water results: non-detects, the detected and over-range flags, and units
 - `working-efficiently` · Working efficiently: large reads and imports
+- `data-rooms-and-vendor-keys` · Data rooms and vendor keys: sharing a project with an outside party

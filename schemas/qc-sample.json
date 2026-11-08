@@ -65,6 +65,19 @@
       ],
       "description": "Name of the drill hole named by `bhid` — the hole as a geologist writes it, so a row can be labelled without a second request. Null when the record is not associated with a hole."
     },
+    "inserted_after": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "The routine drill sample this QC follows in the sample stream. Gives the hole AND the position. Consecutive QC after one sample share it (ordered by name)."
+    },
+    "inserted_after_name": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
     "standard": {
       "type": [
         "integer",
@@ -313,6 +326,8 @@
     "excluded_by_certificate",
     "excluded_reason",
     "id",
+    "inserted_after",
+    "inserted_after_name",
     "lab_status",
     "last_edited",
     "name",

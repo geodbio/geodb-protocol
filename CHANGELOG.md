@@ -1,5 +1,28 @@
 # Changelog
 
+## 0.3.4: regenerated 2026-11-08 from deployed geoDB `7e88d1bc0` (`protocol_version` 0.3.3 → 0.3.4)
+
+Regenerated with prod's flags (MCP + READS + WRITES on, MCP_STAFF_ONLY off) and `--publish-write-profile`. Also
+carries the 2026-11-07 deploy (`a28444d38`), whose regen was owed. ADDITIVE: nothing removed or changed; the
+client pin `>=0.3.4,<0.4` is unchanged.
+
+- **Depth units on writes:** a write may state `depth_units` / `elevation_units`; geoDB converts feet to the stored
+  metres. Reads still serve metres. New reason code `invalid_units`; new warning `length_units_not_read`.
+- **Billing through the AI:** `billing/plans/` and `billing/summary/` reads. A dry-run project create or upgrade
+  returns an approval link the person opens on geodb.io; `approvals/{id}/` reads its status (holder only). New
+  reason codes `approval_*`, `charged_not_moved`, `price_changed`, `wrong_company`, `connection_ended`.
+- **Data rooms and vendor keys:** `datarooms/`, `datarooms/{id}/`, `datarooms/candidates/`,
+  `datarooms/{id}/candidates/`, `vendor-keys/`, `vendor-keys/{id}/pull-log/`, `vendor-keys/new-key-link/`. A
+  connected AI curates a room; publishing is the person's click on an approval link; the AI can unpublish
+  (`DataRoom` intent `unpublish`, never undone). Guests see a room only while it is published, and a published
+  room's 3D view changes only on the 3D page. New reason codes `dataroom_published`, `dataroom_archived`,
+  `dataroom_manage_required`, `publish_approval_required`, `publish_refused`, `vendor_key_manage_required`. New guide
+  topic `data-rooms-and-vendor-keys`.
+- **QC samples** read `inserted_after` / `inserted_after_name` (where the QC sample sits in the stream); new warning
+  `duplicate_parent_other_hole`.
+- **Mineral text** such as `trace` or `<1%` resolves to the mineral with no percentage stored (warning
+  `mineral_percentage_not_stored`).
+
 ## Regenerated 2026-10-31 from deployed geoDB `4bb9ee9a6`: people's names go only to a person's own connection (`protocol_version` unchanged)
 
 Regenerated with prod's flags (MCP + READS + WRITES on, MCP_STAFF_ONLY off) and `--publish-write-profile`.

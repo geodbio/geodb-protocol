@@ -394,6 +394,7 @@ These rules are generated from geoDB's domain guide: the same source the connect
 6. **Say what is withheld.** Rows from a rejected or superseded certificate, assays held back while a project's QAQC approval is pending, and deleted rows are left out of these reads by default; each list's `withheld` counts what its default left out. Before telling the user something is missing, read those counts and say what hid it (a rejected or superseded certificate, a pending approval, a deletion). Ask for the QAQC-withheld rows with `include_excluded=true`: each comes back flagged `excluded` with its `excluded_reason`; quote it to explain an absence, never as a result.
 7. **Read geoDB's QAQC verdicts; never recompute one and present it as geoDB's.** `qc_type` is the QC field, never `sample_type`. If you disagree with a verdict, say so and show why; the verdict stays geoDB's. Never invent a threshold.
 8. **Intercepts are never a grade cutoff you choose.** Propose boundaries the way a geologist draws them and say why; length-weight them (stating coverage below 1.0); report every element asked for; downhole length is not true width.
+9. **Depths are metres.** Every depth, length and elevation is stored and served in metres, whatever unit the project displays; the `*_display` fields and `display_units` carry the project's unit. Quote every depth with its unit, and never read a metre value as feet. On a write, state the unit your numbers ARE IN once per request: `"depth_units": "M"` or `"FT"` (`"elevation_units"` only when elevations are in another unit). geoDB converts, so never multiply them yourself; a number copied from a read is `"M"`. A row's `length_units` is a stored label, never the unit. If a file does not state its unit, ask. The dry run's `units` shows each depth as it will display: show it to the user.
 
 **Sets.** Downhole intervals and samples live in named sets (one logging pass, interpretation or sampling pass each; eight families; structures have none). Within one set in one hole intervals may not overlap (except alteration, veins and mineralization: one mineral / vein type / assemblage per row, so their rows overlap by design); across sets anything goes. Each project has a default set per family (what everyone sees); each person an active set. When a project holds several sets of a kind, ask which one (or all); never merge sets; say which set every answer came from. Before any interval or sample write, ask which set if the user hasn't said, offering: add to an existing set · create a new one · correct rows in one. Derived interpretations go in a new set. Making a set the default needs the user's explicit yes.
 
@@ -440,6 +441,7 @@ Every refusal carries `reason_code` + `remedy`: act on the remedy.
 - `views` · Views: showing the user their data in 3D, and handing them the link — [`skills/geodb/references/views.md`](skills/geodb/references/views.md) · `GET /api/v2/guide/views/`
 - `water` · Water results: non-detects, the detected and over-range flags, and units — [`skills/geodb/references/water.md`](skills/geodb/references/water.md) · `GET /api/v2/guide/water/`
 - `working-efficiently` · Working efficiently: large reads and imports — [`skills/geodb/references/working-efficiently.md`](skills/geodb/references/working-efficiently.md) · `GET /api/v2/guide/working-efficiently/`
+- `data-rooms-and-vendor-keys` · Data rooms and vendor keys: sharing a project with an outside party — [`skills/geodb/references/data-rooms-and-vendor-keys.md`](skills/geodb/references/data-rooms-and-vendor-keys.md) · `GET /api/v2/guide/data-rooms-and-vendor-keys/`
 
 <!-- END:domain-guide -->
 
@@ -610,11 +612,15 @@ moving an interval is a `retract` + a `create` (both after the user's yes),
 never an update of its depths. Dry-run, send, then tell the user what changed
 and the `write_id` that undoes it.
 
-**Depths and elevations are metres on every read and write**, whatever unit the
-project displays, so a row read and sent back does not move. Before loading a
-file in feet, convert it (× 0.3048, at full precision) and tell the user you
-did. If a file does not state its unit, ask; never guess. A `beyond_total_depth`
-warning on the dry run often means a depth still in feet.
+**State the unit your depths are in; geoDB converts.** Depths and elevations
+are stored and read in metres, whatever unit the project displays. Send
+`"depth_units": "M"` or `"FT"` on every request that carries a depth
+(`"elevation_units"` only when elevations are in another unit) and never
+multiply the numbers yourself. A number copied from a read is `"M"`, so a row
+read and sent back does not move. A row's `length_units` is a stored label,
+never the unit. If a file does not state its unit, ask; never guess. The dry
+run's `units` shows a few of your numbers as they will display: show the user
+before writing. A `beyond_total_depth` warning often means the unit is wrong.
 
 **Ask before every write.** Every intent but `undo` adds to or changes the
 user's data or what the project shows, a `create` too. Dry-run it, tell
@@ -712,9 +718,31 @@ Each is dry run first and its real request needs the `confirm` that dry run
 returned. A `create` needs `company`: always ask the user which company (a
 create without one lists them), even when only one is listed, and name it in
 what you show them. A `create` may carry `crs`: the coordinate system is set
-in the same write (one Undo takes back both). A change that raises what the company pays is refused
-`approval_required`: the user does it on the page it names. The guide topic
-`projects` explains coordinate systems and states.
+in the same write (one Undo takes back both). The guide topic `projects`
+explains coordinate systems and states.
+
+**Plans and price.** To create a project, or to move one to a higher plan, ask
+the user which plan, then read `billing/plans/` (`company`: the company's id)
+for the plans offered and their prices: never quote a price or an allowance
+from memory. A create names its plan in `state`. Dry run first: a change that
+raises what the company pays answers `approval_required`, and its
+`offending.approval` carries a one-time link (`id`, `url`, `expires_at`). Tell
+the user exactly what `offending.effect` says: the amount due today and the
+dates it covers, the new monthly total and, when it names one, the date the
+commitment ends (`commitment_end`); name the company; then hand over the link. It works until `expires_at`, and only
+the person who opens it can approve: the user does, on the page, never you.
+Never say anything was charged or changed until the approval says so. When the
+user says they approved, read `approvals/<id>/`. On `approved`, carry on with
+the `project` it returns. On any other status say why (`reason`) and give its
+`remedy`: a link that ran out or a refused payment means a new dry run for a
+new link and the price as it is then. Say that undoing the project later does
+not refund today's charge. `charged_not_moved` means the card was charged but
+the change did not land: tell the user, and that geoDB staff will refund it.
+A create that needs approval cannot carry `crs` (it is refused): set the
+coordinate system after the approval, on the new project. Moving to a LOWER
+plan needs no approval but is a confirm: the project keeps the higher plan's
+access and billing until the billing cycle ends, or until its commitment ends
+when the dry run names one; say so before the user says yes.
 
 **Catalog colours and patterns.** A project's lithologies, alterations,
 formations, minerals, textures and the other catalogs grant-context lists
@@ -953,12 +981,20 @@ to do. `offending` names the thing at fault when there is one. Branch on
 
 <!-- BEGIN:reason-codes (generated by scripts/emit_agents.py — do not edit) -->
 
-**189 codes.** Generated from [`errors.json`](errors.json), which is itself generated from the server, so this table cannot fall behind what you will actually be refused with. Match on `reason_code`, never on `detail` prose.
+**206 codes.** Generated from [`errors.json`](errors.json), which is itself generated from the server, so this table cannot fall behind what you will actually be refused with. Match on `reason_code`, never on `detail` prose.
 
 `retry` — **no**: retrying the identical request cannot succeed. **after**: retry once `Retry-After` has elapsed. **maybe**: transient or state-dependent, safe to retry later.
 
 | `reason_code` | HTTP | retry | What it means | What you do |
 |---|---|---|---|---|
+| `approval_declined` | 200 | no | (approval status) The person chose not to approve the change: nothing was changed and nothing was charged. | Do not ask again unless the user brings it up. |
+| `approval_declined_payment` | 200 | no | (approval status) The person approved, but the payment did not go through (declined, no payment method, the bank asked to confirm it, or it could not be confirmed): nothing was changed and nothing is owed. `payment.outcome` says which. | Tell the user what `reason` says; once the payment method is sorted out (the web billing page), run the dry run again for a new link. |
+| `approval_expired` | 200 | no | (approval status) The one-time link ran out (24 hours) unused: nothing was changed and nothing was charged. | If the user still wants the change, run its dry run again for a new link and the price as it is now. |
+| `approval_failed` | 200 | no | (approval status) Something went wrong while geoDB made the approved change. | Tell the user to check the project in geoDB before trying again, or to email support@geodb.io. |
+| `approval_interrupted` | 200 | no | (approval status) The approval was interrupted before its outcome was recorded; geoDB staff are checking whether it landed or charged. | Tell the user geoDB staff are checking it, and not to try again before asking support@geodb.io. |
+| `approval_pending` | 200 | maybe | (approval status) The person has not approved the change yet, or has just approved it and geoDB is still making it. | Remind the user of the link if they still want the change, and read the approval again later; nothing was changed or charged yet. |
+| `charged_not_moved` | 200 | no | (approval status) The card was charged, but the change did not land (someone changed the project at the same moment); geoDB staff refund the charge. | Tell the user they were charged, that the plan did not change, and that geoDB refunds it; read the project again before anything else. |
+| `publish_refused` | 200 | no | (approval status) The person approved, but one of the room's items could not be shared (the reason names it), so nothing was published. | Tell the user what the reason names; once it is fixed (or the item is taken out of the room), run the publish dry run again for a new link. |
 | `ambiguous_nd` | 400 | no | The result is "N.D." (or "N/D"), which can mean not detected or not determined; nothing was stored for it. | N.D. can mean not detected or not determined — ask the user: not detected → send BDL; not determined → leave the value out. |
 | `api_write_too_large` | 400 | no | An api_write body is larger than 256 KB, the most a connector call carries. | Split the records into smaller batches, or write from your own sandbox with a session key, or upload the file in geoDB. |
 | `assay_config_required` | 400 | no | A composite read needs the assay range configuration whose compositing interval and merge settings it applies (assay_config_id). | List the project's configurations with GET /api/v2/assay-range-configurations/?project=<id> (each `id` is an assay_config_id; `enable_compositing` says which composite), then resend with assay_config_id=<id>. |
@@ -986,6 +1022,7 @@ to do. `offending` names the thing at fault when there is one. Branch on
 | `invalid_crs` | 400 | no | (per row) "epsg" is not a known coordinate system, or it disagrees with the SRID inside the geometry. | Send the EPSG code (an integer, e.g. 26911) of the system the coordinates are in, matching the geometry's SRID if it has one. |
 | `invalid_geometry` | 400 | no | (per row) The coordinates or geometry cannot be a place: not numbers, half a pair, off the globe for a degree system, or a geometry that does not parse. The row is never counted as a clean create. | Correct the coordinates named in `offending` (or the epsg they are in) and resend the row; validate first with "dry_run": true. |
 | `invalid_parameter` | 400 | no | A query parameter was present but could not be understood. | Correct the parameter named in `offending` and resend. Dates are ISO 8601 (YYYY-MM-DD or a full timestamp). |
+| `invalid_units` | 400 | no | The request's "depth_units" or "elevation_units" (named in `offending.field`) is not a length unit. Nothing was written. | Send "M" or "FT": the unit the numbers ARE IN, whatever unit the project displays. geoDB converts to stored metres; never multiply them yourself. |
 | `key_shape_conflict` | 400 | no | (per row) Another row of the same request names the same interval (hole and start depth) of a model whose rows carry an optional type (a vein's type, a mineralization's assemblage), but one row sends that column and the other omits it. None of these rows was written. | Send the type column on every row of this interval (null means no type), then resend the rows. |
 | `land_area_required` | 400 | no | A land read names one area of interest (or one point); this one named none. The mirror is never read whole. | Send bbox=west,south,east,north, or lat=&lon= (+ radius_m), or polygon=<GeoJSON>, in WGS84 degrees. |
 | `land_area_too_large` | 400 | no | The area of interest is larger than one land read covers (260 km², a radius of at most 8 km). | Read the ground the user is working on: a smaller box or radius, or several reads over the parts that matter. |
@@ -1024,10 +1061,12 @@ to do. `offending` names the thing at fault when there is one. Branch on
 | `oauth_token_expired` | 401 | no | The OAuth access token has expired or was revoked. | Refresh the access token with the refresh token (connectors do this automatically), or connect again. |
 | `session_key_api_only` | 401 | no | A session key is for the geoDB API, not for the connector endpoint; it cannot be used to mint further keys. | Send the session key to the API as `Authorization: Grant <key>` on /api/v2/…; connect to /mcp with the connection's own sign-in or key. |
 | `use_grant_scheme` | 401 | no | The credential was sent under the Bearer scheme; grants authenticate under the Grant scheme. | Send the same token as 'Authorization: Grant <token>'. |
-| `approval_required` | 403 | no | The change raises what the company pays, so the person approves it themselves in the browser; an AI never raises a bill. | Give the user the page in offending.approval_url to do it themselves. |
-| `billing_permission_required` | 403 | no | Moving a project between states (or restoring one) changes what the company pays; only the company owner, a company manager who can make purchases, or geoDB staff may do it. | Ask the company owner to make the change, or to turn purchasing on for the user. |
+| `approval_required` | 403 | no | The change raises what the company pays, so the person approves it themselves in the browser; an AI never raises a bill. | Tell the user what it costs from offending.effect (due_today, the new monthly, and the commitment end when it names one), then give them the page in offending.approval_url to do it themselves — or, when the dry run carries offending.approval, its one-time link to approve exactly this change (GET approvals/<id>/ says what became of it). |
+| `billing_permission_required` | 403 | no | A company's billing (what it pays and its plans' prices; moving a project between plans, or restoring one, which changes what it pays) is for the company owner, a company manager who can make purchases, or geoDB staff. | Ask the company owner to do it, or to turn purchasing on for the user. |
 | `company_not_allowed` | 403 | no | The person this key acts for cannot create projects in the company named (they are not its owner, a confirmed manager or a member), or it does not exist. | Ask the user which of their companies to use: a create without "company" lists them in offending.companies. |
 | `compliance_create_staff_only` | 403 | no | A compliance report (NI 43-101 / S-K 1300 / JORC) is started in the geoDB web app for now: through a key only geoDB staff may create one, since its sections are attested by Qualified People in the web app. | Create an informal report instead ("rigor": "informal"), or tell the user to start the compliance report in the geoDB web app. |
+| `connection_ended` | 403 | no | The AI connection this approval is for was disconnected, or can no longer make changes for the person. | Tell the user to reconnect the AI, or to make the change themselves in geoDB. |
+| `dataroom_manage_required` | 403 | no | Changing or publishing a data room needs the person to manage the project's data rooms (a company owner or manager), and the person this key acts for does not. | Tell the user that a company owner or manager can make this change, or can give them the right to manage data rooms; nothing was changed. |
 | `export_link_expired` | 403 | no | This download link is older than 15 minutes. | Call export_link again for a fresh link. |
 | `grant_no_read_capability` | 403 | no | The view declares no read capability, so no grant may reach it. | Use an operation from the operation map: GET /api/v2/ (on a connector, api_read path '') lists every operation a key may call, by task; GET /api/v2/grant-context/ lists the projects this credential can read (name one with project=<id>). |
 | `grant_room_pinned_refused` | 403 | no | The grant is pinned to a data room that does not expose this endpoint. | Use an operation the room exposes, or ask the owner for a project-wide key. |
@@ -1048,6 +1087,7 @@ to do. `offending` names the thing at fault when there is one. Branch on
 | `plotting_unavailable` | 403 | no | Claim plotting is not switched on for this account. | Tell the user claim plotting is not available on their account yet. |
 | `project_not_in_scope` | 403 | no | (per row) This credential cannot write to the project the record names — it is outside the projects the key may write to, or does not exist. | GET /api/v2/grant-context/ lists the projects this key may use; name one of those (by id) in `project`, or drop the row. |
 | `project_settings_required` | 403 | no | Changing a project's setup (its name, coordinate system, or deleting it) needs project-settings access, which the person this key acts for does not hold on that project. | Ask a project manager or the company owner to make the change, or to give the user settings access on that project. |
+| `publish_approval_required` | 403 | no | Publishing a data room is the person's own step: it makes the room visible to its guests and lets keys made for it read it, so the person approves it in the browser; a request never publishes. | Show the user offending.preflight (what the room's guests will see, and which private items become visible), then give them the one-time link in offending.approval.url (a dry run returns it; GET approvals/<id>/ says what became of it), or the room's page in offending.page_url to publish it themselves. |
 | `purchase_authority_required` | 403 | no | Creating a project is limited to the company's owner, a company manager with purchase authority, or geoDB staff (it can raise what the company pays); the person this key acts for is a member without it. | Tell the user: the company owner can turn on purchasing for them, or the owner or a purchasing manager can create the project. |
 | `recent_filings_need_field_project` | 403 | no | The statewide recent-filings read is part of a company that pays for geoDB (its free month does not count) and holds at least one Field or Drilling project; the company of the project this read names does not. | Tell the user what it needs and pass on the remedy and its link. Claims near their own ground are still readable with land-claims/. |
 | `room_key_read_only` | 403 | no | This key is pinned to one data room; it reads what the room publishes and never writes or uploads. Nothing was written. | Tell the user. A change to the project is made by someone with access to it — in the geoDB web app, or through their own connected AI. |
@@ -1057,7 +1097,9 @@ to do. `offending` names the thing at fault when there is one. Branch on
 | `undo_needs_company_reach` | 403 | no | The write being undone created or changed a record every project of the company shares (a laboratory, method or standard), so it is undone only through a key that reaches every live project of that company; this key no longer does (`offending.company_shared`). It is refused whole, never undone in part. Nothing was changed. | Undo it through a key that reaches every project of the company (the user's own connection, set to cover the whole company), or ask the user to undo it from the geoDB web app. Do not retry with this key. |
 | `use_records_endpoint` | 403 | no | A grant tried to write through a resource path. Records are written through ONE endpoint, POST /api/v2/records/. | POST /api/v2/records/ with {"model": "<Model>", "intent": "create" or "upsert", "records": [...]} — the exact call is in this refusal's `use` key. Validate first with "dry_run": true. |
 | `use_v2` | 403 | no | Access grants read the /api/v2/ surface only. The /api/v1/ tree is not part of the protocol. | Request the same path under /api/v2/. Use an operation from the operation map: GET /api/v2/ (on a connector, api_read path '') lists every operation a key may call, by task; GET /api/v2/grant-context/ lists the projects this credential can read (name one with project=<id>). |
+| `vendor_key_manage_required` | 403 | no | Managing a project's vendor keys needs the person to manage the project's settings (an owner, a manager or a project admin), and the person this key acts for does not. | Tell the user that a company owner, a manager or the project's admin can do this; nothing was changed. |
 | `write_access_insufficient` | 403 | no | This credential may read but not write records (its write access is below "records"). | Ask the project owner for a key with records write access (or reconnect the app and allow writing). Reads keep working. |
+| `wrong_company` | 403 | no | The company (or the project in it) this approval is for is no longer one the person belongs to, or the project left that company. | Read the projects again (GET grant-context/) and ask the user what they want now. |
 | `hole_not_found` | 404 | no | No drill hole with that id or name among the holes this credential can read in the project the read is about. `offending` names the parameter and the value sent; for a name, `offending.close_matches` lists up to 5 readable holes of that project with similar names (id and name). | List the project's holes with drill-collars/?project=<id> (each row's id is its hole_id), or pick from offending.close_matches, then send hole_id=<id>. |
 | `not_found` | 404 | no | No such resource inside this credential's scope. A row that exists in another project is indistinguishable from one that does not exist — by design. | Check the id, and that it belongs to a project this credential can read (GET /api/v2/grant-context/ lists them). |
 | `plss_not_in_mirror` | 404 | no | No such township or section is in geoDB's PLSS mirror (unsurveyed ground, a state not loaded, or a mistyped label). | Check the state, township, range, section and meridian; or read land-plss/ at a point to see what is there. |
@@ -1077,6 +1119,8 @@ to do. `offending` names the thing at fault when there is one. Branch on
 | `config_undeletable` | 409 | no | (per row) This is the project's built-in configuration; it is never removed. | Change its settings with "intent": "update" instead. |
 | `conflict` | 409 | no | The request conflicts with the current state of the record. | Read the record again, then resend the change against what is stored now. |
 | `custom_grid_project` | 409 | no | The project uses a custom mine grid (a calibration), not an EPSG code; its frame is set by the calibration tools. | Use the project's coordinate-system page on the web (calibration tools). |
+| `dataroom_archived` | 409 | no | The data room was archived, so it cannot be changed or published. | Ask the user to unarchive it on its page first, or create a new room. |
+| `dataroom_published` | 409 | no | The data room is published: its guests and any key made for it see a change at once, so a change that adds to or rewrites what they see (a new pane, the Overview, the name, a caption, a data table) is made by the person on the room's page. Reordering and removing panes stay open. | Tell the user what you would change and give them the room's page in offending.page_url to make it there; nothing was changed. |
 | `dataset_already_written` | 409 | no | Every member of this plan has already landed (`offending.write_id` names the write), or the write was undone; a plan is never landed twice. Nothing more was written. | Nothing to send again. Report the write named in `offending` to the user (its "undo" takes it back). To land more or new data, rehearse a new dataset. |
 | `dataset_file_changed` | 409 | no | A member file is no longer the one the user approved: its bytes changed, or it was moved to the Trash, undone or is no longer this connection's upload in the project. That member was not written. | Upload the member file again if needed, rehearse the dataset (or the answer's "rehearse_rest") with the files as they are now, show the user, and write the new plan after they say yes. |
 | `dataset_in_progress` | 409 | after | This plan is being written right now by another request (the same write sent twice). Nothing more was started. | Wait a minute and send the same write again: it lands only what has not landed yet, and its answer lists every member. |
@@ -1108,6 +1152,7 @@ to do. `offending` names the thing at fault when there is one. Branch on
 | `plot_already_recorded` | 409 | no | A claim of the block already has a current plot in this project; a record never makes a second current plot of one claim. | Tell the user which claim is already plotted. Correcting a recorded claim is done on the project map (Arrange / Adjust) or with Petra, not through this connection. |
 | `plot_preview_required` | 409 | no | A plotted-claims record names a preview this connection made on this project, and none matches (replaced by a newer preview, already recorded, or never made). | Preview the claims (GET /api/v2/claim-plots/preview/), show the user, and record the preview_id that answer gives. |
 | `plot_preview_stale` | 409 | no | The user confirmed (or changed) the reference point after this preview, so the claims may land somewhere else now. | Preview again with the same body (it walks from the user's point), show the user where the claims land, then record that preview. |
+| `price_changed` | 409 | no | Today's charge for the change was no longer the amount the person confirmed, so nothing was changed and nothing was charged. | Run the dry run again and tell the user the new price before handing over the new link. |
 | `project_crs_required` | 409 | no | The project has no coordinate system, so nothing can be placed on its local grid: positions along a hole (desurvey, trace, xyz at depth) and other derived positions need it. The stored native coordinates are untouched and readable. | Set the project's coordinate system first: read records/describe/Project/, then POST records/ with "model": "Project", "intent": "set_coordinate_system" as a dry run, show the user what it changes and send it on their word (or the user sets it on the web in Project Setup). Then retry this read. |
 | `project_frozen` | 409 | maybe | (per row) The project is frozen: sealed and inaccessible, so nothing can be added or changed in it. | Tell the person: an owner or manager of the company can unfreeze it on the geoDB Billing page. |
 | `project_holding` | 409 | maybe | (per row) The project is on Holding: its data can be read and exported and its claims kept up, but no geology data may be added, changed or removed. Nothing in this row was written. | Tell the person: an owner, or a manager who can make purchases, can switch the project to Field or Drilling on the geoDB Billing page (it raises the monthly price). Resend once it is switched. For a one-off correction, point them to geoDB support instead (the row's remedy names it): the correction stays blocked here. |
@@ -1147,7 +1192,7 @@ to do. `offending` names the thing at fault when there is one. Branch on
 | `throttled` | 429 | after | The grant's request rate was exceeded. | Wait for the interval given in the Retry-After header, then resend. Prefer ?modified_since= incremental pulls over repeated full pulls. |
 | `record_busy` | 503 | after | Another write (for example a large import being checked) was holding records this request changes, so it stopped after a few seconds instead of waiting. Nothing of the request was saved. | Send the same request again in a minute (the field app does this by itself; the `Retry-After` header gives the seconds). |
 | `scanner_unavailable` | 503 | after | The file could not be checked for malware just now, so it was not stored. Nothing is wrong with the file. | Send the same upload again in a minute (the Retry-After header says when). |
-| `writes_switched_off` | 503 | maybe | Writes through AI connections were switched off on the server after this dataset job was accepted, so it did not run; a write already running finished the member it was on and stopped before the next (the members before it stay landed, under the answer's one undo). | Tell the user that writing through AI connections is paused on the server right now and that nothing more was written. Send the same request again later: a write lands only what has not landed yet. |
+| `writes_switched_off` | 503 | maybe | Writes through AI connections are switched off on the server: a billing approval cannot be made or used now, and a dataset job accepted before the switch did not run; a write already running finished the member it was on and stopped before the next (the members before it stay landed, under the answer's one undo). | Tell the user that writing through AI connections is paused on the server right now and that nothing more was written. Send the same request again later: a write lands only what has not landed yet. |
 
 <!-- END:reason-codes -->
 

@@ -134,7 +134,12 @@ shown to them first as a dry run, each undoable:
 
 - **Retype a QC sample** — an update to its `qc_type` (the QC field; never
   `sample_type`). **Retag a standard's CRM** — an update to its `standard`.
-  A field duplicate's parent is `ds_duplicate`.
+  A field duplicate's parent is `ds_duplicate`. A QC sample's hole is `bhid`
+  and its place in the sample stream is `inserted_after` (the routine sample
+  it follows; the hole comes from it, and the two must agree). A write warns
+  `duplicate_parent_other_hole` when a duplicate's parent sits in another
+  hole: name both holes to the user, say which side the warning says looks
+  wrong, and change nothing they have not confirmed. It is a warning.
 - **Reconnect a QC sample to its withdrawn result** — when a deleted
   certificate left the QC sample standing with no visible result. A
   rejected certificate's QC is not a reconnect: its result is withheld by

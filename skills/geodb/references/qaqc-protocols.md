@@ -7,7 +7,9 @@ What a project's QC protocol holds (insertion rates for standards, blanks and du
 A QC protocol is a project's plan and rulebook for quality control. The plan
 says how often each kind of QC sample goes into the sample stream: a
 standard every N samples, a blank every N, a duplicate every N, inserted
-independently, staggered by an offset, or in a round robin, and counted per
+independently, staggered by an offset, in a round robin, or as one shared
+interval that any QC type satisfies (a reminder only: it never blocks, never
+names a type, and a cut sheet cannot plan from it), and counted per
 hole or continuously. The rulebook is the acceptance criteria: how far a
 standard may read from its certified value (in standard deviations and in
 percent bias, each with a pass and a warn level, and a bias ceiling that never

@@ -157,7 +157,7 @@ Whole tables, built in the background, as GeoParquet / Parquet / CSV. One POST i
 | `exports_retrieve` | `GET /api/v2/exports/{job_id}/` | Poll an export job |
 | `exports_download_retrieve` | `GET /api/v2/exports/{job_id}/download/` | Download a finished export |
 
-## geoDB extensions — 166 operations
+## geoDB extensions — 176 operations
 
 Supported, project-scoped, and outside the contract. Read them freely against geoDB; do not expect them from another implementation.
 
@@ -171,6 +171,7 @@ Supported, project-scoped, and outside the contract. Read them freely against ge
 | Drill Intervals | 20 | The `*-sets` logging-run groupings and the interval-type lookups — a geoDB organisational concept, not a measurement. |
 | Files | 11 | Project files, their raster map tiles, and elevation data. |
 | Geophysics | 2 | Geophysical survey acquisition metadata. The bulk data itself travels as STAC assets, which ARE core. |
+| Grant | 10 |  |
 | Guide | 4 |  |
 | Land Holdings | 6 | Mineral claims and other land holdings. A project chooses how much of this a grant may read. |
 | Map Layers | 8 | Vector layers, their features, and roads. |

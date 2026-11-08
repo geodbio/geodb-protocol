@@ -34,9 +34,13 @@ claim is plotted or a plotted claim changed.
 **Frozen**: a hold geoDB applies; sealed, nobody can open, read or export it
 until it is lifted. A company on a single-price plan (not per-project) is
 offered only **Drilling** and **Frozen**: never offer it Field or Holding. A
-plan can change what the company pays: moving down takes
-effect when the billing cycle ends; moving up is the person's own decision,
-made in the browser.
+plan can change what the company pays: moving up is charged
+at once for the rest of the billing cycle, and when it starts a commitment its
+confirm names the date the commitment ends; moving down takes effect when the
+billing cycle ends, or when such a commitment ends if that is later (access and
+billing stay on the higher plan until then). Moving up, and creating a project on a plan, is
+approved by the company's billing people: in geoDB on the plan page, from a
+connected AI on a one-time link that shows the price first.
 
 **Deleting a project is reversible.** It moves to the Trash with everything
 in it and can be restored for the retention window; nothing is purged by an
@@ -56,6 +60,7 @@ the dry run. A create may carry the coordinate system (`crs`): it is applied in
 the same write, so one Undo takes back both. Changing a coordinate system that
 is already set also needs the
 user's explicit acknowledgement (change_project_crs). A change that raises
-what the company pays is never yours to make: it is refused with the page
-where the person does it themselves. Every write returns its Undo handle and
+what the company pays is never yours to make: its dry run is refused
+`approval_required` with a one-time link, and the person approves it there
+(the Writing chapter has the whole flow). Every write returns its Undo handle and
 the project's web address; say both when you report it.

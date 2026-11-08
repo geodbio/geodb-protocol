@@ -31,10 +31,46 @@
       "remedy": "Split the records into smaller batches, or write from your own sandbox with a session key, or upload the file in geoDB.",
       "retry": "no"
     },
+    "approval_declined": {
+      "http": 200,
+      "meaning": "(approval status) The person chose not to approve the change: nothing was changed and nothing was charged.",
+      "remedy": "Do not ask again unless the user brings it up.",
+      "retry": "no"
+    },
+    "approval_declined_payment": {
+      "http": 200,
+      "meaning": "(approval status) The person approved, but the payment did not go through (declined, no payment method, the bank asked to confirm it, or it could not be confirmed): nothing was changed and nothing is owed. `payment.outcome` says which.",
+      "remedy": "Tell the user what `reason` says; once the payment method is sorted out (the web billing page), run the dry run again for a new link.",
+      "retry": "no"
+    },
+    "approval_expired": {
+      "http": 200,
+      "meaning": "(approval status) The one-time link ran out (24 hours) unused: nothing was changed and nothing was charged.",
+      "remedy": "If the user still wants the change, run its dry run again for a new link and the price as it is now.",
+      "retry": "no"
+    },
+    "approval_failed": {
+      "http": 200,
+      "meaning": "(approval status) Something went wrong while geoDB made the approved change.",
+      "remedy": "Tell the user to check the project in geoDB before trying again, or to email support@geodb.io.",
+      "retry": "no"
+    },
+    "approval_interrupted": {
+      "http": 200,
+      "meaning": "(approval status) The approval was interrupted before its outcome was recorded; geoDB staff are checking whether it landed or charged.",
+      "remedy": "Tell the user geoDB staff are checking it, and not to try again before asking support@geodb.io.",
+      "retry": "no"
+    },
+    "approval_pending": {
+      "http": 200,
+      "meaning": "(approval status) The person has not approved the change yet, or has just approved it and geoDB is still making it.",
+      "remedy": "Remind the user of the link if they still want the change, and read the approval again later; nothing was changed or charged yet.",
+      "retry": "maybe"
+    },
     "approval_required": {
       "http": 403,
       "meaning": "The change raises what the company pays, so the person approves it themselves in the browser; an AI never raises a bill.",
-      "remedy": "Give the user the page in offending.approval_url to do it themselves.",
+      "remedy": "Tell the user what it costs from offending.effect (due_today, the new monthly, and the commitment end when it names one), then give them the page in offending.approval_url to do it themselves \u2014 or, when the dry run carries offending.approval, its one-time link to approve exactly this change (GET approvals/<id>/ says what became of it).",
       "retry": "no"
     },
     "approved_certificate": {
@@ -63,8 +99,8 @@
     },
     "billing_permission_required": {
       "http": 403,
-      "meaning": "Moving a project between states (or restoring one) changes what the company pays; only the company owner, a company manager who can make purchases, or geoDB staff may do it.",
-      "remedy": "Ask the company owner to make the change, or to turn purchasing on for the user.",
+      "meaning": "A company's billing (what it pays and its plans' prices; moving a project between plans, or restoring one, which changes what it pays) is for the company owner, a company manager who can make purchases, or geoDB staff.",
+      "remedy": "Ask the company owner to do it, or to turn purchasing on for the user.",
       "retry": "no"
     },
     "certificate_unreject_conflict": {
@@ -83,6 +119,12 @@
       "http": 400,
       "meaning": "The write touched more rows than the changes read lists in one request (`offending` gives the count and the limit).",
       "remedy": "Narrow the read with model=<record type> (each type of the write is read on its own; GET records/writes/<write_id>/ names them in its summary), then page it with limit / offset.",
+      "retry": "no"
+    },
+    "charged_not_moved": {
+      "http": 200,
+      "meaning": "(approval status) The card was charged, but the change did not land (someone changed the project at the same moment); geoDB staff refund the charge.",
+      "remedy": "Tell the user they were charged, that the plan did not change, and that geoDB refunds it; read the project again before anything else.",
       "retry": "no"
     },
     "choice_not_in_list": {
@@ -157,6 +199,12 @@
       "remedy": "Read the record again, then resend the change against what is stored now.",
       "retry": "no"
     },
+    "connection_ended": {
+      "http": 403,
+      "meaning": "The AI connection this approval is for was disconnected, or can no longer make changes for the person.",
+      "remedy": "Tell the user to reconnect the AI, or to make the change themselves in geoDB.",
+      "retry": "no"
+    },
     "crs_geographic": {
       "http": 400,
       "meaning": "A geographic CRS (degrees, e.g. EPSG:4326) cannot be a project's working frame; the frame is a projected CRS in metres or feet.",
@@ -179,6 +227,24 @@
       "http": 409,
       "meaning": "The project uses a custom mine grid (a calibration), not an EPSG code; its frame is set by the calibration tools.",
       "remedy": "Use the project's coordinate-system page on the web (calibration tools).",
+      "retry": "no"
+    },
+    "dataroom_archived": {
+      "http": 409,
+      "meaning": "The data room was archived, so it cannot be changed or published.",
+      "remedy": "Ask the user to unarchive it on its page first, or create a new room.",
+      "retry": "no"
+    },
+    "dataroom_manage_required": {
+      "http": 403,
+      "meaning": "Changing or publishing a data room needs the person to manage the project's data rooms (a company owner or manager), and the person this key acts for does not.",
+      "remedy": "Tell the user that a company owner or manager can make this change, or can give them the right to manage data rooms; nothing was changed.",
+      "retry": "no"
+    },
+    "dataroom_published": {
+      "http": 409,
+      "meaning": "The data room is published: its guests and any key made for it see a change at once, so a change that adds to or rewrites what they see (a new pane, the Overview, the name, a caption, a data table) is made by the person on the room's page. Reordering and removing panes stay open.",
+      "remedy": "Tell the user what you would change and give them the room's page in offending.page_url to make it there; nothing was changed.",
       "retry": "no"
     },
     "dataset_already_written": {
@@ -505,6 +571,12 @@
       "remedy": "Correct the parameter named in `offending` and resend. Dates are ISO 8601 (YYYY-MM-DD or a full timestamp).",
       "retry": "no"
     },
+    "invalid_units": {
+      "http": 400,
+      "meaning": "The request's \"depth_units\" or \"elevation_units\" (named in `offending.field`) is not a length unit. Nothing was written.",
+      "remedy": "Send \"M\" or \"FT\": the unit the numbers ARE IN, whatever unit the project displays. geoDB converts to stored metres; never multiply them yourself.",
+      "retry": "no"
+    },
     "key_shape_conflict": {
       "http": 400,
       "meaning": "(per row) Another row of the same request names the same interval (hole and start depth) of a model whose rows carry an optional type (a vein's type, a mineralization's assemblage), but one row sends that column and the other omits it. None of these rows was written.",
@@ -733,6 +805,12 @@
       "remedy": "Check the state, township, range, section and meridian; or read land-plss/ at a point to see what is there.",
       "retry": "no"
     },
+    "price_changed": {
+      "http": 409,
+      "meaning": "Today's charge for the change was no longer the amount the person confirmed, so nothing was changed and nothing was charged.",
+      "remedy": "Run the dry run again and tell the user the new price before handing over the new link.",
+      "retry": "no"
+    },
     "project_crs_required": {
       "http": 409,
       "meaning": "The project has no coordinate system, so nothing can be placed on its local grid: positions along a hole (desurvey, trace, xyz at depth) and other derived positions need it. The stored native coordinates are untouched and readable.",
@@ -792,6 +870,18 @@
       "meaning": "(per row) The company's free month is over and billing is not set up (or an invoice is overdue), so nothing may be added, changed or removed in its projects. Reading and export keep working. Nothing in this row was written.",
       "remedy": "Tell the person: an owner, or a manager who can make purchases, can set up billing on the geoDB Billing page (the row's remedy links it). Writing turns back on as soon as it is set up. Resend then.",
       "retry": "maybe"
+    },
+    "publish_approval_required": {
+      "http": 403,
+      "meaning": "Publishing a data room is the person's own step: it makes the room visible to its guests and lets keys made for it read it, so the person approves it in the browser; a request never publishes.",
+      "remedy": "Show the user offending.preflight (what the room's guests will see, and which private items become visible), then give them the one-time link in offending.approval.url (a dry run returns it; GET approvals/<id>/ says what became of it), or the room's page in offending.page_url to publish it themselves.",
+      "retry": "no"
+    },
+    "publish_refused": {
+      "http": 200,
+      "meaning": "(approval status) The person approved, but one of the room's items could not be shared (the reason names it), so nothing was published.",
+      "remedy": "Tell the user what the reason names; once it is fixed (or the item is taken out of the room), run the publish dry run again for a new link.",
+      "retry": "no"
     },
     "purchase_authority_required": {
       "http": 403,
@@ -1117,6 +1207,12 @@
       "remedy": "Correct the fields named in the response and resend.",
       "retry": "no"
     },
+    "vendor_key_manage_required": {
+      "http": 403,
+      "meaning": "Managing a project's vendor keys needs the person to manage the project's settings (an owner, a manager or a project admin), and the person this key acts for does not.",
+      "remedy": "Tell the user that a company owner, a manager or the project's admin can do this; nothing was changed.",
+      "retry": "no"
+    },
     "view_link_too_long": {
       "http": 400,
       "meaning": "The view names more than a link can carry (a very long hole list).",
@@ -1137,9 +1233,15 @@
     },
     "writes_switched_off": {
       "http": 503,
-      "meaning": "Writes through AI connections were switched off on the server after this dataset job was accepted, so it did not run; a write already running finished the member it was on and stopped before the next (the members before it stay landed, under the answer's one undo).",
+      "meaning": "Writes through AI connections are switched off on the server: a billing approval cannot be made or used now, and a dataset job accepted before the switch did not run; a write already running finished the member it was on and stopped before the next (the members before it stay landed, under the answer's one undo).",
       "remedy": "Tell the user that writing through AI connections is paused on the server right now and that nothing more was written. Send the same request again later: a write lands only what has not landed yet.",
       "retry": "maybe"
+    },
+    "wrong_company": {
+      "http": 403,
+      "meaning": "The company (or the project in it) this approval is for is no longer one the person belongs to, or the project left that company.",
+      "remedy": "Read the projects again (GET grant-context/) and ask the user what they want now.",
+      "retry": "no"
     }
   },
   "warning_codes": {
@@ -1203,6 +1305,11 @@
       "remedy": "Tell the user. If x is the lab's detection limit for this method, write it on the method (model \"Method\", intent \"upsert\") before the results \u2014 a method is shared by the whole company, so a key that does not reach every project of it is refused out_of_scope, and then the user sets it on the web; otherwise say the reported limit is not stored.",
       "retry": "no"
     },
+    "duplicate_parent_other_hole": {
+      "meaning": "(per-row warning) The field duplicate was saved, but its parent sample is in a different hole from the hole the duplicate sits in (its inserted-after sample, its own hole, or the samples numbered next to it). Both holes are named. Usually a parent number typed from the wrong tag book.",
+      "remedy": "Tell the user both holes and which side the warning says looks wrong (when the samples numbered next to the duplicate sit in the parent's hole, it is the duplicate's own hole); fix only what they confirm. A pair that really spans two holes needs nothing.",
+      "retry": "no"
+    },
     "external_id_conflict": {
       "meaning": "(per-row warning) The row landed, but its external_id already names a different record for this key, so the binding was left unchanged.",
       "remedy": "Use one external_id per record.",
@@ -1238,6 +1345,11 @@
       "remedy": "Say this to the user before the write.",
       "retry": "no"
     },
+    "length_units_not_read": {
+      "meaning": "(per-row warning) The row carries a `length_units` label naming another unit than the one its lengths are read in. The label is a stored, read-only field and is never read as the unit; the lengths were read in the request's \"depth_units\" (metres when none was sent).",
+      "remedy": "Check the unit with the user. If the numbers are in feet, send \"depth_units\": \"FT\" on the request (geoDB converts); a number copied from a read is metres.",
+      "retry": "no"
+    },
     "matched_in_other_set": {
       "meaning": "(per-row warning) The row matched a record stored in a different set from the one this row writes into (a drill sample is identified by its hole and name across every set). The write acts on that stored record, in its own set; it is not moved or copied into the set named. The detail names the stored set.",
       "remedy": "Tell the user which set the record is in before the write. A second sampling pass of the same interval uses new sample names; if this row was meant as a new sample, rename it and resend.",
@@ -1246,6 +1358,11 @@
     "method_detection_limit_missing": {
       "meaning": "(batch warning) These (method, element) pairs have no detection limit on their method, so a below-detection result keeps no limit at all.",
       "remedy": "If the lab reported detection limits, write them on the method first (model \"Method\", intent \"upsert\", with detection_limit and units), then the results. A method is shared by the whole company: a key that does not reach every project of it is refused out_of_scope, and then the user sets the limit on the web. Tell the user which pairs have none.",
+      "retry": "no"
+    },
+    "mineral_percentage_not_stored": {
+      "meaning": "(per-row warning) A mineral in the row's mineral list carried a percentage that is not one number: a range (\"1-2%\"), a qualified number (\"<1%\", \"~2%\") or a trace (\"trace\", \"trace-0.5%\"). The mineral was stored; that percentage was not (never a midpoint or a bound). The detail names the text.",
+      "remedy": "Tell the user. To store a percentage, send one number after the mineral (\"Pyrrhotite 2\"); otherwise leave it as it landed.",
       "retry": "no"
     },
     "other_certificate_merge": {

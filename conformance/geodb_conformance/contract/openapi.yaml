@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: geoDB Exploration Data API
-  version: 0.3.3
+  version: 0.3.4
   description: |
     Access to exploration projects' data — drill holes and what was logged down
     them, samples, laboratory results, quality control, surface geology, maps and
@@ -75,7 +75,7 @@ info:
     tool: drf-spectacular
     source: the geoDB reference implementation's serializers and the runtime grant
       gate
-    protocol_version: 0.3.3
+    protocol_version: 0.3.4
     warning: Generated file — do not edit by hand. Changes belong in the reference
       implementation; regenerate to publish them.
 paths:
@@ -409,6 +409,82 @@ paths:
               schema:
                 type: integer
       summary: Get one of the alteration vocabulary
+      x-geodb-extension: true
+  /api/v2/approvals/{id}/:
+    get:
+      operationId: approvals_retrieve
+      description: 'One approval by the `id` a dry run returned in `offending.approval`.
+        `kind` is `create` or `set_state` (a billing change: a project created at
+        a plan, or moved up to one, that raises what a company pays) or `publish_room`
+        (a data room the person publishes on the approval page). `status` is `pending`,
+        `approved`, `refused`, `expired`, `failed` or `charged_not_moved`. An approved
+        billing change names its `project` (`id`, `name`, `url`), the `write_id` of
+        the write it was recorded as, and the `payment` (`outcome`, `amount` as a
+        decimal string, `sentence`); a publish names its `dataroom` (`id`, `name`,
+        `url`, `is_published`, `published_at`) and `made_visible` (how many private
+        items it made visible to the room''s guests). Any other status carries a `reason_code`,
+        a short `reason` and the `remedy`. Readable only through a key of the person
+        the approval was made for.'
+      summary: What became of an approval this person was handed
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Grant
+      security:
+      - knoxApiToken: []
+      - GrantAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BillingApprovalStatus'
+          description: ''
+        '400':
+          description: The request could not be understood (see `reason_code`).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 'No usable credential. `reason_code` distinguishes a revoked
+            grant from an expired, unknown or malformed one; the response carries
+            `WWW-Authenticate: Grant`.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: The credential is valid but not permitted this operation —
+            outside the grant surface, a write with a read-only grant, or outside
+            a room-pinned grant's room.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: No such resource inside this credential's scope. A row in another
+            project is indistinguishable from one that does not exist, by design.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: The grant's request rate was exceeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            Retry-After:
+              description: Seconds to wait before retrying. Sent on every throttled
+                response.
+              schema:
+                type: integer
       x-geodb-extension: true
   /api/v2/assay-merge-settings/:
     get:
@@ -1468,6 +1544,163 @@ paths:
                 type: integer
       summary: Get one of the assay results
       x-protocol-core: true
+  /api/v2/billing/plans/:
+    get:
+      operationId: billing_plans_retrieve
+      description: 'The plans this company may choose for a project (`plans`, in display
+        order: `tier`, `label`, what it `allows`, its `monthly` price per project
+        as a decimal string from geoDB''s live price list — a project whose footprint
+        is over `project_max_acres` bills as several), the company''s current monthly
+        total (`monthly_now`), and the new-project sentence (`new_project`: the free
+        month, or what a new project starts on). Legacy companies (`scheme` = `legacy`)
+        pay one plan price: `monthly` is null. For the company''s billing people only
+        (the owner and managers who can make purchases), through a person''s key.'
+      summary: The plans a company's projects may be on, and their monthly prices
+      parameters:
+      - in: query
+        name: company
+        schema:
+          type: string
+        description: The company whose billing to read, by its id or its exact name.
+          Optional when this key reads one company only.
+      - in: query
+        name: company_id
+        schema:
+          type: integer
+        description: The company, by its id (see `company`).
+      tags:
+      - Grant
+      security:
+      - knoxApiToken: []
+      - GrantAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BillingPlans'
+          description: ''
+        '400':
+          description: The request could not be understood (see `reason_code`).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 'No usable credential. `reason_code` distinguishes a revoked
+            grant from an expired, unknown or malformed one; the response carries
+            `WWW-Authenticate: Grant`.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: The credential is valid but not permitted this operation —
+            outside the grant surface, a write with a read-only grant, or outside
+            a room-pinned grant's room.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: No such resource inside this credential's scope. A row in another
+            project is indistinguishable from one that does not exist, by design.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: The grant's request rate was exceeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            Retry-After:
+              description: Seconds to wait before retrying. Sent on every throttled
+                response.
+              schema:
+                type: integer
+      x-geodb-extension: true
+  /api/v2/billing/summary/:
+    get:
+      operationId: billing_summary_retrieve
+      description: 'The company''s billing page as data (`summary`), for the projects
+        THIS key reads: each project''s plan (`state`), what it bills as, its monthly
+        share, its free month and commitment, its itemised lines, the next invoice
+        date and what is coming up. `company_total` (= `total`) is the WHOLE company''s
+        monthly, including `projects_outside_this_connection` projects that are not
+        listed, so the listed rows need not add up to it. Money is decimal strings.
+        For the company''s billing people only (the owner and managers who can make
+        purchases), through a person''s key.'
+      summary: 'A company''s bill: each project''s plan and monthly, what is coming
+        up'
+      parameters:
+      - in: query
+        name: company
+        schema:
+          type: string
+        description: The company whose billing to read, by its id or its exact name.
+          Optional when this key reads one company only.
+      - in: query
+        name: company_id
+        schema:
+          type: integer
+        description: The company, by its id (see `company`).
+      tags:
+      - Grant
+      security:
+      - knoxApiToken: []
+      - GrantAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BillingSummary'
+          description: ''
+        '400':
+          description: The request could not be understood (see `reason_code`).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 'No usable credential. `reason_code` distinguishes a revoked
+            grant from an expired, unknown or malformed one; the response carries
+            `WWW-Authenticate: Grant`.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: The credential is valid but not permitted this operation —
+            outside the grant surface, a write with a read-only grant, or outside
+            a room-pinned grant's room.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: No such resource inside this credential's scope. A row in another
+            project is indistinguishable from one that does not exist, by design.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: The grant's request rate was exceeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            Retry-After:
+              description: Seconds to wait before retrying. Sent on every throttled
+                response.
+              schema:
+                type: integer
+      x-geodb-extension: true
   /api/v2/certificates/:
     get:
       operationId: certificates_list
@@ -3180,6 +3413,296 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CutsheetSequence'
+          description: ''
+        '400':
+          description: The request could not be understood (see `reason_code`).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 'No usable credential. `reason_code` distinguishes a revoked
+            grant from an expired, unknown or malformed one; the response carries
+            `WWW-Authenticate: Grant`.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: The credential is valid but not permitted this operation —
+            outside the grant surface, a write with a read-only grant, or outside
+            a room-pinned grant's room.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: No such resource inside this credential's scope. A row in another
+            project is indistinguishable from one that does not exist, by design.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: The grant's request rate was exceeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            Retry-After:
+              description: Seconds to wait before retrying. Sent on every throttled
+                response.
+              schema:
+                type: integer
+      x-geodb-extension: true
+  /api/v2/datarooms/:
+    get:
+      operationId: datarooms_of_project
+      description: 'The data rooms of `project` (named, curated sets of the project''s
+        maps, 3D views, figures, documents, photos, reports, QA/QC approvals and data
+        tables for outside parties): `id`, `name`, `is_published`, `published_at`,
+        `panes`, `has_overview` and the room''s `url`. Readable by a person''s key
+        whose person manages the project''s data rooms.'
+      summary: A project's data rooms
+      parameters:
+      - in: query
+        name: project
+        schema:
+          type: integer
+        description: The project id.
+      tags:
+      - Grant
+      security:
+      - knoxApiToken: []
+      - GrantAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DataroomList'
+          description: ''
+        '400':
+          description: The request could not be understood (see `reason_code`).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 'No usable credential. `reason_code` distinguishes a revoked
+            grant from an expired, unknown or malformed one; the response carries
+            `WWW-Authenticate: Grant`.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: The credential is valid but not permitted this operation —
+            outside the grant surface, a write with a read-only grant, or outside
+            a room-pinned grant's room.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: No such resource inside this credential's scope. A row in another
+            project is indistinguishable from one that does not exist, by design.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: The grant's request rate was exceeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            Retry-After:
+              description: Seconds to wait before retrying. Sent on every throttled
+                response.
+              schema:
+                type: integer
+      x-geodb-extension: true
+  /api/v2/datarooms/{id}/:
+    get:
+      operationId: dataroom_retrieve
+      description: 'One data room: its `overview` (Markdown), its `panes` by section
+        (`id`, `section`, `position`, `caption`, `label`, `artifact`, `shared_now`
+        and `made_visible_on_publish`: a private item that publishing will make visible
+        to the room''s guests), and the `preflight` the publish approval page shows.'
+      summary: 'One data room: its Overview, its panes and its publish preflight'
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Grant
+      security:
+      - knoxApiToken: []
+      - GrantAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DataroomDetail'
+          description: ''
+        '400':
+          description: The request could not be understood (see `reason_code`).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 'No usable credential. `reason_code` distinguishes a revoked
+            grant from an expired, unknown or malformed one; the response carries
+            `WWW-Authenticate: Grant`.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: The credential is valid but not permitted this operation —
+            outside the grant surface, a write with a read-only grant, or outside
+            a room-pinned grant's room.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: No such resource inside this credential's scope. A row in another
+            project is indistinguishable from one that does not exist, by design.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: The grant's request rate was exceeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            Retry-After:
+              description: Seconds to wait before retrying. Sent on every throttled
+                response.
+              schema:
+                type: integer
+      x-geodb-extension: true
+  /api/v2/datarooms/{id}/candidates/:
+    get:
+      operationId: dataroom_candidates
+      description: 'The project''s items that can be added to `section` of a data
+        room (`id` = the `artifact` a DataRoomItem create takes, `label`). Maps, 3D
+        views, figures, documents, photos, reports and QA/QC approvals are listed
+        HERE, not among the project''s data records. Private items are listed too:
+        publishing the room makes them visible to its guests. The `data` section takes
+        a `data_spec`, not an item, so it lists none. `already_bound`: the room already
+        holds it.'
+      summary: What can go in one section of a data room
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      - in: query
+        name: section
+        schema:
+          type: string
+        description: maps, threed, figures, documents, photos, reports or qaqc; none
+          = every section, under "sections".
+      tags:
+      - Grant
+      security:
+      - knoxApiToken: []
+      - GrantAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DataroomCandidates'
+          description: ''
+        '400':
+          description: The request could not be understood (see `reason_code`).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 'No usable credential. `reason_code` distinguishes a revoked
+            grant from an expired, unknown or malformed one; the response carries
+            `WWW-Authenticate: Grant`.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: The credential is valid but not permitted this operation —
+            outside the grant surface, a write with a read-only grant, or outside
+            a room-pinned grant's room.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: No such resource inside this credential's scope. A row in another
+            project is indistinguishable from one that does not exist, by design.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: The grant's request rate was exceeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            Retry-After:
+              description: Seconds to wait before retrying. Sent on every throttled
+                response.
+              schema:
+                type: integer
+      x-geodb-extension: true
+  /api/v2/datarooms/candidates/:
+    get:
+      operationId: datarooms_project_candidates
+      description: 'The project''s items that can be added to `section` of a data
+        room (`id` = the `artifact` a DataRoomItem create takes, `label`). Maps, 3D
+        views, figures, documents, photos, reports and QA/QC approvals are listed
+        HERE, not among the project''s data records. Private items are listed too:
+        publishing the room makes them visible to its guests. The `data` section takes
+        a `data_spec`, not an item, so it lists none.'
+      summary: What a project could put in a data room
+      parameters:
+      - in: query
+        name: project
+        schema:
+          type: integer
+        description: The project id.
+      - in: query
+        name: section
+        schema:
+          type: string
+        description: maps, threed, figures, documents, photos, reports or qaqc; none
+          = every section, under "sections".
+      tags:
+      - Grant
+      security:
+      - knoxApiToken: []
+      - GrantAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DataroomProjectCandidates'
           description: ''
         '400':
           description: The request could not be understood (see `reason_code`).
@@ -16245,8 +16768,8 @@ paths:
         description: 'Only writes with this intent: `create`, `upsert`, `update`,
           `retract`, `restore`, `make_default_set`, `make_export_set`, `qaqc_verdict`,
           `qc_reconnect`, `undo`, `publish`, `set_coordinate_system`, `set_state`,
-          `upload`, `upload_start`, `upload_commit`, `upload_abort`. Any other value
-          is refused with `invalid_parameter`.'
+          `upload`, `upload_start`, `upload_commit`, `upload_abort`, `unpublish`.
+          Any other value is refused with `invalid_parameter`.'
       - in: query
         name: limit
         schema:
@@ -19630,6 +20153,233 @@ paths:
                 type: integer
       summary: Get one of the vein type vocabulary
       x-geodb-extension: true
+  /api/v2/vendor-keys/:
+    get:
+      operationId: vendor_keys_of_project
+      description: 'The read-only keys this project has given outside parties: `id`,
+        `label`, `token_prefix` (the key''s first characters, never the key), `state`
+        (active, revoked, expired, room_unpublished, room_archived), the `dataroom`
+        it is pinned to, `expires_at`, `last_used_at`, `rate_limit` and its `requests`
+        totals. Readable by a person''s key whose person manages the project''s settings.'
+      summary: A project's vendor keys
+      parameters:
+      - in: query
+        name: project
+        schema:
+          type: integer
+        description: The project id.
+      tags:
+      - Grant
+      security:
+      - knoxApiToken: []
+      - GrantAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VendorKeyList'
+          description: ''
+        '400':
+          description: The request could not be understood (see `reason_code`).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 'No usable credential. `reason_code` distinguishes a revoked
+            grant from an expired, unknown or malformed one; the response carries
+            `WWW-Authenticate: Grant`.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: The credential is valid but not permitted this operation —
+            outside the grant surface, a write with a read-only grant, or outside
+            a room-pinned grant's room.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: No such resource inside this credential's scope. A row in another
+            project is indistinguishable from one that does not exist, by design.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: The grant's request rate was exceeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            Retry-After:
+              description: Seconds to wait before retrying. Sent on every throttled
+                response.
+              schema:
+                type: integer
+      x-geodb-extension: true
+  /api/v2/vendor-keys/{id}/pull-log/:
+    get:
+      operationId: vendor_key_pull_log
+      description: 'One vendor key''s pull log: `totals` over the whole log (served,
+        refused, unauthorized, throttled, pending; written / undone for a key that
+        wrote) and, newest first, one row per hour, endpoint and outcome (`window_start`,
+        `endpoint`, `label`, `method`, `outcome`, `requests`, `last_reason`, `last_status_code`,
+        `last_ip`). 100 rows a page (`page`, `pages`).'
+      summary: What one vendor key read, by hour
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      - in: query
+        name: page
+        schema:
+          type: integer
+        description: 1 = newest.
+      tags:
+      - Grant
+      security:
+      - knoxApiToken: []
+      - GrantAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VendorKeyPullLog'
+          description: ''
+        '400':
+          description: The request could not be understood (see `reason_code`).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 'No usable credential. `reason_code` distinguishes a revoked
+            grant from an expired, unknown or malformed one; the response carries
+            `WWW-Authenticate: Grant`.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: The credential is valid but not permitted this operation —
+            outside the grant surface, a write with a read-only grant, or outside
+            a room-pinned grant's room.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: No such resource inside this credential's scope. A row in another
+            project is indistinguishable from one that does not exist, by design.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: The grant's request rate was exceeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            Retry-After:
+              description: Seconds to wait before retrying. Sent on every throttled
+                response.
+              schema:
+                type: integer
+      x-geodb-extension: true
+  /api/v2/vendor-keys/new-key-link/:
+    get:
+      operationId: vendor_key_new_key_link
+      description: 'Creates nothing: returns `url`, the project''s API-access page
+        with the new-key form filled in (`label`, optional `dataroom`, `expires_days`
+        = 0 (never), 30, 90 or 365), and the `steps` to give the user. The key is
+        made and shown only in the user''s browser; you never see it. A key pinned
+        to a room reads only while the room is published (`dataroom.is_published`).'
+      summary: A link for the user to create a vendor key themselves
+      parameters:
+      - in: query
+        name: dataroom
+        schema:
+          type: integer
+        description: Pin the key to this room.
+      - in: query
+        name: expires_days
+        schema:
+          type: integer
+        description: 0, 30, 90 or 365.
+      - in: query
+        name: label
+        schema:
+          type: string
+        description: Who the key is for.
+      - in: query
+        name: project
+        schema:
+          type: integer
+        description: The project id.
+      tags:
+      - Grant
+      security:
+      - knoxApiToken: []
+      - GrantAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VendorKeyNewKeyLink'
+          description: ''
+        '400':
+          description: The request could not be understood (see `reason_code`).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 'No usable credential. `reason_code` distinguishes a revoked
+            grant from an expired, unknown or malformed one; the response carries
+            `WWW-Authenticate: Grant`.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: The credential is valid but not permitted this operation —
+            outside the grant surface, a write with a read-only grant, or outside
+            a room-pinned grant's room.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: No such resource inside this credential's scope. A row in another
+            project is indistinguishable from one that does not exist, by design.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: The grant's request rate was exceeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            Retry-After:
+              description: Seconds to wait before retrying. Sent on every throttled
+                response.
+              schema:
+                type: integer
+      x-geodb-extension: true
   /api/v2/water-analyses/:
     get:
       operationId: water_analyses_list
@@ -21822,6 +22572,115 @@ components:
       - results
       - waiting
       additionalProperties: false
+    BillingApprovalStatus:
+      type: object
+      properties:
+        id:
+          type: integer
+        kind:
+          type: string
+        status:
+          type: string
+        change:
+          type: object
+          additionalProperties: {}
+        quoted_due_today:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+        expires_at:
+          type: string
+        used_at:
+          type: string
+          nullable: true
+        project:
+          type: object
+          additionalProperties: {}
+          nullable: true
+        write_id:
+          type: string
+          nullable: true
+        payment:
+          type: object
+          additionalProperties: {}
+          nullable: true
+        reason_code:
+          type: string
+        reason:
+          type: string
+        remedy:
+          type: string
+        invoice_url:
+          type: string
+        dataroom:
+          type: object
+          additionalProperties: {}
+          nullable: true
+        made_visible:
+          type: integer
+      required:
+      - change
+      - created_at
+      - expires_at
+      - id
+      - kind
+      - status
+      - used_at
+      additionalProperties: false
+    BillingPlans:
+      type: object
+      properties:
+        scheme:
+          type: string
+        plans:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+        per:
+          type: string
+        project_max_acres:
+          type: integer
+          nullable: true
+        monthly_now:
+          type: string
+          nullable: true
+        money_word:
+          type: string
+          nullable: true
+        company_max_yearly:
+          type: string
+          nullable: true
+        commitment_words:
+          type: string
+        new_project:
+          type: string
+          nullable: true
+        error:
+          type: string
+          nullable: true
+      required:
+      - commitment_words
+      - company_max_yearly
+      - error
+      - money_word
+      - monthly_now
+      - new_project
+      - per
+      - plans
+      - project_max_acres
+      - scheme
+      additionalProperties: false
+    BillingSummary:
+      type: object
+      properties:
+        summary:
+          type: object
+          additionalProperties: {}
+      required:
+      - summary
+      additionalProperties: false
     BlankEnum:
       enum:
       - ''
@@ -23164,6 +24023,202 @@ components:
         * `OPENTOPO_SRTMGL1` - OpenTopography: SRTM 30m (±60° latitude)
         * `OPENTOPO_AW3D30` - OpenTopography: ALOS World 3D 30m (Global)
         * `MANUAL_UPLOAD` - Manually Uploaded
+    DataroomCandidate:
+      type: object
+      properties:
+        id:
+          type: integer
+        label:
+          type: string
+        already_bound:
+          type: boolean
+      required:
+      - id
+      - label
+      additionalProperties: false
+    DataroomCandidates:
+      type: object
+      properties:
+        section:
+          type: string
+        count:
+          type: integer
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/DataroomCandidate'
+        sections:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              type: object
+              additionalProperties: {}
+          description: 'With no section asked: each section''s candidates (id, label,
+            already_bound).'
+        dataroom:
+          type: integer
+      required:
+      - dataroom
+      additionalProperties: false
+    DataroomDetail:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        project:
+          type: integer
+        is_published:
+          type: boolean
+        published_at:
+          type: string
+          nullable: true
+        url:
+          type: string
+        has_overview:
+          type: boolean
+        panes:
+          type: array
+          items:
+            $ref: '#/components/schemas/DataroomPane'
+        overview:
+          type: string
+        preflight:
+          type: object
+          additionalProperties: {}
+      required:
+      - has_overview
+      - id
+      - is_published
+      - name
+      - overview
+      - panes
+      - preflight
+      - project
+      - published_at
+      - url
+      additionalProperties: false
+    DataroomList:
+      type: object
+      properties:
+        project:
+          $ref: '#/components/schemas/DataroomProject'
+        count:
+          type: integer
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/DataroomSummary'
+      required:
+      - count
+      - project
+      - results
+      additionalProperties: false
+    DataroomPane:
+      type: object
+      properties:
+        id:
+          type: integer
+        dataroom:
+          type: integer
+        section:
+          type: string
+        position:
+          type: integer
+          nullable: true
+        caption:
+          type: string
+        label:
+          type: string
+        artifact:
+          type: integer
+          nullable: true
+        shared_now:
+          type: boolean
+        made_visible_on_publish:
+          type: boolean
+        data_spec:
+          type: object
+          additionalProperties: {}
+      required:
+      - artifact
+      - caption
+      - dataroom
+      - id
+      - label
+      - made_visible_on_publish
+      - position
+      - section
+      - shared_now
+      additionalProperties: false
+    DataroomProject:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+      required:
+      - id
+      - name
+      additionalProperties: false
+    DataroomProjectCandidates:
+      type: object
+      properties:
+        section:
+          type: string
+        count:
+          type: integer
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/DataroomCandidate'
+        sections:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              type: object
+              additionalProperties: {}
+          description: 'With no section asked: each section''s candidates (id, label,
+            already_bound).'
+        project:
+          $ref: '#/components/schemas/DataroomProject'
+      required:
+      - project
+      additionalProperties: false
+    DataroomSummary:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        project:
+          type: integer
+        is_published:
+          type: boolean
+        published_at:
+          type: string
+          nullable: true
+        url:
+          type: string
+        has_overview:
+          type: boolean
+        panes:
+          type: integer
+      required:
+      - has_overview
+      - id
+      - is_published
+      - name
+      - panes
+      - project
+      - published_at
+      - url
+      additionalProperties: false
     DefaultStrategyEnum:
       enum:
       - high
@@ -28764,11 +29819,13 @@ components:
       - independent
       - staggered
       - round_robin
+      - any_type
       type: string
       description: |-
         * `independent` - Independent (each type runs its own counter)
         * `staggered` - Staggered (each type has a start offset)
         * `round_robin` - Round Robin (single interval, rotate through types)
+        * `any_type` - Any QC type, one shared interval
     IntentEnum:
       enum:
       - create
@@ -36434,7 +37491,7 @@ components:
           type: integer
           readOnly: true
           nullable: true
-          description: Shared interval for round-robin rotation
+          description: Shared interval (round-robin and any-type)
         round_robin_order:
           readOnly: true
           description: Ordered list of types for rotation, e.g. ['standards', 'blanks',
@@ -36540,6 +37597,17 @@ components:
           description: Name of the drill hole named by `bhid` — the hole as a geologist
             writes it, so a row can be labelled without a second request. Null when
             the record is not associated with a hole.
+        inserted_after:
+          type: integer
+          readOnly: true
+          nullable: true
+          description: The routine drill sample this QC follows in the sample stream.
+            Gives the hole AND the position. Consecutive QC after one sample share
+            it (ordered by name).
+        inserted_after_name:
+          type: string
+          readOnly: true
+          nullable: true
         standard:
           type: integer
           readOnly: true
@@ -36737,6 +37805,8 @@ components:
       - excluded_by_certificate
       - excluded_reason
       - id
+      - inserted_after
+      - inserted_after_name
       - lab_status
       - last_edited
       - name
@@ -37362,12 +38432,24 @@ components:
             "qc_policy": "replace"|"append"}. The dry run states it for the user and
             returns the `confirm` the write needs. A Dataset carries it for its Assay
             member, or {"same_as": "<rehearsal id>"} (a stopped write''s `rehearse_rest`).'
+        depth_units:
+          type: string
+          minLength: 1
+          description: '"M" or "FT": the unit the records'' depths and lengths ARE
+            IN, whatever unit the project displays. geoDB converts to stored metres
+            (never multiply them yourself); a number copied from a read is "M". Not
+            sent: metres. Anything else is refused (invalid_units).'
+        elevation_units:
+          type: string
+          minLength: 1
+          description: '"M" or "FT": the unit the records'' elevations are in, only
+            when it differs from depth_units (elevations follow depth_units otherwise).'
         dataset:
           description: 'model Dataset only (describe/Dataset/ says how): the rehearsal
-            {"members": [{"document": <id>, "model": "<Model>", "intent"?, "set"?},
-            …], "continues"?: "<write_id>"} — member files this connection uploaded
-            as CSV documents; or, in the write the rehearsal returned, {"approved":
-            "<dataset id>"}.'
+            {"members": [{"document": <id>, "model": "<Model>", "intent"?, "set"?,
+            "depth_units"?, "elevation_units"?}, …], "continues"?: "<write_id>"} —
+            member files this connection uploaded as CSV documents; or, in the write
+            the rehearsal returned, {"approved": "<dataset id>"}.'
         plan_token:
           type: string
           minLength: 1
@@ -39622,6 +40704,170 @@ components:
             Values are whatever the customer stored (string, number, boolean or null).
             Calculated custom fields appear under the same prefix and are read-only.'
       additionalProperties: false
+    VendorKey:
+      type: object
+      properties:
+        id:
+          type: integer
+        label:
+          type: string
+        project:
+          type: integer
+        token_prefix:
+          type: string
+          description: The key's first characters, never the key.
+        state:
+          type: string
+        dataroom:
+          type: object
+          additionalProperties: {}
+          nullable: true
+        created_at:
+          type: string
+          nullable: true
+        expires_at:
+          type: string
+          nullable: true
+        last_used_at:
+          type: string
+          nullable: true
+        rate_limit:
+          type: string
+        requests:
+          type: object
+          additionalProperties:
+            type: integer
+      required:
+      - created_at
+      - dataroom
+      - expires_at
+      - id
+      - label
+      - last_used_at
+      - project
+      - rate_limit
+      - requests
+      - state
+      - token_prefix
+      additionalProperties: false
+    VendorKeyList:
+      type: object
+      properties:
+        project:
+          $ref: '#/components/schemas/VendorKeyProject'
+        count:
+          type: integer
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/VendorKey'
+      required:
+      - count
+      - project
+      - results
+      additionalProperties: false
+    VendorKeyNewKeyLink:
+      type: object
+      properties:
+        url:
+          type: string
+        project:
+          $ref: '#/components/schemas/VendorKeyProject'
+        dataroom:
+          type: object
+          additionalProperties: {}
+          nullable: true
+        label:
+          type: string
+        expires_days:
+          type: integer
+        steps:
+          type: array
+          items:
+            type: string
+        note:
+          type: string
+        warning:
+          type: string
+      required:
+      - dataroom
+      - expires_days
+      - label
+      - note
+      - project
+      - steps
+      - url
+      additionalProperties: false
+    VendorKeyProject:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+      required:
+      - id
+      - name
+      additionalProperties: false
+    VendorKeyPullLog:
+      type: object
+      properties:
+        key:
+          $ref: '#/components/schemas/VendorKey'
+        totals:
+          type: object
+          additionalProperties:
+            type: integer
+        page:
+          type: integer
+        pages:
+          type: integer
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/VendorKeyPullRow'
+      required:
+      - key
+      - page
+      - pages
+      - results
+      - totals
+      additionalProperties: false
+    VendorKeyPullRow:
+      type: object
+      properties:
+        window_start:
+          type: string
+        endpoint:
+          type: string
+        label:
+          type: string
+        method:
+          type: string
+        outcome:
+          type: string
+        requests:
+          type: integer
+        last_reason:
+          type: string
+          nullable: true
+        last_status_code:
+          type: integer
+          nullable: true
+        last_ip:
+          type: string
+          nullable: true
+      required:
+      - endpoint
+      - label
+      - last_ip
+      - last_reason
+      - last_status_code
+      - method
+      - outcome
+      - requests
+      - window_start
+      additionalProperties: false
     WallStrengthEnum:
       enum:
       - R0
@@ -40720,7 +41966,12 @@ tags:
 - name: Grant
   description: 'What the credential you are holding can see: the projects it can read
     and the default one a read answers, its limits, and the protocol version this
-    server speaks. The cheapest first call an integration can make.'
+    server speaks. The cheapest first call an integration can make. For a person''s
+    key held by a company''s billing people: that company''s plans, prices and bill.
+    For a person who manages a project: its data rooms (what could go in one, and
+    what each shares) and its vendor keys (their state and what each outside party
+    read). What became of an approval the person was handed (a billing change or a
+    data-room publish).'
 - name: Discovery
   description: 'What this project actually contains: which models carry data, which
     fields they have, and the project''s user-defined `cf_*` custom fields. Read this
@@ -40774,6 +42025,9 @@ tags:
     read from a lead file are PLOTTED through the claim-plots preview (geoDB walks
     them; the user confirms the reference point on the map) and recorded through the
     records endpoint.
+- name: Claims
+  description: 'The claim blocks of a project as its members see them: each block''s
+    stage, claim counts, package checklist progress and invoice.'
 - name: Public Land
   description: 'geoDB''s mirror of the agencies'' public land layers, read a neighbourhood
     at a time: BLM mining claims (by area, or one by its serial), the PLSS township
