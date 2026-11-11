@@ -1,5 +1,24 @@
 # Changelog
 
+## Regenerated 2026-11-11 from deployed geoDB `0df6894ac`: custom drill tables, logging templates, claim blocks (`protocol_version` unchanged)
+
+Regenerated with prod's flags (MCP + READS + WRITES on, MCP_STAFF_ONLY off) and `--publish-write-profile`.
+ADDITIVE: no route or field was removed, and the client pin is unchanged.
+
+- **Custom drill tables:** a project's own drill tables are configuration an AI can read and write. A table states
+  its depth mode (interval or point), its main column, its default and export sets and its columns; an export can
+  name a `custom_table`. A table's shape is fixed once rows depend on it: new reason code `config_locked`.
+- **Logging templates:** new guide topic `logging-templates` (recreating a customer's own logging sheets in a
+  project). New catalog entries, such as a template's pick list, are added with `create` on the catalog. Custom
+  columns carry units and multiple-choice lists in `describe`.
+- **Claim blocks:** new read `claim-blocks/{id}/claims/` (a block's claims, with overlaps and name collisions).
+  A block that is of record, in fulfilment, out for bids, invoiced or paid is not changed: new reason code
+  `claim_block_locked`.
+- **Removing a logging set:** `set_not_empty` now counts live rows only (rows in the Trash do not count), and
+  `set_is_default` also covers the default or export set of a custom drill table. The codes are unchanged; their
+  meaning and remedy text is clearer.
+- **Wording:** the `project` parameter on the data-room and vendor-key reads says what an unreadable id returns.
+
 ## 0.3.4: regenerated 2026-11-08 from deployed geoDB `7e88d1bc0` (`protocol_version` 0.3.3 → 0.3.4)
 
 Regenerated with prod's flags (MCP + READS + WRITES on, MCP_STAFF_ONLY off) and `--publish-write-profile`. Also

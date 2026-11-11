@@ -314,7 +314,7 @@ private to the user, and every note write has its Undo.
 
 **Settings.** The same endpoint changes a project's settings: every model
 grant-context lists under `writes.config_models` (merge settings, colour
-ranges, custom columns, column layouts) and `writes.settings_models` (QC
+ranges, custom columns, custom drill tables, column layouts) and `writes.settings_models` (QC
 protocols, the QC configuration, metal-equivalent price decks, ODBC output),
 with the intents its describe lists (`create` · `update` · `retract` ·
 `restore`; a project's own settings take `update` only). A setting is a parent
@@ -417,8 +417,11 @@ name) or its `id`, carrying only what changes: `color` (`"#RRGGBB"`),
 the describe's `fgdc_patterns`, or null for none), `description`, `hidden`.
 The dry run answers each row's old and new values: show the user, write after
 their yes; Undo puts the old values back. A restyle never adds an entry: a
-key that matches none is refused, and the refusal says how a new entry is
-made. A 3D view shows the new colours the next time it is opened.
+key that matches none is refused. NEW entries (a logging template's pick
+list, before any row uses them) are added with `create` on the same catalog,
+one row per entry with its key and anything else known (`describe/<Model>/`
+lists the fields); an entry the project already has answers "unchanged". A 3D
+view shows the new colours the next time it is opened.
 
 | Intent | What it does | Ask the user first |
 |---|---|---|
@@ -454,6 +457,7 @@ Read the topic before answering a question in its area; each is `references/<id>
 - `drilling` · Drilling: the programme, drill intercepts, and sampling passes
 - `geochem` · Lithogeochemistry: indices, element-native screens, pathfinder suites
 - `geostatistics` · Geostatistics: compositing, declustering, capping and variography
+- `logging-templates` · Logging templates: recreating a customer's own logging sheets in a project
 - `metal-equivalents` · "Metal equivalents: price decks and the equivalent grade every surface shows"
 - `odbc-settings` · "ODBC settings: the frame and units connected modelling and GIS tools read"
 - `odbc-troubleshooting` · "ODBC troubleshooting: when a modelling or GIS package doesn't show what geoDB holds"

@@ -2036,6 +2036,97 @@ paths:
               schema:
                 type: integer
       x-geodb-extension: true
+  /api/v2/claim-blocks/{id}/claims/:
+    get:
+      operationId: claim_blocks_claims_retrieve
+      description: |-
+        One claim block (an id from `claim-blocks/`) and its proposed claims in the block's order. `block`: order number, name, `block_stage`, `order_status`, `layout_epsg` (the block's UTM frame; `layout_epsg_stored` false = derived from its first claim), `editable` with `edit_refusal` when it is not, `invoiced`, `paid`, and `revision`. `claims`: `id`, `name`, `claim_type`, `status`, `acreage`, `plss_location`, `corners` (each corner as `lat` / `lng` in WGS84 degrees and `easting` / `northing` in `layout_epsg`) and `geometry` (GeoJSON, WGS84). `overlaps`: every overlap of at least 1 m² between two proposed claims that involves this block (area in m², both claims, `same_block`), largest first, with `overlap_count` and `overlap_area_m2` for all of them. `name_collisions`: claim names this block shares with another block on the project. A person's key only (a vendor key is refused).
+
+        `geometry=false` leaves the polygons out. `limit` / `offset` page the claims (`claims_total` is the whole count). `output=geojson` returns the whole block as one GeoJSON FeatureCollection.
+      summary: 'The proposed claims of one claim block: corners, overlaps and revision'
+      parameters:
+      - in: query
+        name: geometry
+        schema:
+          type: boolean
+        description: Include each claim's GeoJSON polygon (default true).
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      - in: query
+        name: limit
+        schema:
+          type: integer
+        description: Claims per page (default 200, at most 500).
+      - in: query
+        name: offset
+        schema:
+          type: integer
+        description: Claims to skip.
+      - in: query
+        name: output
+        schema:
+          type: string
+          enum:
+          - geojson
+          - rows
+        description: '`geojson`: the whole block as a FeatureCollection.'
+      tags:
+      - Claims
+      security:
+      - knoxApiToken: []
+      - GrantAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClaimBlockClaims'
+          description: ''
+        '400':
+          description: The request could not be understood (see `reason_code`).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 'No usable credential. `reason_code` distinguishes a revoked
+            grant from an expired, unknown or malformed one; the response carries
+            `WWW-Authenticate: Grant`.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: The credential is valid but not permitted this operation —
+            outside the grant surface, a write with a read-only grant, or outside
+            a room-pinned grant's room.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: No such resource inside this credential's scope. A row in another
+            project is indistinguishable from one that does not exist, by design.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: The grant's request rate was exceeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            Retry-After:
+              description: Seconds to wait before retrying. Sent on every throttled
+                response.
+              schema:
+                type: integer
+      x-geodb-extension: true
   /api/v2/claim-plots/preview/:
     get:
       operationId: claim_plot_preview
@@ -3470,7 +3561,10 @@ paths:
         name: project
         schema:
           type: integer
-        description: The project id.
+        description: 'The project, by its id. An id that names no project this credential
+          can read is refused with `invalid_parameter`. The JSON natural key some
+          app endpoints take (`{"name": …, "company": …}`) is not a form this parameter
+          accepts: it is refused with `invalid_parameter` too — send the id.'
       tags:
       - Grant
       security:
@@ -3685,7 +3779,10 @@ paths:
         name: project
         schema:
           type: integer
-        description: The project id.
+        description: 'The project, by its id. An id that names no project this credential
+          can read is refused with `invalid_parameter`. The JSON natural key some
+          app endpoints take (`{"name": …, "company": …}`) is not a form this parameter
+          accepts: it is refused with `invalid_parameter` too — send the id.'
       - in: query
         name: section
         schema:
@@ -16768,8 +16865,8 @@ paths:
         description: 'Only writes with this intent: `create`, `upsert`, `update`,
           `retract`, `restore`, `make_default_set`, `make_export_set`, `qaqc_verdict`,
           `qc_reconnect`, `undo`, `publish`, `set_coordinate_system`, `set_state`,
-          `upload`, `upload_start`, `upload_commit`, `upload_abort`, `unpublish`.
-          Any other value is refused with `invalid_parameter`.'
+          `upload`, `upload_start`, `upload_commit`, `upload_abort`, `unpublish`,
+          `merge`. Any other value is refused with `invalid_parameter`.'
       - in: query
         name: limit
         schema:
@@ -20167,7 +20264,10 @@ paths:
         name: project
         schema:
           type: integer
-        description: The project id.
+        description: 'The project, by its id. An id that names no project this credential
+          can read is refused with `invalid_parameter`. The JSON natural key some
+          app endpoints take (`{"name": …, "company": …}`) is not a form this parameter
+          accepts: it is refused with `invalid_parameter` too — send the id.'
       tags:
       - Grant
       security:
@@ -20325,7 +20425,10 @@ paths:
         name: project
         schema:
           type: integer
-        description: The project id.
+        description: 'The project, by its id. An id that names no project this credential
+          can read is refused with `invalid_parameter`. The JSON natural key some
+          app endpoints take (`{"name": …, "company": …}`) is not a form this parameter
+          accepts: it is refused with `invalid_parameter` too — send the id.'
       tags:
       - Grant
       security:
@@ -22946,6 +23049,47 @@ components:
         * `preliminary` - Preliminary
         * `finalized` - Finalized
         * `unverified` - Unverified (no certificate in source)
+    ClaimBlockClaims:
+      type: object
+      properties:
+        project:
+          type: object
+          additionalProperties: {}
+        block:
+          type: object
+          additionalProperties: {}
+        claims:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+        claims_total:
+          type: integer
+        overlaps:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+        overlap_count:
+          type: integer
+        overlap_area_m2:
+          type: number
+          format: double
+        name_collisions:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+      required:
+      - block
+      - claims
+      - claims_total
+      - name_collisions
+      - overlap_area_m2
+      - overlap_count
+      - overlaps
+      - project
+      additionalProperties: false
     ClaimBlocks:
       type: object
       properties:
@@ -23833,6 +23977,57 @@ components:
           format: date
           readOnly: true
           nullable: true
+        depth_mode:
+          allOf:
+          - $ref: '#/components/schemas/DepthModeEnum'
+          description: |-
+            'interval' (from/to) or 'point' (one depth, stored from == to).
+
+            * `interval` - Interval
+            * `point` - Point
+        default_set:
+          type: object
+          nullable: true
+          properties:
+            id:
+              type: integer
+            name:
+              type: string
+          readOnly: true
+        export_set:
+          type: object
+          nullable: true
+          properties:
+            id:
+              type: integer
+            name:
+              type: string
+          readOnly: true
+        columns:
+          type: array
+          items:
+            type: object
+            properties:
+              field_name:
+                type: string
+              display_name:
+                type: string
+              field_type:
+                type: string
+              required:
+                type: boolean
+              choices:
+                type: array
+                nullable: true
+                items: {}
+              display_order:
+                type: integer
+                nullable: true
+          readOnly: true
+        main_required:
+          type: boolean
+          description: Every row of this table must carry its main value (a category,
+            or a measure).
         project_id:
           type: integer
           readOnly: true
@@ -23840,7 +24035,10 @@ components:
             GET /api/v2/grant-context/ names them).
       required:
       - code
+      - columns
       - date_created
+      - default_set
+      - export_set
       - id
       - last_edited
       - name
@@ -24241,6 +24439,14 @@ components:
         * `ppb` - Parts Per Billion (ppb)
         * `pct` - Percent (%)
         * `opt` - Ounces Per Ton (oz/t)
+    DepthModeEnum:
+      enum:
+      - interval
+      - point
+      type: string
+      description: |-
+        * `interval` - Interval
+        * `point` - Point
     DesurveyMethodEnum:
       enum:
       - minimum_curvature
@@ -25389,6 +25595,17 @@ components:
           type: integer
           description: Number of records, excluding soft-deleted ones.
           readOnly: true
+        type:
+          type: object
+          nullable: true
+          properties:
+            id:
+              type: integer
+            code:
+              type: string
+            name:
+              type: string
+          readOnly: true
         project_id:
           type: integer
           readOnly: true
@@ -25401,6 +25618,7 @@ components:
       - last_edited
       - name
       - project
+      - type
       additionalProperties: false
     DrillIntercepts:
       type: object
@@ -28761,6 +28979,13 @@ components:
             vector map layer (homogeneous geometry + attribute schema). Omit to export
             every active layer in the project export vintage, with layer_id/layer_name/kind
             identity columns. Ignored by all other models.
+        custom_table:
+          type: string
+          minLength: 1
+          description: 'Only for model=drill_custom_intervals. One custom drill table
+            (its code or id, from `custom-interval-types/`): the file holds that table
+            alone, with the columns its database table `ci_<code>` has (the main column
+            named by its code, its own columns). Omit for every table in one file.'
         project:
           type: string
           minLength: 1

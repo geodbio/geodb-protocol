@@ -133,6 +133,12 @@
       "remedy": "GET /api/v2/records/describe/<Model>/ lists the choices; map the value onto one of them, or \u2014 after asking the user \u2014 resend with \"acknowledge\": [\"create_catalog_entries\"] to add a new lithology/alteration/\u2026 name to the project's list.",
       "retry": "no"
     },
+    "claim_block_locked": {
+      "http": 409,
+      "meaning": "(per row) The proposed claim block cannot be changed or combined this way: it is of record, in fulfilment or out for staking bids, it has been invoiced or paid, the blocks belong to different buyers, or a block a merge would delete carries records that would be lost. `detail` says which; `offending.block_reason` names it. Nothing was changed.",
+      "remedy": "Tell the user why (the detail says); nothing was changed. Where the detail says to ask geoDB staff, they can make this change.",
+      "retry": "no"
+    },
     "collar_position_required": {
       "http": 409,
       "meaning": "The drill hole cannot be placed on the project grid: its collar has no position (no coordinates), or its coordinates do not fit the coordinate system (epsg) they are stored under. Positions along the hole (trace, xyz at depth) need it. Nothing stored was changed.",
@@ -179,6 +185,12 @@
       "http": 409,
       "meaning": "(per row) Other configuration uses this one (`offending.used_by` names each), so it was not removed.",
       "remedy": "Tell the user what uses it. Point those at another configuration (an \"update\" naming the replacement) or remove them first, then resend.",
+      "retry": "no"
+    },
+    "config_locked": {
+      "http": 409,
+      "meaning": "(per row) A setting of this configuration is fixed once records depend on it: a custom drill table's main column (categorical or numeric) and its depth mode (interval or point) once the table holds rows. `offending.fields` names the setting(s), `offending.rows` the row count; nothing was changed.",
+      "remedy": "Tell the user the setting is fixed while the table holds rows. For a different shape, create a new table with it and log into that one; the existing table and its rows stay as they are.",
       "retry": "no"
     },
     "config_undeletable": {
@@ -1035,14 +1047,14 @@
     },
     "set_is_default": {
       "http": 409,
-      "meaning": "(per row) This set is the project's default (or export) set for its family, which is never removed. Nothing was changed.",
-      "remedy": "If the user wants it gone, first make another set the default with {\"intent\": \"make_default_set\", \"model\": <the family>, \"set\": <name>} (a person who manages the project, through their own key), then retract this one.",
+      "meaning": "(per row) This set is the project's system \"default\" set (never removed), or the default or export set of the project or of a custom drill table (not removed while it is). Nothing was changed.",
+      "remedy": "`detail` says which holds it. The project's: make another set the default or export (make_default_set / make_export_set). A custom drill table's: update that table's default_set / export_set. The \"default\" set: leave it. Then retract this one.",
       "retry": "no"
     },
     "set_not_empty": {
       "http": 409,
-      "meaning": "(per row) Only an EMPTY set is removed; this set still holds rows (`detail` gives the count). A set with rows is never removed or merged. Nothing was changed.",
-      "remedy": "Leave the set where it is and tell the user it holds rows, so it stays. Do not offer to delete the rows to make room: only if the user, told what the rows are, EXPLICITLY asks for those rows to be deleted, retract them (dry run first), then the set.",
+      "meaning": "(per row) Only an EMPTY set is removed; live rows still use this set (`detail` gives the count; rows in the Trash do not count). A set with live rows is never removed or merged. Nothing was changed.",
+      "remedy": "Tell the user the set still holds live rows, so it stays. Only if they, told what the rows are, ask for those rows to be deleted: retract them (dry run first), then the set. There is no tool to move rows to another set.",
       "retry": "no"
     },
     "set_not_owned": {
