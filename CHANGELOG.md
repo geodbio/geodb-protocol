@@ -1,5 +1,22 @@
 # Changelog
 
+## Regenerated 2026-11-12 from deployed geoDB `a85d98bef`: `also_changed`, structure angle wording (`protocol_version` unchanged)
+
+Regenerated with prod's flags (MCP + READS + WRITES on, MCP_STAFF_ONLY off) and `--publish-write-profile`.
+ADDITIVE: no route, field or code was removed, and the client pin is unchanged. Also carries the 2026-11-12
+deploys `62f1fa09d` / `094636cd7`, whose regen was owed.
+
+- **New per-row warning `also_changed`:** an update (or upsert) that changes a stored field the row did not
+  send, by a rule geoDB applies on every save, says so on the row, with each field's stored and new value
+  (`fields`). Examples: a sample linked to its lab result moves to Analyzed; a value computed from other fields
+  follows a source the row changed; a paired field is kept in step. The DRY RUN names the same changes.
+- **Behaviour, no shape change:** a value a row sends is stored as sent, 0 included (a sent 0 on some interval
+  fields was read as "not provided"); a computed value the row did not send (a run length from its depths) is
+  rewritten only when one of its sources changes; and a row whose sent value could not be read is refused by
+  name (`row_refused`, naming the field), in the dry run and the write, while the rest of the batch lands.
+- **Wording:** `alpha` and `angle_to_ca` on structure intervals say they are one measurement, kept in step on
+  every write, and that orientation is read from `beta` and `confidence`.
+
 ## Regenerated 2026-11-11 from deployed geoDB `0df6894ac`: custom drill tables, logging templates, claim blocks (`protocol_version` unchanged)
 
 Regenerated with prod's flags (MCP + READS + WRITES on, MCP_STAFF_ONLY off) and `--publish-write-profile`.

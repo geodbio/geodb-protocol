@@ -1080,6 +1080,11 @@
       "remedy": "Check with the user: an over-range result is sent as \">\" + the upper limit (e.g. \">10000\") and the re-assay by an ore-grade method is its value; a units mix-up (ppb sent as ppm) is corrected before writing.",
       "retry": "no"
     },
+    "also_changed": {
+      "meaning": "(per-row warning) Saving this row also changes stored fields the row did not send, by a rule geoDB applies on every save: a sample linked to its lab result moves to Analyzed; a value computed from other fields (a run length from its depths, a percentage from its lengths) follows a source the row changed; a paired field is kept in step. \"fields\" lists each one with its stored and new value. The dry run names the same changes.",
+      "remedy": "Tell the user which fields will also change before the write. If one of them must keep its value, send that field with the value it should have.",
+      "retry": "no"
+    },
     "assays_left_unlinked": {
       "meaning": "(batch warning, retract) Removing these samples (or the hole they belong to) leaves assay records with no live sample of their name. Assays are never removed with their sample: they are kept and re-link if the sample is restored or re-imported. `assays_left_unlinked` in the answer counts them; reads mark them `sample_status: trashed`.",
       "remedy": "Tell the user how many assays will be left without a sample before sending the retract; to keep them linked, restore the sample later (intent \"restore\") or re-import it under the same name.",

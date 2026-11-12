@@ -91,7 +91,8 @@
         "null"
       ],
       "format": "double",
-      "title": "Angle to Core Axis"
+      "title": "Angle to Core Axis",
+      "description": "Angle between the structure and the core axis (0-90 degrees). The same measurement as alpha: the two columns hold one value, kept in step on every write. Whether a structure is oriented is read from beta and confidence, never from which angle column is filled."
     },
     "alpha": {
       "type": [
@@ -99,7 +100,7 @@
         "null"
       ],
       "format": "double",
-      "description": "Core-to-structure angle (0-90 degrees)"
+      "description": "Angle between the structure and the core axis (0-90 degrees). The same measurement as angle_to_ca: the two columns hold one value, kept in step on every write. Whether a structure is oriented is read from beta and confidence, never from which angle column is filled."
     },
     "beta": {
       "type": [
