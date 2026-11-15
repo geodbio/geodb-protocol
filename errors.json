@@ -139,6 +139,12 @@
       "remedy": "Tell the user why (the detail says); nothing was changed. Where the detail says to ask geoDB staff, they can make this change.",
       "retry": "no"
     },
+    "claims_permission_missing": {
+      "http": 403,
+      "meaning": "The person this request acts for may not see this project's claims (land holdings, claim stakes, claim packages and their records).",
+      "remedy": "Ask a project manager for View Claims & Land Holdings on this project, then retry. Nothing else about this access is wrong.",
+      "retry": "no"
+    },
     "collar_position_required": {
       "http": 409,
       "meaning": "The drill hole cannot be placed on the project grid: its collar has no position (no coordinates), or its coordinates do not fit the coordinate system (epsg) they are stored under. Positions along the hole (trace, xyz at depth) need it. Nothing stored was changed.",

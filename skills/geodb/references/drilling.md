@@ -90,6 +90,13 @@ press-release sentence is the same class of error as a hand-rolled composite.
 ⛔ Do NOT state true widths unless the user gives you the zone orientation:
 downhole length is not true width, and dip alone does not determine it.
 
+A drill structure's `alpha` and `angle_to_ca` (angle to core axis) are ONE
+measurement: the two columns hold the same value, so either one filled, or both,
+says nothing about whether the structure is oriented. Orientation is read from
+`beta` (the rotation around the core axis) and the `confidence` code (0 no
+orientation, 1 solid line, 2 inferred line), never from which angle column is
+filled. Do not map `alpha` and `angle_to_ca` as two different angles.
+
 A sampling PASS is one physical sampling of a hole. A second pass over the same
 ground is normal cost-control design: Au on every 5-ft bag (gold is nuggety) AND a
 48-element ICP suite on 10-ft composites of the pulps (that signal varies slowly, and

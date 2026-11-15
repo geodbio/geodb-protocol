@@ -1,5 +1,20 @@
 # Changelog
 
+## Regenerated 2026-11-15 from deployed geoDB `18a426cb8`: claims permission, structure angle guide (`protocol_version` unchanged)
+
+Regenerated with prod's flags (MCP + READS + WRITES on, MCP_STAFF_ONLY off) and `--publish-write-profile`.
+ADDITIVE: no route, field or code was removed, and the client pin is unchanged. The spec and the write profile are
+byte-identical to the previous regeneration. Also carries the 2026-11-14 deploy `7d1c2ae1a`, whose regen was owed.
+
+- **New reason code `claims_permission_missing` (403, retry no):** a project's claims (land holdings, claim stakes,
+  claim packages and their records) need their own permission, View Claims & Land Holdings. A request for them on
+  behalf of someone without it is refused by name; the remedy is to ask a project manager for that permission.
+- **Guide (drilling):** a drill structure's `alpha` and `angle_to_ca` are one measurement; orientation is read from
+  `beta` and the `confidence` code, never from which angle column is filled.
+- **Behaviour, no shape change:** on a mine-grid project (a project with its own local grid), an elevation is stored
+  as sent and the grid's vertical scale is applied when it is read; an update leaves coordinates it did not send
+  alone. Drill pads are grouped only on request (the `group_onto_pads` acknowledgement `describe` already lists).
+
 ## Regenerated 2026-11-12 from deployed geoDB `a85d98bef`: `also_changed`, structure angle wording (`protocol_version` unchanged)
 
 Regenerated with prod's flags (MCP + READS + WRITES on, MCP_STAFF_ONLY off) and `--publish-write-profile`.
