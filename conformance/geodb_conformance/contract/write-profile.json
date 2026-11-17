@@ -713,6 +713,12 @@
       "remedy": "Restore the parent first (ask the user), then resend or restore this record.",
       "retry": "no"
     },
+    "planning_number_required": {
+      "http": 400,
+      "meaning": "(per row) A planned point sample (status PL) carries neither a planning number (\"sequence_number\") nor a \"name\", so nothing identifies it. No number is made up for it.",
+      "remedy": "Resend the row with its \"sequence_number\" (the planning number the crew navigates by, e.g. SS-001; its letters name the sample programme it joins). A name is normally given in the field, from the sample bag; send one only if the user has it.",
+      "retry": "no"
+    },
     "plot_already_recorded": {
       "http": 409,
       "meaning": "A claim of the block already has a current plot in this project; a record never makes a second current plot of one claim.",
@@ -879,6 +885,12 @@
       "http": 409,
       "meaning": "(per row) The sample name is already registered as a DIFFERENT kind of sample (a drill sample vs a QC or surface sample): two records would share one assay.",
       "remedy": "Ask the user which record is right; correct the name (or the existing record) and resend the row. Nothing is guessed.",
+      "retry": "no"
+    },
+    "sample_type_required": {
+      "http": 400,
+      "meaning": "(per row) A NEW point sample names no sample type. It is never given one by default. An edit of a stored sample may leave the type out (the stored type stays).",
+      "remedy": "Ask the user which type the samples are if they did not say, then resend the row with \"ps_type\": one of the types `detail` lists (the company's sample types, by name). Validate first with \"dry_run\": true.",
       "retry": "no"
     },
     "scanner_unavailable": {

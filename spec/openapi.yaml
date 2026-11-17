@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: geoDB Exploration Data API
-  version: 0.3.4
+  version: 0.3.5
   description: |
     Access to exploration projects' data — drill holes and what was logged down
     them, samples, laboratory results, quality control, surface geology, maps and
@@ -75,7 +75,7 @@ info:
     tool: drf-spectacular
     source: the geoDB reference implementation's serializers and the runtime grant
       gate
-    protocol_version: 0.3.4
+    protocol_version: 0.3.5
     warning: Generated file — do not edit by hand. Changes belong in the reference
       implementation; regenerate to publish them.
 paths:

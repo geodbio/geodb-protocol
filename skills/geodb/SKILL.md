@@ -169,6 +169,15 @@ always a new record, and the answer's `result.uuid` names it. Send that
 no-op; an update or retract naming it only by a name several records carry
 is refused `ambiguous_match`, listing them.
 
+A planned point sample (`"status": "PL"`, its target coordinates in
+`target_latitude` / `target_longitude` / `target_epsg`) is identified by its
+planning number `sequence_number` (e.g. `SS-001`; its letters name the sample
+programme it joins, which the write's `programmes` names: tell the user) and
+needs no name: the name is given in the field, from the sample bag. A planned
+row with neither is refused `planning_number_required`.
+Every new point sample names its type (`ps_type`); one with none is refused
+`sample_type_required`, never given a default.
+
 **4 · Coordinates carry their CRS.** Send the original numbers with their
 `epsg` (easting/northing with the grid's code, or GPS degrees with `4326`);
 never pre-convert. A row with coordinates and no `epsg` is refused

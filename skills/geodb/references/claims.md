@@ -12,6 +12,11 @@ A crew's STAKE workflow status on a corner post (Planned / Assigned / Staked /
 Skipped) is a different object from a claim's layout, its approval status and
 its legal status: changing it never touches the layout or the approval.
 
+A claim is filed with BLM when its `blm_filed` box is ticked OR it carries a
+BLM `serial_number` (BLM issues a serial only once a claim is filed); the tick
+is optional and often left blank, so never report a claim as unfiled, or as
+having no serial, from `blm_filed` alone.
+
 ### Reading a claim's stakes
 
 `claim-stakes/` lists the posts of a project's claims: one row per physical

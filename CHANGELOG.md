@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.3.5: regenerated 2026-11-17 from deployed geoDB `912a57371` (release #41): sample type required, planning number without a name
+
+Regenerated with prod's flags (MCP + READS + WRITES on, MCP_STAFF_ONLY off) and `--publish-write-profile`.
+`protocol_version` is now 0.3.5. ADDITIVE: no route or field was removed, and the client pin is unchanged
+(`geodb-client>=0.3.4,<0.4`), so no client release goes with it.
+
+- **New reason code `sample_type_required` (400, per row, retry no):** a NEW point sample that names no type is refused,
+  row by row, naming the field (`ps_type`) and the allowed values (the company's sample types). It is never given a
+  default type. An edit of a stored sample may leave the type out; the stored type stays.
+- **New reason code `planning_number_required` (400, per row, retry no):** a planned point sample (status `PL`) is
+  identified by its planning number (`sequence_number`, e.g. `SS-001`; its letters name the sample programme it joins)
+  and needs no name, since the name is given in the field from the sample bag. A planned row with neither is refused.
+- **Guide:** the write teaching states both rules. The claims guide adds that a claim is filed with BLM when its
+  `blm_filed` box is ticked OR it carries a BLM `serial_number`.
+
 ## Regenerated 2026-11-15 from deployed geoDB `18a426cb8`: claims permission, structure angle guide (`protocol_version` unchanged)
 
 Regenerated with prod's flags (MCP + READS + WRITES on, MCP_STAFF_ONLY off) and `--publish-write-profile`.
