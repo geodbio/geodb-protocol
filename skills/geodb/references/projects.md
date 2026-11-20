@@ -27,7 +27,7 @@ never to guess positions.
 A project is on one of three **plans**, or on a hold. **Drilling**: everything
 works. **Field**: everything except holes or intervals deeper than 100 ft of
 hole length (assays and QAQC for samples that already exist are accepted).
-**Holding**: keeps the project and its claims in good standing; it can be read,
+**Holding**: keeps the project and its claims records up to date; it can be read,
 exported and its claims maintained, but no geology data is added, edited or
 deleted (imports, logging, field sync and connected-AI writes are refused), and no
 claim is plotted or a plotted claim changed.

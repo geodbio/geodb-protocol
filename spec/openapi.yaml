@@ -36559,9 +36559,12 @@ components:
         attach_to:
           type: string
           minLength: 1
-          description: '{"model": "DrillPhoto", "id": <the box record''s id>} as a
-            JSON string: link the photo to that drill-box record (same project) in
-            this request. The category then defaults to DH.'
+          description: '{"model": <a record type that carries photos>, "id": <that
+            record''s id>} as a JSON string: link the photo to that record (same project)
+            in this request, e.g. a DrillPhoto drill-box record, a PointSample, a
+            DrillCollar or a FieldNote (the record type''s records/describe/ answer
+            carries the rule under "images"). The category then defaults to the record
+            type''s own.'
         dry_run:
           type: boolean
           default: false

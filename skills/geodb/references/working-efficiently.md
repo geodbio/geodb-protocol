@@ -116,7 +116,20 @@ itself.
    certificate. Up to 5,000 rows (and 8 MiB of files) answer
    at once; a larger dataset answers 202 with a `dataset.poll` path (absolute,
    on this host): GET it after its `Retry-After` seconds until `status` is
-   `done` (the answer is its `result`).
+   `done` (the answer is its `result`). **At every poll, tell the user where
+   it is** from its `progress`: file `member` of `members` (`model`), and
+   `rows_done` of `rows_total`, as one short line or a progress bar. A load
+   that is working must never look frozen, and you must never go quiet while
+   one runs.
+   **Over about 50,000 values, load in pieces:** split the certificates into
+   pieces of up to about 50,000 values (each certificate whole, in one piece),
+   and dry run, show and write each piece in turn, telling the user which
+   piece of how many is running. A piece takes minutes; one huge dataset holds
+   the project for far longer, and a problem in it stops everything. Each
+   piece is its own write with its own `write_id` and its own undo (newest
+   first): tell the user an undo takes back one piece, not the whole load.
+   Records every piece shares (laboratories, methods) go in the first piece; a
+   later piece that repeats them gets "unchanged".
 4. **Show the user the answer.** Per file: the counts, and `exceptions` and
    `warnings` by code with each row's file `line`. For the Assay file, its
    `assay` block: values `linked` to samples by kind (drill, point, QC),
@@ -128,7 +141,11 @@ itself.
    `sample_name_ambiguous` warning, mean a sample number may be reused: ask
    the user re-assay or reused number before any acknowledgement. Then
    `before_writing`; the full list is `detail.download`. Nothing is written
-   yet.
+   yet. **Fix refused rows first:** a refused QC row usually leaves its batch
+   short, so its certificate's `qc_mapping` no longer matches and every value
+   of that certificate is refused `qc_mapping_mismatch`. Read the other
+   refusals first (`detail.download` has every message in full); fixing the
+   one bad cell usually clears the whole certificate.
 5. **After the user's yes,** send the answer's `write` body exactly as it
    came. Each file commits in turn, re-checked against what was approved; a
    file that would land differently stops the write, and the answer names

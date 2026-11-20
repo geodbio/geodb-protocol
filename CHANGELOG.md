@@ -1,5 +1,33 @@
 # Changelog
 
+## Regenerated 2026-11-20 from deployed geoDB `feb1c6027` (release #48): photos on every record type, three releases of owed changes (`protocol_version` unchanged)
+
+Regenerated with prod's flags (MCP + READS + WRITES on, MCP_STAFF_ONLY off) and `--publish-write-profile`.
+ADDITIVE: no route, field or code was removed, `protocol_version` stays 0.3.5 and the client pin is unchanged
+(`geodb-client>=0.3.4,<0.4`), so no client release goes with it. Also carries releases #45 and #46, whose regen was owed.
+
+- **A photo attaches to any record type that carries photos.** The photo upload's `attach_to`
+  (`{"model": <record type>, "id": <record id>}`) took a `DrillPhoto` drill-box record only. It now takes every
+  photo-carrying record type (a point sample, a drill collar, a field note, a drill interval and so on), in the same
+  request as the upload. Each type's `records/describe/<Model>/` answer carries the rule under `images` and names the
+  category its photos are filed under; pass that category with the upload. A claim stake's photos still link through
+  its staking record (`ClaimStakeStatus` `photo_ids`), and a claims record needs the claims permission.
+- **New reason code `sample_collected_by_someone_else` (409, retry no):** a new surface sample from the field app with
+  the name (or planning number) of a collected sample someone else in the project holds is refused; nothing is
+  overwritten.
+- **New reason code `dataset_stopped` (409, retry maybe):** the server stopped a background dataset job (no progress,
+  past its time limit, or a rehearsal nobody polled). The detail says what was written; a stopped write can be sent
+  again and lands only what has not landed.
+- **`storage_limit_exceeded` wording:** the message states the usage, the limit, the price of extra storage and where
+  an owner adds it. Files in the Trash do not count toward the limit.
+- **`project_tier_unpaid` wording:** it can refuse a whole call as well as a row, and it describes a company locked
+  for non-payment (reading, export and shared links refused; the data is held, not deleted).
+- **Guide (working efficiently):** report a load's progress at every poll; over about 50,000 values load in pieces,
+  each certificate whole, each piece its own write and its own undo; fix refused QC rows first, since one refused
+  row can refuse its whole certificate.
+- **Guide:** for 3D or a map, offer the user a geoDB view link before building a viewer. Uploads state the storage
+  limit rule. A Holding project "keeps the project and its claims records up to date".
+
 ## 0.3.5: regenerated 2026-11-17 from deployed geoDB `912a57371` (release #41): sample type required, planning number without a name
 
 Regenerated with prod's flags (MCP + READS + WRITES on, MCP_STAFF_ONLY off) and `--publish-write-profile`.

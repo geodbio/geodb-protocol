@@ -349,6 +349,12 @@
       "remedy": "Tell the user nothing was written and that geoDB could not issue a safe plan for this dataset. Report it through POST /api/v2/feedback/ (kind \"bug_report\") naming the member's model from `offending.members`; do not send the same rehearsal again.",
       "retry": "no"
     },
+    "dataset_stopped": {
+      "http": 409,
+      "meaning": "The server stopped a dataset job it was running in the background (`offending.rule`): it made no progress for 15 minutes (a rehearsal or dry run only), ran past the time limit for its size, or was a rehearsal or dry run nobody read the poll link of for 30 minutes. The detail says what was written: a rehearsal or dry run writes nothing; a write keeps the member files it finished and lands nothing of the one it was on; an undo is all or nothing.",
+      "remedy": "If `offending.rule` is \"abandoned\", send the same request again when the user is ready, and keep reading its poll link until it finishes. Otherwise send the dataset in smaller parts (fewer rows or member files per request; a stopped write can be sent again as it was: it lands only what has not landed); if a small request is stopped too, tell the user to contact geoDB support and quote the error_id in `offending`.",
+      "retry": "maybe"
+    },
     "dataset_too_large": {
       "http": 400,
       "meaning": "The dataset passes one of its limits (`offending.limit` names it and `offending.max` gives the limit): member files, bytes per file, data rows per dataset, per member or per certificate, columns, or characters per cell. Nothing was written.",
@@ -891,8 +897,8 @@
     },
     "project_tier_unpaid": {
       "http": 409,
-      "meaning": "(per row) The company's free month is over and billing is not set up (or an invoice is overdue), so nothing may be added, changed or removed in its projects. Reading and export keep working. Nothing in this row was written.",
-      "remedy": "Tell the person: an owner, or a manager who can make purchases, can set up billing on the geoDB Billing page (the row's remedy links it). Writing turns back on as soon as it is set up. Resend then.",
+      "meaning": "(per row, or the whole call) The company's free month is over and billing is not set up (or a subscription invoice is overdue), so its projects refuse this: nothing may be added, changed or removed, and while the company is locked for non-payment reading, export and shared links are refused too. The data is held, not deleted; a copy can be requested from admin@geodb.io. Nothing in this row was written. `offending.project` names the project when one is known.",
+      "remedy": "Tell the person: an owner, or a manager who can make purchases, can set up billing (or pay the overdue invoice) on the geoDB Billing page (the refusal's remedy links it). Everything turns back on as soon as it is done. Resend then.",
       "retry": "maybe"
     },
     "publish_approval_required": {
@@ -995,6 +1001,12 @@
       "http": 400,
       "meaning": "(per row) The landing checks refused this row; `detail` says which check and why.",
       "remedy": "Correct the row as `detail` describes (GET /api/v2/records/describe/<Model>/ lists fields, keys and choices) and resend it; validate first with \"dry_run\": true.",
+      "retry": "no"
+    },
+    "sample_collected_by_someone_else": {
+      "http": 409,
+      "meaning": "A new surface sample from the field app has the name (or planning number) of a collected sample someone else in the project already holds, one this device never downloaded. Saving it would overwrite their sample, so nothing was written.",
+      "remedy": "Rename your sample on the phone and sync again. If it really is the same sample, the office settles it on the web.",
       "retry": "no"
     },
     "sample_name_case_variant": {
@@ -1107,8 +1119,8 @@
     },
     "storage_limit_exceeded": {
       "http": 403,
-      "meaning": "(per row) The file would take the company past its storage limit; nothing was stored. The numbers are in `offending` (GB).",
-      "remedy": "Tell the user: an owner can free space (empty the Trash) or raise the plan on the Billing page; then send the upload again.",
+      "meaning": "(per row) The file would take the company past its storage limit; nothing was stored. The numbers are in `offending` (GB); the message states the usage, the limit, the price of extra storage and where to add it.",
+      "remedy": "Tell the user what the message says: a company owner can add storage where it says (the Add-ons page, at the price it states), or free space by deleting files the company no longer needs (files in the Trash do not count); then send the upload again.",
       "retry": "no"
     },
     "throttled": {
