@@ -298,8 +298,8 @@ excludes data they need (it can mean excluding a whole live certificate). Never 
   not a sync failure. The re-assay's certificate re-links it by name through
   the ordinary import path and the status returns to AN on its own.
 - `QCSample` → `qaqc_excluded=True` and it **KEEPS** its link to the assay (the audit
-  chain back to the failed cert). Un-rejecting clears the flags but never
-  re-links a primary. A re-imported QC keeps its lab name — rejected names are
+  chain back to the failed cert). Un-rejecting clears them, re-links
+  primaries it unlinked. A re-imported QC keeps its lab name — rejected names are
   reclaimable (a rejected row does not hold the name) — so after a re-assay one name
   can legitimately be TWO rows: one rejected, one live.
 

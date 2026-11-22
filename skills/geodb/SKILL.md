@@ -486,3 +486,4 @@ Read the topic before answering a question in its area; each is `references/<id>
 - `water` · Water results: non-detects, the detected and over-range flags, and units
 - `working-efficiently` · Working efficiently: large reads and imports
 - `data-rooms-and-vendor-keys` · Data rooms and vendor keys: sharing a project with an outside party
+- `3d-meshes` · 3D meshes: build one in your own sandbox and draw it in the project's 3D

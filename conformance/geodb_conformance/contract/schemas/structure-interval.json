@@ -63,7 +63,7 @@
       "items": {
         "type": "number"
       },
-      "description": "Desurveyed position at `depth_at`, as `[x, y, z]` on the project local grid in metres. Null when the hole has no survey."
+      "description": "Desurveyed position at `depth_at`, as `[x, y, z]` on the project local grid in the grid's own unit. Null when the hole has no survey."
     },
     "xyz_from": {
       "type": [
@@ -73,7 +73,7 @@
       "items": {
         "type": "number"
       },
-      "description": "Desurveyed position at `depth_from`, as `[x, y, z]` on the PROJECT LOCAL GRID in metres — not WGS84, and not the record's own `epsg`. Null when the hole has no survey to desurvey against."
+      "description": "Desurveyed position at `depth_from`, as `[x, y, z]` on the PROJECT LOCAL GRID in the grid's own unit — not WGS84, and not the record's own `epsg`. Null when the hole has no survey to desurvey against."
     },
     "xyz_to": {
       "type": [
@@ -83,7 +83,7 @@
       "items": {
         "type": "number"
       },
-      "description": "Desurveyed position at `depth_to`, as `[x, y, z]` on the project local grid in metres. Null when the hole has no survey."
+      "description": "Desurveyed position at `depth_to`, as `[x, y, z]` on the project local grid in the grid's own unit. Null when the hole has no survey."
     },
     "angle_to_ca": {
       "type": [

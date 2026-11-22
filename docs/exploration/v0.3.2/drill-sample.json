@@ -55,7 +55,7 @@
       "items": {
         "type": "number"
       },
-      "description": "Desurveyed position at `depth_from`, as `[x, y, z]` on the PROJECT LOCAL GRID in metres — not WGS84, and not the record's own `epsg`. Null when the hole has no survey to desurvey against."
+      "description": "Desurveyed position at `depth_from`, as `[x, y, z]` on the PROJECT LOCAL GRID in the grid's own unit — not WGS84, and not the record's own `epsg`. Null when the hole has no survey to desurvey against."
     },
     "xyz_to": {
       "type": [
@@ -65,7 +65,7 @@
       "items": {
         "type": "number"
       },
-      "description": "Desurveyed position at `depth_to`, as `[x, y, z]` on the project local grid in metres. Null when the hole has no survey."
+      "description": "Desurveyed position at `depth_to`, as `[x, y, z]` on the project local grid in the grid's own unit. Null when the hole has no survey."
     },
     "xyz_from_wgs84": {
       "type": [
@@ -92,7 +92,7 @@
         "integer",
         "null"
       ],
-      "description": "EPSG of the projected CRS the project LOCAL GRID is built on (the `crs_epsg` of `GET /api/v2/projects/{id}/coordinate-system/`). `xyz_from` / `xyz_to` are metres from that grid's origin (offset, possibly rotated) — add the origin back (after the rotation) to get coordinates in this EPSG; `xyz_*_wgs84` are EPSG:4326. Null when the project has no grid, and when its local grid is a custom mine grid (calibrated, possibly in feet, not an offset of any EPSG): use the `xyz_*_wgs84` twins there."
+      "description": "EPSG of the projected CRS the project LOCAL GRID is built on (the `crs_epsg` of `GET /api/v2/projects/{id}/coordinate-system/`). `xyz_from` / `xyz_to` are in that grid's own unit, from its origin (offset, possibly rotated) — add the origin back (after the rotation) to get coordinates in this EPSG; `xyz_*_wgs84` are EPSG:4326. Null when the project has no grid, and when its local grid is a custom mine grid (calibrated, possibly in feet, not an offset of any EPSG): use the `xyz_*_wgs84` twins there."
     },
     "xyz_status": {
       "type": "string",

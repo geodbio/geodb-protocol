@@ -1,5 +1,28 @@
 # Changelog
 
+## Regenerated 2026-11-22 from deployed geoDB `af6b9bf21` (release #56): mesh layers in a project's 3D, local-grid unit wording (`protocol_version` unchanged)
+
+Regenerated with prod's flags (MCP + READS + WRITES on, MCP_STAFF_ONLY off) and `--publish-write-profile`.
+ADDITIVE: no route, field or code was removed, `protocol_version` stays 0.3.5 and the client pin is unchanged
+(`geodb-client>=0.3.4,<0.4`), so no client release goes with it. Also carries release #55, whose regen was owed.
+
+- **A mesh you built is drawn in the project's 3D.** Upload one binary glTF 2 file (`.glb`) as a project file, then
+  attach it through the records endpoint with `model: MeshLayer`. New guide topic `3d-meshes`
+  (`GET /api/v2/guide/3d-meshes/`, `skills/geodb/references/3d-meshes.md`) states the frame to build in (the
+  project's local grid, Z up, in the grid's own length unit) and what a file may contain.
+- **New read `GET /api/v2/mesh-layers/`** (`mesh_layers_retrieve`, a geoDB extension): every surface, shell and
+  solid drawn as a layer of the project's 3D, with its origin, triangle count, bounds and whether it is drawn now.
+- **Seven new refusals (per row, retry no):** `mesh_not_glb`, `mesh_not_self_contained`,
+  `mesh_extension_unsupported` (Draco compression, GPU instancing and image textures are not taken), `mesh_empty`,
+  `mesh_too_large`, `mesh_too_many_triangles` (all 400) and `mesh_frame_unavailable` (409: a custom calibrated mine
+  grid, or a project with no located data yet).
+- **Three new per-row warnings** (the layer is made as sent): `mesh_elevation_mismatch`, `mesh_outside_project`,
+  `mesh_placement_unchecked`.
+- **`xyz_from` / `xyz_to` wording:** the desurveyed positions are on the project local grid "in the grid's own
+  unit", no longer "in metres" (a grid may be in feet). The values did not change.
+- **Guide (QAQC):** un-rejecting a certificate clears the rejection flags and re-links the primaries the rejection
+  unlinked.
+
 ## Regenerated 2026-11-20 from deployed geoDB `feb1c6027` (release #48): photos on every record type, three releases of owed changes (`protocol_version` unchanged)
 
 Regenerated with prod's flags (MCP + READS + WRITES on, MCP_STAFF_ONLY off) and `--publish-write-profile`.

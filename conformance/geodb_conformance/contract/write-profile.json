@@ -641,6 +641,48 @@
       "remedy": "Tell the user a project manager must do this with their own connection, or on the web (Project Settings). Reconnecting this key or asking for more write access does not help.",
       "retry": "no"
     },
+    "mesh_empty": {
+      "http": 400,
+      "meaning": "(per row) The file holds no triangles (only points or lines, or nothing).",
+      "remedy": "Write the surface or solid as triangles and upload it again; points and lines belong in the project's own records, not in a mesh layer.",
+      "retry": "no"
+    },
+    "mesh_extension_unsupported": {
+      "http": 400,
+      "meaning": "(per row) The mesh uses a glTF feature a mesh layer does not take, named in `offending.extensions`: a required extension outside `offending.supported`, Draco compression or GPU instancing (required or merely used), or image textures. geoDB counts a mesh from its plain description; these hide what the browser would draw.",
+      "remedy": "Export the mesh again as plain uncompressed geometry (no Draco, no instancing) coloured by materials or vertex colours (no image textures), upload it and attach that.",
+      "retry": "no"
+    },
+    "mesh_frame_unavailable": {
+      "http": 409,
+      "meaning": "(per row) The project has no local grid a mesh can be placed in: it uses a custom calibrated mine grid (which geoDB does not yet state in a form a mesh can be built in), or it has no located data yet so no grid exists.",
+      "remedy": "Tell the user the mesh cannot be drawn on this project yet. On a project with no data, add located records (drill collars) first, then read projects/<id>/coordinate-system/ and build the mesh in that grid. On a custom mine grid nothing you send can be placed: keep the file as a project file and say so.",
+      "retry": "no"
+    },
+    "mesh_not_glb": {
+      "http": 400,
+      "meaning": "(per row) The project file is not a binary glTF 2 mesh (.glb) the 3D viewer can read: another format, a broken header, or a JSON chunk that does not describe its meshes.",
+      "remedy": "Convert the mesh to one binary glTF 2 file (.glb) on your side, upload that as a project file, then attach the new file.",
+      "retry": "no"
+    },
+    "mesh_not_self_contained": {
+      "http": 400,
+      "meaning": "(per row) The mesh points at other files (a buffer or an image by URI); the viewer loads ONE file and follows no link.",
+      "remedy": "Export the mesh as one self-contained .glb with its buffers embedded and no image textures, upload it and attach that.",
+      "retry": "no"
+    },
+    "mesh_too_large": {
+      "http": 400,
+      "meaning": "(per row) The mesh file is larger than a mesh layer takes (100 MB; `offending.limit`), or its JSON description is (its bytes, or the count of values, nodes and accessors in it).",
+      "remedy": "Make the mesh smaller on your side (simplify it, merge it into few meshes, drop unused attributes), or split it into several layers; upload the smaller file and attach that.",
+      "retry": "no"
+    },
+    "mesh_too_many_triangles": {
+      "http": 400,
+      "meaning": "(per row) The mesh holds more triangles than one layer may (`offending.limit`), counted from the file's own accessor counts.",
+      "remedy": "Simplify (decimate) the mesh on your side, or split it into several layers, then upload and attach the smaller file. Tell the user the detail was reduced.",
+      "retry": "no"
+    },
     "missing_crs": {
       "http": 400,
       "meaning": "(per row) The record has coordinates but no \"epsg\". The coordinate system is never assumed (never WGS84 by default).",
@@ -1206,6 +1248,21 @@
     "matched_in_other_set": {
       "meaning": "(per-row warning) The row matched a record stored in a different set from the one this row writes into (a drill sample is identified by its hole and name across every set). The write acts on that stored record, in its own set; it is not moved or copied into the set named. The detail names the stored set.",
       "remedy": "Tell the user which set the record is in before the write. A second sampling pass of the same interval uses new sample names; if this row was meant as a new sample, rename it and resend.",
+      "retry": "no"
+    },
+    "mesh_elevation_mismatch": {
+      "meaning": "(per-row warning) The mesh's Z range does not meet the elevations of the project's drill collars. The usual cause is a Y-up export (elevation written to Y), or Z in the wrong length unit. The layer was made as sent.",
+      "remedy": "Export Z-up, with Z an elevation in the grid's own length unit (feet on a feet grid), then upload the corrected file and update the layer to draw it. If the model really is that deep or that high, tell the user.",
+      "retry": "no"
+    },
+    "mesh_outside_project": {
+      "meaning": "(per-row warning) The mesh's own bounding box is far from the project's drill collars in the local grid. The layer was made as sent.",
+      "remedy": "Check the frame: vertices belong in the project's LOCAL GRID (projects/<id>/coordinate-system/: subtract the origin, apply the rotation), not in map coordinates. If it is wrong, fix the mesh, upload it and update the layer to draw the new file; if the model really sits there, tell the user it is far from the drilling.",
+      "retry": "no"
+    },
+    "mesh_placement_unchecked": {
+      "meaning": "(per-row warning) Where the mesh sits could not be compared with the project: the file places its meshes with node transforms, or does not state the bounds of its vertices. The layer was made as sent.",
+      "remedy": "Open the 3D link and check the mesh sits on the drilling; better, write final local-grid coordinates into the vertices (no node transform) and upload again.",
       "retry": "no"
     },
     "method_detection_limit_missing": {

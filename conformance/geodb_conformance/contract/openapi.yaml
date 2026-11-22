@@ -12697,6 +12697,82 @@ paths:
                 type: integer
       summary: Get one of the lithology vocabulary
       x-geodb-extension: true
+  /api/v2/mesh-layers/:
+    get:
+      operationId: mesh_layers_retrieve
+      description: 'Every surface, shell and solid drawn as a layer of the project''s
+        3D: `id`, `layer_type` (`mesh` = a .glb attached from the project''s files;
+        `gradeshell` / `structural` / `lithsolid` = solved by geoDB), `name`, `origin`
+        (`geodb_solved` · `uploaded` · `ai_made`), `enabled`, `order`, `project_file`
+        (the id of the project file an attached layer draws, else null), `method`,
+        and the `triangles` and `bounds` read from the file when it was attached.
+        `drawn` is false when the layer has nothing to draw right now, with `not_drawn_because`
+        (its file is in the Trash, was removed, or moved). `url` is the project''s
+        3D page. To add, change or remove an attached layer use the records endpoint
+        with `model: MeshLayer`.'
+      summary: The mesh layers of a project's 3D
+      parameters:
+      - in: query
+        name: project_id
+        schema:
+          type: integer
+        description: The project to read. Defaults to the project this credential
+          is pinned to; any other must be one it can read — an id naming no readable
+          project is refused with `invalid_parameter`, as on the lists.
+      tags:
+      - Discovery
+      security:
+      - knoxApiToken: []
+      - GrantAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeshLayers'
+          description: ''
+        '400':
+          description: The request could not be understood (see `reason_code`).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 'No usable credential. `reason_code` distinguishes a revoked
+            grant from an expired, unknown or malformed one; the response carries
+            `WWW-Authenticate: Grant`.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: The credential is valid but not permitted this operation —
+            outside the grant surface, a write with a read-only grant, or outside
+            a room-pinned grant's room.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: No such resource inside this credential's scope. A row in another
+            project is indistinguishable from one that does not exist, by design.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: The grant's request rate was exceeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            Retry-After:
+              description: Seconds to wait before retrying. Sent on every throttled
+                response.
+              schema:
+                type: integer
+      x-geodb-extension: true
   /api/v2/metal-equivalents/:
     get:
       operationId: metal_equivalents_retrieve
@@ -24712,8 +24788,8 @@ components:
           items:
             type: number
           description: Desurveyed position at `depth_from`, as `[x, y, z]` on the
-            PROJECT LOCAL GRID in metres — not WGS84, and not the record's own `epsg`.
-            Null when the hole has no survey to desurvey against.
+            PROJECT LOCAL GRID in the grid's own unit — not WGS84, and not the record's
+            own `epsg`. Null when the hole has no survey to desurvey against.
           readOnly: true
         xyz_to:
           type: array
@@ -24721,7 +24797,7 @@ components:
           items:
             type: number
           description: Desurveyed position at `depth_to`, as `[x, y, z]` on the project
-            local grid in metres. Null when the hole has no survey.
+            local grid in the grid's own unit. Null when the hole has no survey.
           readOnly: true
         alteration:
           allOf:
@@ -25393,8 +25469,8 @@ components:
           items:
             type: number
           description: Desurveyed position at `depth_from`, as `[x, y, z]` on the
-            PROJECT LOCAL GRID in metres — not WGS84, and not the record's own `epsg`.
-            Null when the hole has no survey to desurvey against.
+            PROJECT LOCAL GRID in the grid's own unit — not WGS84, and not the record's
+            own `epsg`. Null when the hole has no survey to desurvey against.
           readOnly: true
         xyz_to:
           type: array
@@ -25402,7 +25478,7 @@ components:
           items:
             type: number
           description: Desurveyed position at `depth_to`, as `[x, y, z]` on the project
-            local grid in metres. Null when the hole has no survey.
+            local grid in the grid's own unit. Null when the hole has no survey.
           readOnly: true
         type:
           allOf:
@@ -25735,8 +25811,8 @@ components:
           items:
             type: number
           description: Desurveyed position at `depth_from`, as `[x, y, z]` on the
-            PROJECT LOCAL GRID in metres — not WGS84, and not the record's own `epsg`.
-            Null when the hole has no survey to desurvey against.
+            PROJECT LOCAL GRID in the grid's own unit — not WGS84, and not the record's
+            own `epsg`. Null when the hole has no survey to desurvey against.
           readOnly: true
         xyz_to:
           type: array
@@ -25744,7 +25820,7 @@ components:
           items:
             type: number
           description: Desurveyed position at `depth_to`, as `[x, y, z]` on the project
-            local grid in metres. Null when the hole has no survey.
+            local grid in the grid's own unit. Null when the hole has no survey.
           readOnly: true
         lithology:
           allOf:
@@ -25984,8 +26060,8 @@ components:
           items:
             type: number
           description: Desurveyed position at `depth_from`, as `[x, y, z]` on the
-            PROJECT LOCAL GRID in metres — not WGS84, and not the record's own `epsg`.
-            Null when the hole has no survey to desurvey against.
+            PROJECT LOCAL GRID in the grid's own unit — not WGS84, and not the record's
+            own `epsg`. Null when the hole has no survey to desurvey against.
           readOnly: true
         xyz_to:
           type: array
@@ -25993,7 +26069,7 @@ components:
           items:
             type: number
           description: Desurveyed position at `depth_to`, as `[x, y, z]` on the project
-            local grid in metres. Null when the hole has no survey.
+            local grid in the grid's own unit. Null when the hole has no survey.
           readOnly: true
         assemblage:
           allOf:
@@ -26518,8 +26594,8 @@ components:
           items:
             type: number
           description: Desurveyed position at `depth_from`, as `[x, y, z]` on the
-            PROJECT LOCAL GRID in metres — not WGS84, and not the record's own `epsg`.
-            Null when the hole has no survey to desurvey against.
+            PROJECT LOCAL GRID in the grid's own unit — not WGS84, and not the record's
+            own `epsg`. Null when the hole has no survey to desurvey against.
           readOnly: true
         xyz_to:
           type: array
@@ -26527,7 +26603,7 @@ components:
           items:
             type: number
           description: Desurveyed position at `depth_to`, as `[x, y, z]` on the project
-            local grid in metres. Null when the hole has no survey.
+            local grid in the grid's own unit. Null when the hole has no survey.
           readOnly: true
         run_length:
           type: number
@@ -27024,8 +27100,8 @@ components:
           items:
             type: number
           description: Desurveyed position at `depth_from`, as `[x, y, z]` on the
-            PROJECT LOCAL GRID in metres — not WGS84, and not the record's own `epsg`.
-            Null when the hole has no survey to desurvey against.
+            PROJECT LOCAL GRID in the grid's own unit — not WGS84, and not the record's
+            own `epsg`. Null when the hole has no survey to desurvey against.
           readOnly: true
         xyz_to:
           type: array
@@ -27033,7 +27109,7 @@ components:
           items:
             type: number
           description: Desurveyed position at `depth_to`, as `[x, y, z]` on the project
-            local grid in metres. Null when the hole has no survey.
+            local grid in the grid's own unit. Null when the hole has no survey.
           readOnly: true
         xyz_from_wgs84:
           type: array
@@ -27056,8 +27132,8 @@ components:
           nullable: true
           description: 'EPSG of the projected CRS the project LOCAL GRID is built
             on (the `crs_epsg` of `GET /api/v2/projects/{id}/coordinate-system/`).
-            `xyz_from` / `xyz_to` are metres from that grid''s origin (offset, possibly
-            rotated) — add the origin back (after the rotation) to get coordinates
+            `xyz_from` / `xyz_to` are in that grid''s own unit, from its origin (offset,
+            possibly rotated) — add the origin back (after the rotation) to get coordinates
             in this EPSG; `xyz_*_wgs84` are EPSG:4326. Null when the project has no
             grid, and when its local grid is a custom mine grid (calibrated, possibly
             in feet, not an offset of any EPSG): use the `xyz_*_wgs84` twins there.'
@@ -27637,8 +27713,8 @@ components:
           items:
             type: number
           description: Desurveyed position at `depth_from`, as `[x, y, z]` on the
-            PROJECT LOCAL GRID in metres — not WGS84, and not the record's own `epsg`.
-            Null when the hole has no survey to desurvey against.
+            PROJECT LOCAL GRID in the grid's own unit — not WGS84, and not the record's
+            own `epsg`. Null when the hole has no survey to desurvey against.
           readOnly: true
         xyz_to:
           type: array
@@ -27646,7 +27722,7 @@ components:
           items:
             type: number
           description: Desurveyed position at `depth_to`, as `[x, y, z]` on the project
-            local grid in metres. Null when the hole has no survey.
+            local grid in the grid's own unit. Null when the hole has no survey.
           readOnly: true
         abundances:
           type: array
@@ -27924,7 +28000,7 @@ components:
           items:
             type: number
           description: Desurveyed position at `depth_at`, as `[x, y, z]` on the project
-            local grid in metres. Null when the hole has no survey.
+            local grid in the grid's own unit. Null when the hole has no survey.
           readOnly: true
         xyz_from:
           type: array
@@ -27932,8 +28008,8 @@ components:
           items:
             type: number
           description: Desurveyed position at `depth_from`, as `[x, y, z]` on the
-            PROJECT LOCAL GRID in metres — not WGS84, and not the record's own `epsg`.
-            Null when the hole has no survey to desurvey against.
+            PROJECT LOCAL GRID in the grid's own unit — not WGS84, and not the record's
+            own `epsg`. Null when the hole has no survey to desurvey against.
           readOnly: true
         xyz_to:
           type: array
@@ -27941,7 +28017,7 @@ components:
           items:
             type: number
           description: Desurveyed position at `depth_to`, as `[x, y, z]` on the project
-            local grid in metres. Null when the hole has no survey.
+            local grid in the grid's own unit. Null when the hole has no survey.
           readOnly: true
         angle_to_ca:
           type: number
@@ -28521,8 +28597,8 @@ components:
           items:
             type: number
           description: Desurveyed position at `depth_from`, as `[x, y, z]` on the
-            PROJECT LOCAL GRID in metres — not WGS84, and not the record's own `epsg`.
-            Null when the hole has no survey to desurvey against.
+            PROJECT LOCAL GRID in the grid's own unit — not WGS84, and not the record's
+            own `epsg`. Null when the hole has no survey to desurvey against.
           readOnly: true
         xyz_to:
           type: array
@@ -28530,7 +28606,7 @@ components:
           items:
             type: number
           description: Desurveyed position at `depth_to`, as `[x, y, z]` on the project
-            local grid in metres. Null when the hole has no survey.
+            local grid in the grid's own unit. Null when the hole has no survey.
           readOnly: true
         vein_type:
           allOf:
@@ -30818,6 +30894,28 @@ components:
             `/api/v2/model-schemas/?project_id=<id>`, never by assuming a fixed set.
             Values are whatever the customer stored (string, number, boolean or null).
             Calculated custom fields appear under the same prefix and are read-only.'
+      additionalProperties: false
+    MeshLayers:
+      type: object
+      properties:
+        project:
+          type: object
+          additionalProperties: {}
+        url:
+          type: string
+          nullable: true
+        count:
+          type: integer
+        mesh_layers:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+      required:
+      - count
+      - mesh_layers
+      - project
+      - url
       additionalProperties: false
     MetalEquivalents:
       type: object
