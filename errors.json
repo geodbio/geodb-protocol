@@ -453,7 +453,7 @@
     },
     "grant_expired": {
       "http": 401,
-      "meaning": "The grant passed its expiry date.",
+      "meaning": "The grant itself passed its expiry date (or went unused too long). A one-hour session key that expired answers `session_key_expired` instead.",
       "remedy": "Ask the project owner to rotate or reissue it.",
       "retry": "no"
     },
@@ -603,7 +603,7 @@
     },
     "key_shape_conflict": {
       "http": 400,
-      "meaning": "(per row) Another row of the same request names the same interval (hole and start depth) of a model whose rows carry an optional type (a vein's type, a mineralization's assemblage), but one row sends that column and the other omits it. None of these rows was written.",
+      "meaning": "(per row) Another row of the same request names the same interval (hole and start depth; a structure: hole and depth) of a model whose rows carry an optional type (a vein's type, a mineralization's assemblage, a drill structure's feature type), but one row sends that column and the other omits it. None of these rows was written.",
       "remedy": "Send the type column on every row of this interval (null means no type), then resend the rows.",
       "retry": "no"
     },
@@ -1105,6 +1105,12 @@
       "remedy": "Send the session key to the API as `Authorization: Grant <key>` on /api/v2/\u2026; connect to /mcp with the connection's own sign-in or key.",
       "retry": "no"
     },
+    "session_key_expired": {
+      "http": 401,
+      "meaning": "The session key expired (session keys last one hour) or was retired by newer session keys. The connection (grant) behind it is still valid; only the key needs replacing.",
+      "remedy": "Call your geoDB connection's session_key tool for a fresh key, then retry this same request with the new key. Do this without asking the user: nothing needs their action. To avoid this, renew a few minutes before the expires_at the session_key tool returned.",
+      "retry": "no"
+    },
     "set_cannot_be_default": {
       "http": 409,
       "meaning": "A field-XRF sample set (kind \"field_xrf\": portable-XRF readings) is never the project's default sample set, which is where new routine samples land. It may be the export set. Nothing was changed.",
@@ -1185,7 +1191,7 @@
     },
     "typed_onto_typeless": {
       "http": 409,
-      "meaning": "(per row) The row sends a vein type / assemblage, and its interval (hole, start depth and set) holds a stored record with NO type (`offending.ids`) and none of the type sent. It may be that record with its type now known, or a new row beside it, so nothing was written for this row.",
+      "meaning": "(per row) The row sends a vein type / assemblage / structure feature type, and its interval (hole, start depth and set; a structure: hole and depth) holds a stored record with NO type (`offending.ids`) and none of the type sent. It may be that record with its type now known, or a new row beside it, so nothing was written for this row.",
       "remedy": "Ask the user. A new row beside the stored one: resend with \"acknowledge\": [\"typed_onto_typeless\"]. The same record: retract the record with no type (intent \"retract\" with its \"id\"), then send this row again.",
       "retry": "no"
     },

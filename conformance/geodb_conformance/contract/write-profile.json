@@ -619,7 +619,7 @@
     },
     "key_shape_conflict": {
       "http": 400,
-      "meaning": "(per row) Another row of the same request names the same interval (hole and start depth) of a model whose rows carry an optional type (a vein's type, a mineralization's assemblage), but one row sends that column and the other omits it. None of these rows was written.",
+      "meaning": "(per row) Another row of the same request names the same interval (hole and start depth; a structure: hole and depth) of a model whose rows carry an optional type (a vein's type, a mineralization's assemblage, a drill structure's feature type), but one row sends that column and the other omits it. None of these rows was written.",
       "remedy": "Send the type column on every row of this interval (null means no type), then resend the rows.",
       "retry": "no"
     },
@@ -1015,7 +1015,7 @@
     },
     "typed_onto_typeless": {
       "http": 409,
-      "meaning": "(per row) The row sends a vein type / assemblage, and its interval (hole, start depth and set) holds a stored record with NO type (`offending.ids`) and none of the type sent. It may be that record with its type now known, or a new row beside it, so nothing was written for this row.",
+      "meaning": "(per row) The row sends a vein type / assemblage / structure feature type, and its interval (hole, start depth and set; a structure: hole and depth) holds a stored record with NO type (`offending.ids`) and none of the type sent. It may be that record with its type now known, or a new row beside it, so nothing was written for this row.",
       "remedy": "Ask the user. A new row beside the stored one: resend with \"acknowledge\": [\"typed_onto_typeless\"]. The same record: retract the record with no type (intent \"retract\" with its \"id\"), then send this row again.",
       "retry": "no"
     },

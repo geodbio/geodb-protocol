@@ -42245,7 +42245,7 @@ components:
       description: |-
         The ONE error shape. Every 4xx carries a stable machine `reason_code` and a `remedy` sentence saying what to do next.
 
-        Authentication failures are distinguishable, which matters because a revoked credential must not look like a transient failure: `grant_revoked` (the owner revoked it — do not retry), `grant_expired` (ask the owner to rotate it), `grant_unknown` (no such grant), `grant_malformed` (the header is not `Authorization: Grant <token>`), `grant_invalid` (project or data-room state). Each also carries the short `grant_error` key (`revoked` | `expired` | `unknown` | `malformed` | `invalid`).
+        Authentication failures are distinguishable, which matters because a revoked credential must not look like a transient failure: `grant_revoked` (the owner revoked it — do not retry), `grant_expired` (ask the owner to rotate it), `session_key_expired` (only the one-hour session key expired; the connection is fine: get a fresh key from the session_key tool and retry), `grant_unknown` (no such grant), `grant_malformed` (the header is not `Authorization: Grant <token>`), `grant_invalid` (project or data-room state). Each also carries the short `grant_error` key (`revoked` | `expired` | `session_key_expired` | `unknown` | `malformed` | `invalid`).
 
         Refusals by the grant gate use `grant_write_forbidden`, `grant_surface_forbidden`, `grant_no_read_capability`, `grant_room_pinned_*` and `use_v2` (a grant reads the /api/v2/ surface only).
 
