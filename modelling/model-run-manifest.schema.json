@@ -1,0 +1,257 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://spec.geodb.io/modelling/v1/model-run-manifest.json",
+  "title": "Model run manifest",
+  "description": "How a computed 3D object was made: what data went in, with which settings, by which script, in which environment, what came out and which checks it passed. Filed with the object so that anyone with a code sandbox can run the same recipe again on current data. geoDB checks the structure and the file hashes; it never judges the content and never executes a recipe.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "manifest_version",
+    "kind",
+    "title",
+    "made_by",
+    "inputs",
+    "parameters",
+    "recipe",
+    "environment",
+    "outputs",
+    "checks",
+    "caveats"
+  ],
+  "properties": {
+    "manifest_version": {
+      "const": 1,
+      "description": "The version of this contract. Always 1."
+    },
+    "kind": {
+      "type": "string",
+      "enum": [
+        "grade_shell",
+        "surface",
+        "solid",
+        "variogram",
+        "block_model",
+        "estimate_report",
+        "validation"
+      ],
+      "description": "What the run made. A mesh layer takes grade_shell, surface or solid."
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 255,
+      "description": "A short name for the result, as a person would say it."
+    },
+    "made_by": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 255,
+      "description": "The program or AI that made it, with its version, as it reports itself."
+    },
+    "replaces": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 1,
+      "description": "The id of the mesh layer this run is the next version of, or null."
+    },
+    "inputs": {
+      "type": "array",
+      "maxItems": 50,
+      "description": "Every pull the recipe makes, so the same pull can be made again.",
+      "items": {
+        "type": "object",
+        "required": [
+          "what"
+        ],
+        "properties": {
+          "what": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500,
+            "description": "What was pulled, in plain words."
+          },
+          "read": {
+            "type": "string",
+            "maxLength": 500,
+            "description": "The API read it came from (a path under /api/v2/)."
+          },
+          "filters": {
+            "type": "object",
+            "description": "The query parameters of that read, as sent."
+          },
+          "rows": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "How many records came back."
+          },
+          "fields": {
+            "type": "array",
+            "maxItems": 200,
+            "items": {
+              "type": "string",
+              "maxLength": 100
+            },
+            "description": "The fields of each pulled row the recipe uses, which are the fields the fingerprint covers."
+          },
+          "fingerprint": {
+            "type": "string",
+            "maxLength": 200,
+            "description": "To tell later whether the data changed. Keep only `fields` of each pulled row; write each row as JSON with its keys sorted, no whitespace (separators \",\" and \":\") and non-ASCII characters escaped; sort those row texts; join them with \",\" between \"[\" and \"]\"; the fingerprint is the SHA-256 of that text (UTF-8), as 64 lowercase hexadecimal characters."
+          },
+          "pulled_at": {
+            "type": "string",
+            "maxLength": 40,
+            "description": "When it was pulled (ISO 8601, UTC)."
+          }
+        }
+      }
+    },
+    "parameters": {
+      "type": "object",
+      "description": "Every setting the recipe takes (cutoff and its units, composite length, grid size and so on). The recipe reads its settings from here and from nowhere else."
+    },
+    "recipe": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "sha256",
+        "entry"
+      ],
+      "properties": {
+        "file": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,63}\\.py$",
+          "description": "The recipe's file name (a plain .py name)."
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$",
+          "description": "SHA-256 of the exact bytes, as 64 lowercase hexadecimal characters."
+        },
+        "entry": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500,
+          "description": "How to run it, for example \"python recipe.py\"."
+        }
+      }
+    },
+    "environment": {
+      "type": "object",
+      "description": "The interpreter and package versions the run used, for example {\"python\": \"3.12\", \"packages\": {\"scipy\": \"1.16.2\"}}."
+    },
+    "outputs": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 20,
+      "items": {
+        "type": "object",
+        "required": [
+          "role",
+          "sha256"
+        ],
+        "properties": {
+          "role": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 50,
+            "description": "What the file is. \"mesh\" is the .glb a mesh layer draws."
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$",
+            "description": "SHA-256 of the exact bytes, as 64 lowercase hexadecimal characters."
+          },
+          "file": {
+            "type": "string",
+            "maxLength": 255,
+            "description": "Its file name."
+          },
+          "frame": {
+            "type": "string",
+            "maxLength": 50,
+            "description": "For a mesh: \"project_local_grid\"."
+          },
+          "up": {
+            "type": "string",
+            "maxLength": 5,
+            "description": "For a mesh: \"Z\"."
+          },
+          "length_unit": {
+            "type": "string",
+            "maxLength": 30,
+            "description": "The unit of X, Y and Z in the file."
+          }
+        }
+      }
+    },
+    "checks": {
+      "type": "array",
+      "maxItems": 50,
+      "description": "The checks the maker ran on the result, each with its outcome.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "name",
+          "pass"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "pass": {
+            "type": "boolean"
+          },
+          "detail": {
+            "type": "string",
+            "maxLength": 2000
+          }
+        }
+      }
+    },
+    "caveats": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4000,
+      "description": "What the result is not. Always present, for example \"An interpolated surface for visualisation, not a mineral resource estimate.\""
+    }
+  },
+  "if": {
+    "properties": {
+      "kind": {
+        "enum": [
+          "grade_shell",
+          "surface",
+          "solid"
+        ]
+      }
+    },
+    "required": [
+      "kind"
+    ]
+  },
+  "then": {
+    "properties": {
+      "outputs": {
+        "contains": {
+          "type": "object",
+          "properties": {
+            "role": {
+              "const": "mesh"
+            }
+          },
+          "required": [
+            "role"
+          ]
+        },
+        "minContains": 1,
+        "maxContains": 1
+      }
+    }
+  }
+}

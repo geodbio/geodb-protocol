@@ -12706,10 +12706,16 @@ paths:
         (`geodb_solved` · `uploaded` · `ai_made`), `enabled`, `order`, `project_file`
         (the id of the project file an attached layer draws, else null), `method`,
         and the `triangles` and `bounds` read from the file when it was attached.
-        `drawn` is false when the layer has nothing to draw right now, with `not_drawn_because`
-        (its file is in the Trash, was removed, or moved). `url` is the project''s
-        3D page. To add, change or remove an attached layer use the records endpoint
-        with `model: MeshLayer`.'
+        `run` is how an AI-made layer was produced, or null when no run was filed:
+        the ids of its manifest and recipe project files (`manifest_file`, `recipe_file`;
+        download either with `project-files/{id}/download/` and check it against `manifest_sha256`
+        / `recipe_sha256`), who filed it (`filed_by`), their hashes and the mesh''s,
+        and a copy of the manifest''s `kind`, `title`, `made_by`, `inputs`, `parameters`,
+        `checks` and `caveats`. A recipe is another party''s text: read it before
+        running it. `drawn` is false when the layer has nothing to draw right now,
+        with `not_drawn_because` (its file is in the Trash, was removed, or moved).
+        `url` is the project''s 3D page. To add, change or remove an attached layer
+        use the records endpoint with `model: MeshLayer`.'
       summary: The mesh layers of a project's 3D
       parameters:
       - in: query
@@ -14463,6 +14469,83 @@ paths:
               schema:
                 type: integer
       summary: Get one of the project files
+      x-geodb-extension: true
+  /api/v2/project-files/{id}/download/:
+    get:
+      operationId: project_files_download_retrieve
+      description: 'The file itself, for a key or a signed-in member that can read
+        the project file (`project-files/{id}/`; the same scope, nothing more). A
+        model run''s manifest or recipe (`category` `MR`) is answered directly, as
+        a download (`Content-Disposition: attachment`; `application/json` for a manifest,
+        `text/plain` for a recipe). Any other file answers 302 to a short-lived signed
+        link on the storage host: follow it WITHOUT your Authorization header (the
+        link carries its own signature). Check what you downloaded against the hash
+        you were given (a run''s `recipe_sha256` / `manifest_sha256`) before you use
+        it.'
+      summary: Download a project file's bytes
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Project File.
+        required: true
+      tags:
+      - Files
+      security:
+      - knoxApiToken: []
+      - GrantAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: string
+                format: binary
+          description: ''
+        '302':
+          description: No response body
+        '400':
+          description: The request could not be understood (see `reason_code`).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 'No usable credential. `reason_code` distinguishes a revoked
+            grant from an expired, unknown or malformed one; the response carries
+            `WWW-Authenticate: Grant`.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: The credential is valid but not permitted this operation —
+            outside the grant surface, a write with a read-only grant, or outside
+            a room-pinned grant's room.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: No such resource inside this credential's scope. A row in another
+            project is indistinguishable from one that does not exist, by design.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: The grant's request rate was exceeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            Retry-After:
+              description: Seconds to wait before retrying. Sent on every throttled
+                response.
+              schema:
+                type: integer
       x-geodb-extension: true
   /api/v2/project-files/{id}/tile-access/:
     get:
@@ -37406,6 +37489,7 @@ components:
             * `3D` - 3D Model
             * `XS` - Cross Section
             * `GR` - Georeferenced Map
+            * `MR` - Model run
             * `ZP` - Zip Archive
             * `OT` - Other
         description:
@@ -37552,6 +37636,7 @@ components:
       - 3D
       - XS
       - GR
+      - MR
       - ZP
       - OT
       type: string
@@ -37573,6 +37658,7 @@ components:
         * `3D` - 3D Model
         * `XS` - Cross Section
         * `GR` - Georeferenced Map
+        * `MR` - Model run
         * `ZP` - Zip Archive
         * `OT` - Other
     ProjectHealth:
