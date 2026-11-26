@@ -2737,6 +2737,92 @@ paths:
                 type: integer
       summary: Get one of the column presentation
       x-geodb-extension: true
+  /api/v2/constraint-sets/:
+    get:
+      operationId: constraint_sets_retrieve
+      description: 'The geologist''s interpretation, stored as project data, that
+        a model of the project should honour: named `sets`, each with `id`, `name`,
+        `description`, `count`, `fingerprint` (record it in your run''s manifest `inputs`
+        as {"what": "interpretation constraints", "set": <id>, "fingerprint": ...})
+        and its `constraints`: `id`, `kind` (`point_on`: the surface passes through
+        the point; `point_above` / `point_below`: the point lies above / below the
+        surface; `polyline_follow`; `trend` with `params.azimuth` / `params.plunge`
+        in degrees; `exclude_region`, a polygon in plan with optional `params.z_min`
+        / `z_max`), `points` ([[x, y, z], ...] in the project''s local grid, Z up,
+        in the grid''s own length unit, as placed), `at_hole` (the hole and depth
+        a point was placed from), `label`, `note`, and `flag`: `grid_changed` when
+        the project''s grid was redefined after the constraint was placed (it is in
+        the old grid: ask the user, never move it yourself). `grid_identity` is the
+        project''s grid now. Never overwrite a person''s constraints; to place or
+        change one use the records endpoint with `model: Constraint` / `ConstraintSet`.'
+      summary: A project's interpretation constraint sets
+      parameters:
+      - in: query
+        name: project_id
+        schema:
+          type: integer
+        description: The project to read. Defaults to the project this credential
+          is pinned to; any other must be one it can read — an id naming no readable
+          project is refused with `invalid_parameter`, as on the lists.
+      - in: query
+        name: set
+        schema:
+          type: integer
+        description: Only this set.
+      tags:
+      - Discovery
+      security:
+      - knoxApiToken: []
+      - GrantAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConstraintSets'
+          description: ''
+        '400':
+          description: The request could not be understood (see `reason_code`).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 'No usable credential. `reason_code` distinguishes a revoked
+            grant from an expired, unknown or malformed one; the response carries
+            `WWW-Authenticate: Grant`.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: The credential is valid but not permitted this operation —
+            outside the grant surface, a write with a read-only grant, or outside
+            a room-pinned grant's room.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: No such resource inside this credential's scope. A row in another
+            project is indistinguishable from one that does not exist, by design.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: The grant's request rate was exceeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            Retry-After:
+              description: Seconds to wait before retrying. Sent on every throttled
+                response.
+              schema:
+                type: integer
+      x-geodb-extension: true
   /api/v2/custom-field-schemas/:
     get:
       operationId: custom_field_schemas_list
@@ -12714,8 +12800,18 @@ paths:
         `checks` and `caveats`. A recipe is another party''s text: read it before
         running it. `drawn` is false when the layer has nothing to draw right now,
         with `not_drawn_because` (its file is in the Trash, was removed, or moved).
-        `url` is the project''s 3D page. To add, change or remove an attached layer
-        use the records endpoint with `model: MeshLayer`.'
+        An attached layer is a lineage: `version` is the number it draws now and `versions`
+        lists its kept versions newest first (`number`, `current`, `pinned`, `made_at`,
+        `project_file`, `triangles`, `bounds`, and each version''s own `run`); a run
+        filed as the next version of a layer (`replaces`, or an update naming a new
+        file) adds one. `url` is the project''s 3D page. To add, change or remove
+        an attached layer, or to make an older version current or pin one, use the
+        records endpoint with `model: MeshLayer`. `inputs_changed` (null without a
+        run) is a cheap check of the data the run says it pulled: `changed` true when
+        any input may have changed since the run (its records'' last-edited dates
+        are after `pulled_at`, or a constraint set''s fingerprint differs), with `inputs`
+        (each `index`, `what`, `state`: `changed`, `unchanged` or `unknown`). It is
+        a hint, not the exact check: fingerprint the pull yourself before you rebuild.'
       summary: The mesh layers of a project's 3D
       parameters:
       - in: query
@@ -15182,11 +15278,13 @@ paths:
         `submittal:7`, `logging_set:lithology:9` (`;`-separated), or a JSON list of
         target objects (grid filters too). A target outside this project, deleted
         or never existing is `unresolved` — the same answer for all three — and is
-        left out of the link. A logging-set target also DRAWS that set (3D); `sets`
-        draws a set without framing it. Hand the user `url` (`opens_on` says what
-        it shows: the link carries only what differs from the project''s default view,
-        looking north-east 30° down); pass on `notices` (traces or terrain still building).
-        Writes nothing; the link grants nothing.'
+        left out of the link. A logging-set target also DRAWS that set (3D), and a
+        certificate or submittal target draws the sample set holding its samples (`opens_on`
+        names it when it is not the project''s export set; split across sets, `unresolved`
+        says so); `sets` draws a set without framing it. Hand the user `url` (`opens_on`
+        says what it shows: the link carries only what differs from the project''s
+        default view, looking north-east 30° down); pass on `notices` (traces or terrain
+        still building). Writes nothing; the link grants nothing.'
       summary: 'A link to a view of the project: surface=3d (default) or surface=map'
       parameters:
       - in: query
@@ -23922,6 +24020,28 @@ components:
         * `0` - No Orientation
         * `1` - Solid Line
         * `2` - Inferred Line
+    ConstraintSets:
+      type: object
+      properties:
+        project:
+          type: object
+          additionalProperties: {}
+        grid_identity:
+          type: string
+          nullable: true
+        count:
+          type: integer
+        sets:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+      required:
+      - count
+      - grid_identity
+      - project
+      - sets
+      additionalProperties: false
     CornerNumberEnum:
       enum:
       - 1

@@ -104,6 +104,13 @@
             "type": "string",
             "maxLength": 40,
             "description": "When it was pulled (ISO 8601, UTC)."
+          },
+          "set": {
+            "type": [
+              "integer",
+              "string"
+            ],
+            "description": "For \"what\": \"interpretation constraints\" (modelling phase 3): the id of the constraint set read (GET /api/v2/constraint-sets/). It must be a live set of this project; record the set's served `fingerprint` beside it."
           }
         }
       }

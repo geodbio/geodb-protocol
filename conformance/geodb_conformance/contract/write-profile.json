@@ -365,6 +365,18 @@
       "remedy": "Tell the user to reconnect the AI, or to make the change themselves in geoDB.",
       "retry": "no"
     },
+    "constraint_frame_unavailable": {
+      "http": 409,
+      "meaning": "(per row) The project has no local grid a constraint can be placed in: it uses a custom calibrated mine grid (which geoDB does not yet state in a form a point can be placed in), or it has no located data yet so no grid exists.",
+      "remedy": "Tell the user constraints cannot be placed on this project yet. On a project with no data, add located records (drill collars) first, then read projects/<id>/coordinate-system/ and place the points in that grid.",
+      "retry": "no"
+    },
+    "constraint_limit_reached": {
+      "http": 400,
+      "meaning": "(per row) A project holds a bounded number of constraint sets, and a set a bounded number of constraints (`offending.limit`). Nothing was written.",
+      "remedy": "Tell the user the limit was reached; remove sets or constraints they no longer need (ask them which), or start a new set.",
+      "retry": "no"
+    },
     "crs_geographic": {
       "http": 400,
       "meaning": "A geographic CRS (degrees, e.g. EPSG:4326) cannot be a project's working frame; the frame is a projected CRS in metres or feet.",
@@ -747,6 +759,12 @@
       "http": 403,
       "meaning": "(per row) The record is shared by every project of the company (a laboratory, a lab method, a reference standard, a water method) and this key does not reach all of those projects.",
       "remedy": "This record is shared by every project in the company; ask a person with access to all of them, or make the change in the web app.",
+      "retry": "no"
+    },
+    "own_restore_door": {
+      "http": 409,
+      "meaning": "The batch holds a record that comes back only through its own restore, one at a time (a mesh layer, a constraint set or a constraint; `offending.own_restore` names them). A batch restore never brings it back. Nothing was restored.",
+      "remedy": "Restore each such record one at a time with its own restore: {\"model\": \"MeshLayer\", \"ConstraintSet\" or \"Constraint\", \"intent\": \"restore\", \"records\": [{\"id\": <its id>}]} (a constraint set's restore brings back the constraints its removal took), or ask the user to press its Restore in the project's Trash.",
       "retry": "no"
     },
     "parent_not_found": {
@@ -1137,6 +1155,12 @@
       "http": 403,
       "meaning": "Managing a project's vendor keys needs the person to manage the project's settings (an owner, a manager or a project admin), and the person this key acts for does not.",
       "remedy": "Tell the user that a company owner, a manager or the project's admin can do this; nothing was changed.",
+      "retry": "no"
+    },
+    "version_file_unavailable": {
+      "http": 409,
+      "meaning": "(per row) The version asked to be made current cannot be drawn: the project file it drew is in the Trash, was removed, moved to another project, or its bytes changed after they were checked (`offending.version`, `offending.why`). Nothing was changed.",
+      "remedy": "Tell the user which version it is and why. If its file is in the Trash, a project member can restore it in Project Files and you can try again; otherwise choose another version, or file a new run as the next version.",
       "retry": "no"
     },
     "view_surface_unavailable": {
