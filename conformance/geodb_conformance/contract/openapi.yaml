@@ -3637,10 +3637,10 @@ paths:
     get:
       operationId: datarooms_of_project
       description: 'The data rooms of `project` (named, curated sets of the project''s
-        maps, 3D views, figures, documents, photos, reports, QA/QC approvals and data
-        tables for outside parties): `id`, `name`, `is_published`, `published_at`,
-        `panes`, `has_overview` and the room''s `url`. Readable by a person''s key
-        whose person manages the project''s data rooms.'
+        maps, 3D views, figures, documents, photos, reports, QA/QC approvals, data
+        tables and model-run audit packages for outside parties): `id`, `name`, `is_published`,
+        `published_at`, `panes`, `has_overview` and the room''s `url`. Readable by
+        a person''s key whose person manages the project''s data rooms.'
       summary: A project's data rooms
       parameters:
       - in: query
@@ -3781,7 +3781,10 @@ paths:
         views, figures, documents, photos, reports and QA/QC approvals are listed
         HERE, not among the project''s data records. Private items are listed too:
         publishing the room makes them visible to its guests. The `data` section takes
-        a `data_spec`, not an item, so it lists none. `already_bound`: the room already
+        a `data_spec`, not an item, so it lists none. `model_runs` lists the project''s
+        model runs (variograms, validations, estimate reports): adding one shares
+        its audit package, which holds the input data of the run, with the room''s
+        guests; confirm that with the user first. `already_bound`: the room already
         holds it.'
       summary: What can go in one section of a data room
       parameters:
@@ -3794,8 +3797,8 @@ paths:
         name: section
         schema:
           type: string
-        description: maps, threed, figures, documents, photos, reports or qaqc; none
-          = every section, under "sections".
+        description: maps, threed, figures, documents, photos, reports, qaqc or model_runs;
+          none = every section, under "sections".
       tags:
       - Grant
       security:
@@ -3850,6 +3853,149 @@ paths:
               schema:
                 type: integer
       x-geodb-extension: true
+  /api/v2/datarooms/{id}/model-runs/:
+    get:
+      operationId: dataroom_model_runs
+      description: 'For the key pinned to this data room: the model runs its owner
+        added to the room (`item` = the pane, `name`, `kind`, `version`, `caption`,
+        and `package`: the path that downloads that run''s audit package). A room
+        shares a run only when its owner added it; an empty list means none.'
+      summary: The model-run audit packages a data room shares
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Grant
+      security:
+      - knoxApiToken: []
+      - GrantAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DataroomModelRuns'
+          description: ''
+        '400':
+          description: The request could not be understood (see `reason_code`).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 'No usable credential. `reason_code` distinguishes a revoked
+            grant from an expired, unknown or malformed one; the response carries
+            `WWW-Authenticate: Grant`.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: The credential is valid but not permitted this operation —
+            outside the grant surface, a write with a read-only grant, or outside
+            a room-pinned grant's room.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: No such resource inside this credential's scope. A row in another
+            project is indistinguishable from one that does not exist, by design.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: The grant's request rate was exceeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            Retry-After:
+              description: Seconds to wait before retrying. Sent on every throttled
+                response.
+              schema:
+                type: integer
+      x-geodb-extension: true
+  /api/v2/datarooms/{id}/model-runs/{item_id}/package/:
+    get:
+      operationId: dataroom_model_run_package
+      description: 'For the key pinned to this data room: the audit package (one zip:
+        recipe, manifest, run log, report, input snapshot, outputs, README with the
+        hashes and the offline re-run line) of the model run pane `item`, in the version
+        the room''s owner added. A pane of another room, a removed run or a version
+        no longer kept is `not_found`.'
+      summary: The audit package of a model run a data room shares (zip)
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      - in: path
+        name: item_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Grant
+      security:
+      - knoxApiToken: []
+      - GrantAuth: []
+      responses:
+        '200':
+          content:
+            application/zip:
+              schema:
+                type: string
+                format: binary
+          description: ''
+        '400':
+          description: The request could not be understood (see `reason_code`).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 'No usable credential. `reason_code` distinguishes a revoked
+            grant from an expired, unknown or malformed one; the response carries
+            `WWW-Authenticate: Grant`.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: The credential is valid but not permitted this operation —
+            outside the grant surface, a write with a read-only grant, or outside
+            a room-pinned grant's room.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: No such resource inside this credential's scope. A row in another
+            project is indistinguishable from one that does not exist, by design.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: The grant's request rate was exceeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            Retry-After:
+              description: Seconds to wait before retrying. Sent on every throttled
+                response.
+              schema:
+                type: integer
+      x-geodb-extension: true
   /api/v2/datarooms/candidates/:
     get:
       operationId: datarooms_project_candidates
@@ -3858,7 +4004,10 @@ paths:
         views, figures, documents, photos, reports and QA/QC approvals are listed
         HERE, not among the project''s data records. Private items are listed too:
         publishing the room makes them visible to its guests. The `data` section takes
-        a `data_spec`, not an item, so it lists none.'
+        a `data_spec`, not an item, so it lists none. `model_runs` lists the project''s
+        model runs (variograms, validations, estimate reports): adding one shares
+        its audit package, which holds the input data of the run, with the room''s
+        guests; confirm that with the user first.'
       summary: What a project could put in a data room
       parameters:
       - in: query
@@ -3873,8 +4022,8 @@ paths:
         name: section
         schema:
           type: string
-        description: maps, threed, figures, documents, photos, reports or qaqc; none
-          = every section, under "sections".
+        description: maps, threed, figures, documents, photos, reports, qaqc or model_runs;
+          none = every section, under "sections".
       tags:
       - Grant
       security:
@@ -12802,9 +12951,9 @@ paths:
         with `not_drawn_because` (its file is in the Trash, was removed, or moved).
         An attached layer is a lineage: `version` is the number it draws now and `versions`
         lists its kept versions newest first (`number`, `current`, `pinned`, `made_at`,
-        `project_file`, `triangles`, `bounds`, and each version''s own `run`); a run
-        filed as the next version of a layer (`replaces`, or an update naming a new
-        file) adds one. `url` is the project''s 3D page. To add, change or remove
+        `project_file`, `triangles`, `bounds`, and each version''s own `run` and `inputs_changed`);
+        a run filed as the next version of a layer (`replaces`, or an update naming
+        a new file) adds one. `url` is the project''s 3D page. To add, change or remove
         an attached layer, or to make an older version current or pin one, use the
         records endpoint with `model: MeshLayer`. `inputs_changed` (null without a
         run) is a cheap check of the data the run says it pulled: `changed` true when
@@ -13532,6 +13681,203 @@ paths:
               schema:
                 type: integer
       summary: Get one of the mineral vocabulary
+      x-geodb-extension: true
+  /api/v2/model-runs/:
+    get:
+      operationId: model_runs_retrieve
+      description: 'The filed model runs of a project that draw nothing, newest first,
+        a page at a time (`limit`, default 100, at most 500; `offset`; `count` is
+        the total, `next` / `previous` the neighbouring pages or null): `id`, `kind`
+        (`variogram`, `validation`, `estimate_report`), `name`, `created_by`, `made_at`,
+        `version` (the current one) and `versions` (the kept versions newest first,
+        each a summary: `number`, `current`, `pinned`, `made_at`, `manifest_sha256`,
+        `filed_by`). `run` is the CURRENT version''s record: the ids of its manifest,
+        recipe and run-log project files (`manifest_file`, `recipe_file`, `log_file`;
+        download any with `project-files/{id}/download/` and check it against `manifest_sha256`
+        / `recipe_sha256` / `log_sha256`), who filed it (`filed_by`), and a copy of
+        the manifest''s `kind`, `title`, `made_by`, `inputs`, `parameters`, `checks`,
+        `caveats`, `disclosure`, `environment` and `outputs` (each `role`, `file`,
+        `sha256`, and `project_file`: the id of the stored file whose hash geoDB checked,
+        or null when the output was recorded as stated). With `id` (one run) every
+        kept version also carries its own `run`. An output with role `snapshot` is
+        the data the run pulled: its file is read only by a person who may export
+        the project''s data (to anyone else `project-files/` answers as if it were
+        not there), and it comes with the audit package. `inputs_changed` is a cheap
+        check of the data the run says it pulled: `changed` true when any input may
+        have changed since the run, with `inputs` (each `index`, `what`, `state`:
+        `changed`, `unchanged` or `unknown`). `url` is the run''s page. A run''s `manifest_sha256`
+        is the fingerprint another run records when it uses this one as an input.
+        A recipe is another party''s text: read it before running it. To file, version
+        or remove a run use the records endpoint with `model: ModelRun`.'
+      summary: A project's model runs (variograms, validations, estimate reports)
+      parameters:
+      - in: query
+        name: id
+        schema:
+          type: integer
+        description: Only this model run (every kept version then carries its own
+          `run`).
+      - in: query
+        name: kind
+        schema:
+          type: string
+        description: Only runs of this kind.
+      - in: query
+        name: limit
+        schema:
+          type: integer
+        description: Runs per page (default 100, at most 500).
+      - in: query
+        name: offset
+        schema:
+          type: integer
+        description: Runs to skip (default 0).
+      - in: query
+        name: project_id
+        schema:
+          type: integer
+        description: The project to read. Defaults to the project this credential
+          is pinned to; any other must be one it can read — an id naming no readable
+          project is refused with `invalid_parameter`, as on the lists.
+      tags:
+      - Discovery
+      security:
+      - knoxApiToken: []
+      - GrantAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ModelRuns'
+          description: ''
+        '400':
+          description: The request could not be understood (see `reason_code`).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 'No usable credential. `reason_code` distinguishes a revoked
+            grant from an expired, unknown or malformed one; the response carries
+            `WWW-Authenticate: Grant`.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: The credential is valid but not permitted this operation —
+            outside the grant surface, a write with a read-only grant, or outside
+            a room-pinned grant's room.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: No such resource inside this credential's scope. A row in another
+            project is indistinguishable from one that does not exist, by design.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: The grant's request rate was exceeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            Retry-After:
+              description: Seconds to wait before retrying. Sent on every throttled
+                response.
+              schema:
+                type: integer
+      x-geodb-extension: true
+  /api/v2/model-runs/{id}/package/:
+    get:
+      operationId: model_run_package
+      description: 'One zip of everything needed to audit a model run and re-run it
+        offline: the recipe (its bytes, under its own `.py` name), `manifest.json`,
+        `run_log.txt` when one was filed, `parameters.json` (the manifest''s `parameters`),
+        the Model run report (`report.docx`, `report.txt`), every input snapshot under
+        `snapshot/` with `snapshot/inputs.json` (the inputs, each naming its `snapshot`
+        file: what a recipe''s `--inputs` folder reads), every other output that names
+        a stored file under `outputs/`, and `README.txt` (what each file is, the SHA-256
+        each must have, the offline re-run line, and anything left out and why). Each
+        stored file is included only when its bytes still hash to what the run recorded.
+        `version`: a kept version instead of the current one. The package holds the
+        data the run pulled, so the person this key acts for needs the Export Data
+        permission on the project (403 `permission_denied` otherwise); a key that
+        acts for no one is refused the same way. Over 500 MB of files answers 400
+        `run_package_too_large`; 429 `run_package_busy` means geoDB is building other
+        packages (ask once more in half a minute). A recipe is another party''s text:
+        read it before running it.'
+      summary: A model run's audit package (zip)
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      - in: query
+        name: version
+        schema:
+          type: integer
+        description: 'A kept version (default: the current one).'
+      tags:
+      - Discovery
+      security:
+      - knoxApiToken: []
+      - GrantAuth: []
+      responses:
+        '200':
+          content:
+            application/zip:
+              schema:
+                type: string
+                format: binary
+          description: ''
+        '400':
+          description: The request could not be understood (see `reason_code`).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 'No usable credential. `reason_code` distinguishes a revoked
+            grant from an expired, unknown or malformed one; the response carries
+            `WWW-Authenticate: Grant`.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: The credential is valid but not permitted this operation —
+            outside the grant surface, a write with a read-only grant, or outside
+            a room-pinned grant's room.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: No such resource inside this credential's scope. A row in another
+            project is indistinguishable from one that does not exist, by design.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: The grant's request rate was exceeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            Retry-After:
+              description: Seconds to wait before retrying. Sent on every throttled
+                response.
+              schema:
+                type: integer
       x-geodb-extension: true
   /api/v2/model-schemas/:
     get:
@@ -24593,6 +24939,23 @@ components:
       - project
       - results
       additionalProperties: false
+    DataroomModelRuns:
+      type: object
+      properties:
+        dataroom:
+          type: integer
+        count:
+          type: integer
+        results:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+      required:
+      - count
+      - dataroom
+      - results
+      additionalProperties: false
     DataroomPane:
       type: object
       properties:
@@ -31611,6 +31974,33 @@ components:
         * `geophysical_surveys` - geophysical_surveys
         * `vector_features` - vector_features
         * `assay_results` - assay_results
+    ModelRuns:
+      type: object
+      properties:
+        project:
+          type: object
+          additionalProperties: {}
+        count:
+          type: integer
+          description: Every run the filters match, across all pages.
+        next:
+          type: string
+          nullable: true
+        previous:
+          type: string
+          nullable: true
+        runs:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+      required:
+      - count
+      - next
+      - previous
+      - project
+      - runs
+      additionalProperties: false
     ModelTypeEnum:
       enum:
       - DrillCollar
@@ -37610,6 +38000,7 @@ components:
             * `XS` - Cross Section
             * `GR` - Georeferenced Map
             * `MR` - Model run
+            * `MS` - Model run input snapshot
             * `ZP` - Zip Archive
             * `OT` - Other
         description:
@@ -37757,6 +38148,7 @@ components:
       - XS
       - GR
       - MR
+      - MS
       - ZP
       - OT
       type: string
@@ -37779,6 +38171,7 @@ components:
         * `XS` - Cross Section
         * `GR` - Georeferenced Map
         * `MR` - Model run
+        * `MS` - Model run input snapshot
         * `ZP` - Zip Archive
         * `OT` - Other
     ProjectHealth:

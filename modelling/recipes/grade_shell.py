@@ -1,4 +1,13 @@
 #!/usr/bin/env python3
+# /// script
+# requires-python = ">=3.11"
+# dependencies = [
+#     "numpy==2.2.5",
+#     "scipy==1.16.2",
+#     "scikit-image==0.25.2",
+#     "pyarrow==24.0.0",
+# ]
+# ///
 """Reference recipe: a grade shell from drill assays, filed with its run.
 
 This is the method geoDB's own grade-shell solver uses, written as one script
@@ -18,18 +27,34 @@ file, or the defaults below); every input comes from the API pulls it makes;
 the key comes from the environment. Nothing is pasted in by hand.
 
     export GEODB_SESSION_KEY=...        # or GEODB_TOKEN for a key of your own
-    python grade_shell.py parameters.json
+    uv run grade_shell.py parameters.json
+
+``uv run`` reads the pinned header at the top of this file and builds exactly
+that environment, so anyone can reproduce it from the script alone. The
+manifest records the versions actually installed; a check says whether they
+match the header.
+
+Offline, with no key and no network (an audit package):
+
+    uv run grade_shell.py parameters.json --inputs ./snapshot/ [--check-against manifest.json]
+
+reads every pull from the snapshot (one Parquet file per pull, written by the
+online run), refuses to go on if a file does not give the fingerprint the
+manifest recorded, builds the same shell and writes it beside the snapshot;
+with ``--check-against`` it compares the result's hash with the filed one.
 
 parameters.json, at least:  {"project": 123, "element": "Cu", "cutoff": 2000, "units": "ppm"}
 To file the next version of an existing layer, add "layer": <its id>.
 To build and check without writing anything to geoDB, add "dry_run": true.
 
-Needs numpy and scipy, and scikit-image or pyvista for the isosurface. The
+Needs the packages pinned in the header (pyvista too, only if you add it to the
+header: it gives geoDB's own isosurface and decimation). The
 result is an interpolated surface for visualisation. It is not a mineral
 resource estimate, and the user chooses the cutoff.
 """
 import hashlib
 import json
+import re
 import math
 import os
 import platform
@@ -43,7 +68,7 @@ from datetime import datetime, timezone
 
 import numpy as np
 
-RECIPE_VERSION = '1.0'
+RECIPE_VERSION = '1.1'
 
 #: Every setting. A parameters file overrides any of them; the manifest
 #: records the full set a run used. The solver settings are the defaults of
@@ -74,6 +99,13 @@ DEFAULTS = {
     'min_component_tris': 50,   # pieces smaller than this are dropped as speckle
     'decimate_budget': 150000,  # the most triangles delivered (needs pyvista; else reported)
     'color': [230, 159, 0],     # the shell's colour, RGB 0 to 255
+    # From a fitted variogram (optional): the search ellipse that scales the
+    # interpolant, {"azimuth": deg clockwise from grid north, "dip": deg down
+    # of the major axis, "ranges": [major, semi-major, minor] in grid units}.
+    'anisotropy': None,
+    'variogram_run': None,      # the ModelRun id the anisotropy came from (recorded as an input)
+    'variogram_fingerprint': None,  # that run's manifest_sha256, as model-runs/ served it
+    'cutoff_confirmed_by': None,    # who confirmed the cutoff, in words ("the user, in chat")
 }
 TO_PPM = {'ppm': 1.0, 'g/t': 1.0, 'gpt': 1.0, 'ppb': 1e-3, 'pct': 1e4, '%': 1e4, 'percent': 1e4}
 MAX_MESH_BYTES = 104_857_600        # 100 MB: the most a mesh layer takes
@@ -149,9 +181,55 @@ def fingerprint(rows, fields):
     whitespace and non-ASCII escaped; sort those texts; join them with ","
     inside "[" "]"; SHA-256 of that text. The same pull on unchanged data
     gives the same value, in any language."""
-    texts = sorted(json.dumps({k: row.get(k) for k in fields}, sort_keys=True, separators=(',', ':'),
-                              ensure_ascii=True) for row in rows)
+    return fingerprint_of_texts(row_texts(rows, fields))
+
+
+def row_texts(rows, fields):
+    """Each row reduced to ``fields`` as the rule writes it, sorted: the
+    fingerprint's own texts, and what a snapshot stores."""
+    return sorted(json.dumps({k: row.get(k) for k in fields}, sort_keys=True, separators=(',', ':'),
+                             ensure_ascii=True) for row in rows)
+
+
+def fingerprint_of_texts(texts):
     return hashlib.sha256(('[' + ','.join(texts) + ']').encode('utf-8')).hexdigest()
+
+
+# --------------------------------------------------------------------------- #
+# The snapshot: one Parquet file per pull                                       #
+# --------------------------------------------------------------------------- #
+SNAPSHOT_INDEX = 'inputs.json'
+
+
+def write_snapshot(folder, index, item, texts):
+    """Keep one pull as ``<folder>/<n>-<read>.parquet``: one text column
+    ``row``, each row as the fingerprint rule writes it, so the file gives
+    back the recorded fingerprint and the very rows the recipe computed on."""
+    import pyarrow as pa
+    import pyarrow.parquet as pq
+    os.makedirs(folder, exist_ok=True)
+    slug = re.sub(r'[^a-z0-9]+', '-', (item.get('read') or item['what']).lower()).strip('-')[:40] or 'pull'
+    name = f'{index}-{slug}.parquet'
+    pq.write_table(pa.table({'row': pa.array(texts, type=pa.string())}), os.path.join(folder, name),
+                   compression='zstd')
+    return name
+
+
+def read_snapshot(folder):
+    """The pulls of an earlier run, from its snapshot. Each file must give
+    the fingerprint the run recorded, or nothing is built."""
+    import pyarrow.parquet as pq
+    with open(os.path.join(folder, SNAPSHOT_INDEX), encoding='utf-8') as handle:
+        inputs = json.load(handle)
+    pulls = []
+    for item in inputs:
+        texts = sorted(pq.read_table(os.path.join(folder, item['snapshot'])).column('row').to_pylist())
+        found = fingerprint_of_texts(texts)
+        if found != item.get('fingerprint'):
+            raise SystemExit(f'The snapshot file {item["snapshot"]} gives fingerprint {found}, but the run recorded '
+                             f'{item.get("fingerprint")}: it is not the data the run used. Nothing was built.')
+        pulls.append([json.loads(text) for text in texts])
+    return inputs, pulls
 
 
 #: The fields of each pull this recipe uses (and so fingerprints).
@@ -167,40 +245,55 @@ def now():
 # --------------------------------------------------------------------------- #
 # The data                                                                      #
 # --------------------------------------------------------------------------- #
-def pull_inputs(p):
-    """The samples' positions and the laboratory values, and what the manifest
-    says about each pull. Positions (``xyz_from`` / ``xyz_to``) are already in
-    the project's local grid, in the grid's own unit: the mesh's frame."""
+def pull_inputs(p, snapshot=None):
+    """The samples' positions and the laboratory values, what the manifest
+    says about each pull, and each pull's rows as the fingerprint rule writes
+    them (the snapshot's content). Positions (``xyz_from`` / ``xyz_to``) are
+    already in the project's local grid, in the grid's own unit: the mesh's
+    frame.
+
+    Online, the three pulls come from the API; offline (``snapshot``: a
+    folder written by an earlier run), from that folder, with no key. Either
+    way the recipe computes on the pulled rows REDUCED to the fingerprinted
+    fields and in the rule's sorted order, so an offline re-run sees exactly
+    what the online run saw and makes the same bytes."""
     project = p['project']
-    grid = api(f'projects/{project}/coordinate-system/').get('coordinate_system')
-    if not grid:
-        raise SystemExit('This project has no local grid a mesh can be placed in (no located data yet, or a '
-                         'custom calibrated mine grid). Tell the user; nothing was built.')
-    # Each pull is fingerprinted as it came back (every row, reduced to the
-    # fields this recipe uses), so anyone can make the same pull and compare.
     sample_filters = {'project_id': project}
-    pulled_samples = pull('drill-samples/', **sample_filters)
-    sets = sorted({s.get('set_id') for s in pulled_samples if s.get('set_id') is not None})
+    value_filters = {'project_id': project, 'element': p['element'], 'source_type': p['source_type']}
+    inputs = [
+        {'what': 'the project local grid', 'read': f'projects/{project}/coordinate-system/', 'filters': {},
+         'fields': GRID_FIELDS},
+        {'what': 'drill samples: depths and desurveyed positions on the local grid', 'read': 'drill-samples/',
+         'filters': sample_filters, 'fields': SAMPLE_FIELDS},
+        {'what': f'laboratory values of {p["element"]} (the drill samples\' rows are used)',
+         'read': 'assay-results/', 'filters': value_filters, 'fields': VALUE_FIELDS},
+    ]
+    if snapshot:
+        recorded, pulls = read_snapshot(snapshot)
+        if [i.get('read') for i in recorded] != [i['read'] for i in inputs]:
+            raise SystemExit('The snapshot holds other pulls than this recipe makes; nothing was built.')
+        for item, done in zip(inputs, recorded, strict=True):
+            item.update({k: done[k] for k in ('filters', 'rows', 'fingerprint', 'pulled_at', 'snapshot') if k in done})
+        texts = [row_texts(rows, item['fields']) for rows, item in zip(pulls, inputs, strict=True)]
+    else:
+        grid = api(f'projects/{project}/coordinate-system/').get('coordinate_system')
+        if not grid:
+            raise SystemExit('This project has no local grid a mesh can be placed in (no located data yet, or a '
+                             'custom calibrated mine grid). Tell the user; nothing was built.')
+        pulled = [[grid], pull('drill-samples/', **sample_filters), pull('assay-results/', **value_filters)]
+        texts = []
+        for item, rows in zip(inputs, pulled, strict=True):
+            texts.append(row_texts(rows, item['fields']))
+            item.update({'rows': len(rows), 'fingerprint': fingerprint_of_texts(texts[-1]), 'pulled_at': now()})
+    grid_rows, sample_rows, value_rows = ([json.loads(t) for t in group] for group in texts)
+    sets = sorted({s.get('set_id') for s in sample_rows if s.get('set_id') is not None})
     if p['sample_set'] is None and len(sets) > 1:
         raise SystemExit(f'This project has {len(sets)} sampling passes (set ids {sets}). Two passes over the same '
                          f'ground would be counted twice: ask the user which one and set "sample_set".')
-    kept = [{**{k: s.get(k) for k in SAMPLE_FIELDS}, 'hole': s['bhid']['hole_id']} for s in pulled_samples
+    kept = [{**s, 'hole': s['bhid']['hole_id']} for s in sample_rows
             if p['sample_set'] is None or s.get('set_id') == p['sample_set']]
-    value_filters = {'project_id': project, 'element': p['element'], 'source_type': p['source_type']}
-    pulled_values = pull('assay-results/', **value_filters)
-    values = [{k: v.get(k) for k in VALUE_FIELDS} for v in pulled_values
-              if v.get('sample_type') == 'drill' and not v.get('excluded')]
-    inputs = [
-        {'what': 'the project local grid', 'read': f'projects/{project}/coordinate-system/', 'filters': {},
-         'fields': GRID_FIELDS, 'rows': 1, 'fingerprint': fingerprint([grid], GRID_FIELDS), 'pulled_at': now()},
-        {'what': 'drill samples: depths and desurveyed positions on the local grid', 'read': 'drill-samples/',
-         'filters': sample_filters, 'fields': SAMPLE_FIELDS, 'rows': len(pulled_samples),
-         'fingerprint': fingerprint(pulled_samples, SAMPLE_FIELDS), 'pulled_at': now()},
-        {'what': f'laboratory values of {p["element"]} (the drill samples\' rows are used)',
-         'read': 'assay-results/', 'filters': value_filters, 'fields': VALUE_FIELDS, 'rows': len(pulled_values),
-         'fingerprint': fingerprint(pulled_values, VALUE_FIELDS), 'pulled_at': now()},
-    ]
-    return grid, kept, values, inputs
+    values = [v for v in value_rows if v.get('sample_type') == 'drill' and not v.get('excluded')]
+    return grid_rows[0], kept, values, inputs, texts
 
 
 def sample_grades(p, values):
@@ -292,10 +385,33 @@ def precondition(points, values, p, scale):
 # --------------------------------------------------------------------------- #
 # The solve                                                                     #
 # --------------------------------------------------------------------------- #
+def anisotropy_matrix(anisotropy):
+    """The linear map that makes the search ellipse a sphere (None: isotropic).
+
+    Convention (state it with any numbers you carry over): X east, Y north,
+    Z up, in grid units. The major axis points along ``azimuth`` (degrees
+    clockwise from grid north) and plunges ``dip`` degrees below horizontal;
+    the semi-major axis is horizontal, 90 degrees clockwise of the major;
+    the minor axis is perpendicular to both. Distances along each axis are
+    divided by its range and multiplied by the major range, so the major
+    direction keeps its own scale."""
+    if not anisotropy:
+        return None
+    az, dip = math.radians(float(anisotropy['azimuth'])), math.radians(float(anisotropy.get('dip', 0.0)))
+    major, semi, minor = (float(r) for r in anisotropy['ranges'])
+    u = np.array([math.sin(az) * math.cos(dip), math.cos(az) * math.cos(dip), -math.sin(dip)])
+    v = np.array([math.cos(az), -math.sin(az), 0.0])
+    w = np.cross(u, v)
+    return np.vstack([u, v * (major / semi), w * (major / minor)])
+
+
 def solve_field(points, solved, p, scale):
     """Radial basis interpolation onto a regular grid of cubic cells over the
-    data's box plus a margin. Returns ``(field[nx, ny, nz], origin, cell)``."""
+    data's box plus a margin, in the anisotropy's stretched space when one is
+    given. Returns ``(field[nx, ny, nz], origin, cell)``."""
     from scipy.interpolate import RBFInterpolator
+    stretch = anisotropy_matrix(p['anisotropy'])
+    to_space = (lambda xyz: xyz) if stretch is None else (lambda xyz: xyz @ stretch.T)
     margin = (p['margin'] if p['margin'] is not None else p['composite_length']) * scale
     low, high = points.min(axis=0) - margin, points.max(axis=0) + margin
     extent = np.maximum(high - low, 1e-6)
@@ -304,14 +420,14 @@ def solve_field(points, solved, p, scale):
     options = {'kernel': p['kernel'], 'smoothing': p['smoothing']}
     if len(solved) > p['dense_cutoff']:
         options['neighbors'] = int(min(p['neighbors'], max(len(solved) - 1, 1)))
-    interpolator = RBFInterpolator(points, solved, **options)
+    interpolator = RBFInterpolator(to_space(points), solved, **options)
     nx, ny, nz = (int(d) for d in dims)
     xs, ys, zs = (low[i] + cell * np.arange(n) for i, n in enumerate((nx, ny, nz)))
     gx, gy = np.meshgrid(xs, ys, indexing='ij')
     flat = np.column_stack([gx.ravel(), gy.ravel()])
     field = np.empty((nx, ny, nz), dtype=np.float32)
     for k in range(nz):
-        field[:, :, k] = interpolator(np.column_stack([flat, np.full(nx * ny, zs[k])])).reshape(nx, ny)
+        field[:, :, k] = interpolator(to_space(np.column_stack([flat, np.full(nx * ny, zs[k])]))).reshape(nx, ny)
     return field, low, cell
 
 
@@ -319,10 +435,11 @@ def isosurface(field, origin, cell, level, p):
     """The triangles of ``field == level``: speckle dropped, decimated to the
     budget when pyvista is here. Returns ``(vertices, faces, how)``."""
     how = {}
-    try:
+    pyvista = None
+    if 'pyvista' in pinned():
+        # Only when the header pins it: a package the header does not name
+        # would make the run's environment differ from its own header.
         import pyvista
-    except ImportError:
-        pyvista = None
     if pyvista is not None:
         grid = pyvista.ImageData(dimensions=field.shape, spacing=(cell,) * 3, origin=tuple(float(o) for o in origin))
         grid.point_data['v'] = field.ravel(order='F')
@@ -459,10 +576,10 @@ def run_checks(p, vertices, faces, volume, points, values, field, origin, cell, 
 # --------------------------------------------------------------------------- #
 # Filing                                                                        #
 # --------------------------------------------------------------------------- #
-def upload(p, glb, file_name):
-    """The .glb as a project file: upload_start, PUT the blocks, upload_commit."""
+def upload(p, glb, file_name, category='3D'):
+    """A file as a project file: upload_start, PUT the blocks, upload_commit."""
     _answer, started = write({'model': 'ProjectFile', 'intent': 'upload_start', 'dry_run': False, 'records': [
-        {'project': p['project'], 'file_name': file_name, 'size': len(glb), 'category': '3D',
+        {'project': p['project'], 'file_name': file_name, 'size': len(glb), 'category': category,
          'name': file_name.rsplit('.', 1)[0]}]})
     plan = started['result']
     for block in plan['blocks']:
@@ -474,21 +591,110 @@ def upload(p, glb, file_name):
     return committed['result']['id']
 
 
+def pinned():
+    """``{package: version}`` from this file's own pinned header (PEP 723)."""
+    import tomllib
+    with open(os.path.abspath(__file__), encoding='utf-8') as handle:
+        text = handle.read()
+    block = re.search(r'(?m)^# /// script\s*$\n((?:^#(?: .*)?$\n)+?)^# ///\s*$', text)
+    if not block:
+        return {}
+    meta = tomllib.loads(''.join(line[2:] + '\n' for line in block.group(1).splitlines()))
+    out = {}
+    for dep in meta.get('dependencies', []):
+        name, _, version = dep.partition('==')
+        out[name.strip()] = version.strip()
+    return out
+
+
 def environment():
+    """The interpreter and the INSTALLED version of every package the header
+    pins (the only third-party packages this recipe imports)."""
     from importlib import metadata
     packages = {}
-    for name in ('numpy', 'scipy', 'scikit-image', 'pyvista'):
+    for name in pinned():
         try:
             packages[name] = metadata.version(name)
         except metadata.PackageNotFoundError:
-            pass
+            packages[name] = 'not installed'
     return {'python': platform.python_version(), 'platform': platform.system(), 'packages': packages}
 
 
+def environment_check(env):
+    wanted = pinned()
+    off = {name: (wanted[name], env['packages'].get(name)) for name in wanted
+           if env['packages'].get(name) != wanted[name]}
+    return {'name': 'environment_matches_header', 'pass': not off,
+            'detail': ('every package is the version the header pins' if not off else
+                       'installed versions differ from the header: '
+                       + ', '.join(f'{n} {have} (pinned {want})' for n, (want, have) in sorted(off.items()))
+                       + '; run it with `uv run` to get the pinned environment')}
+
+
+#: The run log: what the run printed, and each check with its numbers.
+LOG = []
+
+
+def say(line):
+    LOG.append(line)
+    sys.stderr.write(line + '\n')
+
+
+def disclosure(p, assumed, how):
+    """What a reviewer needs to read the shell, as this recipe made it (the
+    AI or person running it corrects anything it changed)."""
+    return {
+        'domain': 'none: every positioned drill sample of the sampling pass, no geological domain split',
+        'sample_population': (f'drill samples of sampling pass {p["sample_set"]}' if p['sample_set'] is not None
+                              else 'drill samples of the project\'s one sampling pass')
+                             + f', {p["source_type"]} values of {p["element"]}',
+        'compositing': f'{p["composite_length"]:g} m fixed-length composites down each hole, length-weighted',
+        'capping': 'none applied',
+        'metal_removed': 'none (no capping)',
+        'declustering': 'none (a shell is drawn, no mean is reported)',
+        'transform': p['transform'],
+        'below_detection': f'{p["bdl"]} the detection limit where one is on file '
+                           f'({assumed.get("below_detection", 0)} values); '
+                           f'{assumed.get("below_detection_no_limit", 0)} below-detection values had no limit '
+                           f'on file and were left out',
+        'assumptions': [f'several results for one sample: the {p["merge_strategy"]} is kept',
+                        f'points closer than {p["merge_tol"] if p["merge_tol"] is not None else p["composite_length"] / 4.0:g} m are merged'],
+        'limitations': ['an interpolated surface for visualisation, not a mineral resource estimate',
+                        'no geological domain constrains the interpolation'],
+        'cutoff': f'{p["cutoff"]:g} {p["units"]}',
+        'cutoff_confirmed_by': p.get('cutoff_confirmed_by') or 'not stated',
+        'interpolant': f'radial basis function, {p["kernel"]} kernel, smoothing {p["smoothing"]:g}'
+                       + (f', in the space of the search ellipse {p["anisotropy"]} (azimuth clockwise from grid '
+                          f'north, dip down, ranges major / semi-major / minor in grid units)'
+                          if p['anisotropy'] else ', isotropic')
+                       + f'; isosurface by {how.get("isosurface", "marching cubes")}',
+        'range_anisotropy_source': ({'run': p['variogram_run']} if p['variogram_run'] else
+                                    'stated in the parameters' if p['anisotropy'] else
+                                    'none: an isotropic radial basis interpolant (no variogram used)'),
+    }
+
+
+def arguments(argv):
+    """``parameters.json [--inputs FOLDER] [--check-against manifest.json]``."""
+    args, options = [], {'inputs': None, 'check_against': None}
+    rest = list(argv[1:])
+    while rest:
+        word = rest.pop(0)
+        if word in ('--inputs', '--check-against'):
+            if not rest:
+                raise SystemExit(f'{word} needs a path.')
+            options[word[2:].replace('-', '_')] = rest.pop(0)
+        else:
+            args.append(word)
+    return args, options
+
+
 def main(argv):
+    args, options = arguments(argv)
+    offline = options['inputs']
     p = dict(DEFAULTS)
-    if len(argv) > 1:
-        with open(argv[1], encoding='utf-8') as handle:
+    if args:
+        with open(args[0], encoding='utf-8') as handle:
             given = json.load(handle)
         unknown = sorted(set(given) - set(DEFAULTS))
         if unknown:
@@ -502,8 +708,30 @@ def main(argv):
     p['cutoff'] = float(p['cutoff'])
     with open(os.path.abspath(__file__), encoding='utf-8') as handle:
         recipe = handle.read()
+    env = environment()
+    say(f'recipe {os.path.basename(__file__)} {RECIPE_VERSION}, sha256 '
+        f'{hashlib.sha256(recipe.encode("utf-8")).hexdigest()}; python {env["python"]}; '
+        + ', '.join(f'{k} {v}' for k, v in sorted(env['packages'].items())))
+    say('offline: every pull read from the snapshot ' + offline if offline else 'online: pulling from ' + BASE)
 
-    grid, samples, values, inputs = pull_inputs(p)
+    grid, samples, values, inputs, texts = pull_inputs(p, snapshot=offline)
+    if offline and options['check_against']:
+        # The snapshot must be the data the FILED run recorded, not only what its own index says.
+        with open(options['check_against'], encoding='utf-8') as handle:
+            recorded = json.load(handle).get('inputs', [])
+        for index, item in enumerate(inputs):
+            stated = recorded[index].get('fingerprint') if index < len(recorded) else None
+            if stated != item['fingerprint']:
+                raise SystemExit(f'The snapshot of pull {index} ({item["read"]}) is not the data the filed run '
+                                 f'recorded (fingerprint {item["fingerprint"]}, filed {stated}). Nothing was built.')
+    for item in inputs:
+        say(f'pull {item["read"]}: {item["rows"]} rows, fingerprint {item["fingerprint"]}')
+    if p['variogram_run'] is not None:
+        # The fitted variogram this shell takes its anisotropy from (a ModelRun of the project):
+        # a re-fitted variogram then flags the shell as "inputs may have changed".
+        inputs.append({'what': 'model run', 'run': p['variogram_run'], 'read': 'model-runs/',
+                       'filters': {'project': p['project'], 'id': p['variogram_run']},
+                       'fingerprint': p['variogram_fingerprint']})
     grades, assumed = sample_grades(p, values)
     points, composite_values, scale = composites(p, samples, grades)
     if len(composite_values) < 4:
@@ -522,44 +750,92 @@ def main(argv):
     unit = 'feet' if scale > 2 else 'metres'
     checks = run_checks(p, vertices, faces, volume, points, composite_values, field, origin, cell, level, glb,
                         unit, scale)
+    checks.append(environment_check(env))
+    for check in checks:
+        say(f'check {check["name"]}: {"pass" if check["pass"] else "FAIL"}: {check.get("detail", "")}')
 
     name = p['name'] or f'{p["element"]} {p["cutoff"]:g} {p["units"]} shell'
     file_name = f'{p["element"].lower()}_{p["cutoff"]:g}_{p["units"].replace("/", "").replace("%", "pct")}_shell.glb'
+    mesh_sha256 = hashlib.sha256(glb).hexdigest()
+    say(f'output {file_name}: {len(faces):,} triangles, sha256 {mesh_sha256}')
+    outputs = [{'file': file_name, 'sha256': mesh_sha256, 'role': 'mesh',
+                'frame': 'project_local_grid', 'up': 'Z', 'length_unit': unit,
+                # What the run found on the way (facts of this output, not settings).
+                'triangles': int(len(faces)), 'volume': round(volume), 'composites': int(len(composite_values)),
+                'points_solved': int(len(solved)), 'grid_cell': round(cell, 4), 'assumed': assumed,
+                'how': how}]
     manifest = {
         'manifest_version': 1,
         'kind': 'grade_shell',
         'title': name,
         'made_by': p['made_by'] or f'geoDB reference grade-shell recipe {RECIPE_VERSION}',
         'replaces': p['layer'],
-        'inputs': inputs,
+        'inputs': [{k: v for k, v in item.items() if k != 'snapshot'} for item in inputs],
         # Exactly the settings: this block, saved as a parameters file, runs the recipe again.
         'parameters': p,
         'recipe': {'file': os.path.basename(__file__), 'sha256': hashlib.sha256(recipe.encode('utf-8')).hexdigest(),
-                   'entry': f'python {os.path.basename(__file__)} parameters.json'},
-        'environment': environment(),
-        'outputs': [{'file': file_name, 'sha256': hashlib.sha256(glb).hexdigest(), 'role': 'mesh',
-                     'frame': 'project_local_grid', 'up': 'Z', 'length_unit': unit,
-                     # What the run found on the way (facts of this output, not settings).
-                     'triangles': int(len(faces)), 'volume': round(volume), 'composites': int(len(composite_values)),
-                     'points_solved': int(len(solved)), 'grid_cell': round(cell, 4), 'assumed': assumed,
-                     'how': how}],
+                   'entry': f'uv run {os.path.basename(__file__)} parameters.json'},
+        'environment': env,
+        'outputs': outputs,
         'checks': checks,
+        'disclosure': disclosure(p, assumed, how),
         'caveats': CAVEAT,
     }
     summary = {'name': name, 'triangles': int(len(faces)), 'bytes': len(glb), 'volume': round(volume),
-               'composites': int(len(composite_values)), 'checks': checks, 'assumed': assumed, 'how': how}
+               'composites': int(len(composite_values)), 'mesh_sha256': mesh_sha256, 'checks': checks,
+               'assumed': assumed, 'how': how}
+
+    if offline:
+        # A re-run from an audit package: nothing is sent anywhere.
+        folder = os.path.join(os.path.dirname(os.path.abspath(offline.rstrip('/'))), 'rerun')
+        os.makedirs(folder, exist_ok=True)
+        with open(os.path.join(folder, file_name), 'wb') as handle:
+            handle.write(glb)
+        with open(os.path.join(folder, 'manifest.json'), 'w', encoding='utf-8') as handle:
+            json.dump(manifest, handle, indent=2)
+        with open(os.path.join(folder, 'run_log.txt'), 'w', encoding='utf-8') as handle:
+            handle.write('\n'.join(LOG) + '\n')
+        result = {**summary, 'filed': False, 'offline': True, 'wrote': folder}
+        if options['check_against']:
+            with open(options['check_against'], encoding='utf-8') as handle:
+                filed = json.load(handle)
+            stated = next((o['sha256'] for o in filed.get('outputs', []) if o.get('role') == 'mesh'), None)
+            result['matches_filed_run'] = stated == mesh_sha256
+            result['filed_mesh_sha256'] = stated
+        sys.stdout.write(json.dumps(result, indent=2) + '\n')
+        return
+
+    # The snapshot: each pull as the run saw it, so the run can be made again offline.
+    snapshot = 'snapshot'
+    for index, (item, rows) in enumerate(zip(inputs[:len(texts)], texts, strict=True)):
+        item['snapshot'] = write_snapshot(snapshot, index, item, rows)
+    with open(os.path.join(snapshot, SNAPSHOT_INDEX), 'w', encoding='utf-8') as handle:
+        json.dump([item for item in inputs if 'snapshot' in item], handle, indent=2)
+    manifest['inputs'] = [{k: v for k, v in item.items() if k != 'snapshot'} for item in inputs]
     if p['dry_run']:
         with open(file_name, 'wb') as handle:
             handle.write(glb)
         with open('manifest.json', 'w', encoding='utf-8') as handle:
             json.dump(manifest, handle, indent=2)
-        sys.stdout.write(json.dumps({**summary, 'filed': False, 'wrote': [file_name, 'manifest.json']}, indent=2) + '\n')
+        with open('run_log.txt', 'w', encoding='utf-8') as handle:
+            handle.write('\n'.join(LOG) + '\n')
+        sys.stdout.write(json.dumps({**summary, 'filed': False,
+                                     'wrote': [file_name, 'manifest.json', 'run_log.txt', snapshot]},
+                                    indent=2) + '\n')
         return
 
     project_file = upload(p, glb, file_name)
+    for index, item in enumerate(inputs):
+        if 'snapshot' not in item:
+            continue
+        with open(os.path.join(snapshot, item['snapshot']), 'rb') as handle:
+            data = handle.read()
+        manifest['outputs'].append({'file': item['snapshot'], 'sha256': hashlib.sha256(data).hexdigest(),
+                                    'role': 'snapshot', 'input': index, 'fingerprint': item['fingerprint'],
+                                    'project_file': upload(p, data, item['snapshot'], category='OT')})
     method = (f'Radial basis interpolation ({p["kernel"]} kernel) of {p["composite_length"]:g} m composites of '
               f'{p["element"]}, isosurface at {p["cutoff"]:g} {p["units"]}.')
-    run = {'manifest': manifest, 'recipe': recipe, 'recipe_name': os.path.basename(__file__)}
+    run = {'manifest': manifest, 'recipe': recipe, 'recipe_name': os.path.basename(__file__), 'log': '\n'.join(LOG)}
     if p['layer'] is None:
         record, intent = {'project': p['project'], 'project_file': project_file, 'name': name, 'method': method,
                           'run': run}, 'create'
@@ -570,9 +846,10 @@ def main(argv):
     answer, row = write({**body, 'dry_run': False}, key=str(uuid.uuid4()))
     filed = {**summary, 'filed': True, 'layer': row['id'], 'project_file': project_file,
              'write_id': answer.get('write_id'), 'status': row['status'], 'url': row['result']['url'],
-             'run': {k: row['result']['run'][k] for k in ('manifest_file', 'recipe_file', 'mesh_sha256')},
+             'run': {k: row['result']['run'].get(k) for k in ('manifest_file', 'recipe_file', 'mesh_sha256')},
              'warnings': [w['code'] for w in (checked.get('warnings') or []) + (row.get('warnings') or [])]}
     sys.stdout.write(json.dumps(filed, indent=2) + '\n')
+
 
 if __name__ == '__main__':
     main(sys.argv)

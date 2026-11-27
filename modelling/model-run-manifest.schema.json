@@ -30,11 +30,11 @@
         "surface",
         "solid",
         "variogram",
-        "block_model",
+        "validation",
         "estimate_report",
-        "validation"
+        "block_model"
       ],
-      "description": "What the run made. A mesh layer takes grade_shell, surface or solid."
+      "description": "What the run made. A mesh layer (model MeshLayer) takes grade_shell, surface or solid. A model run that draws nothing (model ModelRun) takes variogram, validation or estimate_report. block_model cannot be filed yet."
     },
     "title": {
       "type": "string",
@@ -54,7 +54,7 @@
         "null"
       ],
       "minimum": 1,
-      "description": "The id of the mesh layer this run is the next version of, or null."
+      "description": "The id of the mesh layer (a mesh kind) or of the model run of the same kind (variogram, validation, estimate_report) this run is the next version of, or null."
     },
     "inputs": {
       "type": "array",
@@ -111,6 +111,11 @@
               "string"
             ],
             "description": "For \"what\": \"interpretation constraints\" (modelling phase 3): the id of the constraint set read (GET /api/v2/constraint-sets/). It must be a live set of this project; record the set's served `fingerprint` beside it."
+          },
+          "run": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "For an input that is another filed model run (for example the variogram whose ranges set a shell's interpolant): the id of that model run (GET /api/v2/model-runs/). It must be a live model run of this project; record its served `manifest_sha256` as `fingerprint` beside it."
           }
         }
       }
@@ -147,12 +152,117 @@
     },
     "environment": {
       "type": "object",
-      "description": "The interpreter and package versions the run used, for example {\"python\": \"3.12\", \"packages\": {\"scipy\": \"1.16.2\"}}."
+      "description": "The interpreter and package versions the run used, for example {\"python\": \"3.12\", \"packages\": {\"scipy\": \"1.16.2\"}}. `python` is text; `packages` maps EVERY package the recipe imports to its exact version, the same set and versions as the recipe's PEP 723 header (`# /// script`, `requires-python`, `dependencies = [\"scipy==1.16.2\"]`), so the script alone reproduces the environment."
+    },
+    "disclosure": {
+      "type": "object",
+      "description": "What the maker states about the method, laid out later in the model run report exactly as written. Required for a variogram, a validation and an estimate report; on a mesh kind a missing field is a warning. Write \"none applied\" where a step was not taken. geoDB checks that the fields are present, never what they say.",
+      "properties": {
+        "domain": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4000,
+          "description": "The volume or unit the run covers."
+        },
+        "sample_population": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4000,
+          "description": "Which samples went in (holes, dates, filters)."
+        },
+        "compositing": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4000,
+          "description": "How samples were composited."
+        },
+        "capping": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4000,
+          "description": "Top cuts applied."
+        },
+        "metal_removed": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4000,
+          "description": "The metal the capping removed."
+        },
+        "declustering": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4000,
+          "description": "How clustering was handled."
+        },
+        "transform": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4000,
+          "description": "Any data transform (log, normal score)."
+        },
+        "below_detection": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4000,
+          "description": "How values below detection were treated."
+        },
+        "assumptions": {
+          "type": "array",
+          "maxItems": 50,
+          "items": {
+            "type": "string",
+            "maxLength": 2000
+          },
+          "description": "Each assumption, one sentence each."
+        },
+        "limitations": {
+          "type": "array",
+          "maxItems": 50,
+          "items": {
+            "type": "string",
+            "maxLength": 2000
+          },
+          "description": "Each limitation, one sentence each."
+        },
+        "how_fitted": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4000,
+          "description": "Variogram: how the model was fitted."
+        },
+        "cutoff": {
+          "type": [
+            "number",
+            "string"
+          ],
+          "description": "Grade shell: the cutoff and its units."
+        },
+        "cutoff_confirmed_by": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4000,
+          "description": "Grade shell: who confirmed the cutoff."
+        },
+        "interpolant": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4000,
+          "description": "Grade shell: the interpolant used."
+        },
+        "range_anisotropy_source": {
+          "type": [
+            "string",
+            "object"
+          ],
+          "description": "Grade shell: where the range and anisotropy came from, in words, or {\"run\": <model run id>} for a filed variogram."
+        }
+      }
     },
     "outputs": {
       "type": "array",
       "minItems": 1,
       "maxItems": 20,
+      "description": "What the run made. An estimate_report carries one \"snapshot\" output for every input that states a fingerprint; a snapshot is optional for every other kind.",
       "items": {
         "type": "object",
         "required": [
@@ -164,7 +274,7 @@
             "type": "string",
             "minLength": 1,
             "maxLength": 50,
-            "description": "What the file is. \"mesh\" is the .glb a mesh layer draws."
+            "description": "What the file is. \"mesh\" is the .glb a mesh layer draws; \"figure\" an image; \"table\" a table; \"snapshot\" the input snapshot of one pull (a Parquet file)."
           },
           "sha256": {
             "type": "string",
@@ -175,6 +285,21 @@
             "type": "string",
             "maxLength": 255,
             "description": "Its file name."
+          },
+          "project_file": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "The id of the project file that holds this output, uploaded to this project before the run is filed. geoDB hashes the stored bytes and refuses a mismatch with `sha256`. Without it the output is recorded as stated."
+          },
+          "input": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "For \"snapshot\": the index in `inputs` of the pull this file holds."
+          },
+          "fingerprint": {
+            "type": "string",
+            "maxLength": 200,
+            "description": "For \"snapshot\": the fingerprint of that input, repeated."
           },
           "frame": {
             "type": "string",
@@ -191,6 +316,23 @@
             "maxLength": 30,
             "description": "The unit of X, Y and Z in the file."
           }
+        },
+        "if": {
+          "properties": {
+            "role": {
+              "const": "snapshot"
+            }
+          },
+          "required": [
+            "role"
+          ]
+        },
+        "then": {
+          "required": [
+            "input",
+            "fingerprint",
+            "project_file"
+          ]
         }
       }
     },
@@ -260,5 +402,253 @@
         "maxContains": 1
       }
     }
-  }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "variogram"
+          }
+        },
+        "required": [
+          "kind"
+        ]
+      },
+      "then": {
+        "required": [
+          "disclosure"
+        ],
+        "properties": {
+          "disclosure": {
+            "required": [
+              "domain",
+              "sample_population",
+              "compositing",
+              "capping",
+              "metal_removed",
+              "declustering",
+              "transform",
+              "below_detection",
+              "assumptions",
+              "limitations",
+              "how_fitted"
+            ]
+          },
+          "parameters": {
+            "required": [
+              "variable",
+              "domain",
+              "transform",
+              "nugget",
+              "structures",
+              "directions",
+              "anisotropy"
+            ],
+            "properties": {
+              "variable": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200
+              },
+              "domain": {
+                "type": [
+                  "string",
+                  "object"
+                ]
+              },
+              "transform": {
+                "type": [
+                  "string",
+                  "object"
+                ]
+              },
+              "nugget": {
+                "type": "number",
+                "minimum": 0
+              },
+              "structures": {
+                "type": "array",
+                "minItems": 1,
+                "maxItems": 10,
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "model",
+                    "sill",
+                    "ranges"
+                  ],
+                  "properties": {
+                    "model": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 100
+                    },
+                    "sill": {
+                      "type": "number"
+                    },
+                    "ranges": {
+                      "type": "array",
+                      "minItems": 1,
+                      "maxItems": 3,
+                      "items": {
+                        "type": "number",
+                        "minimum": 0
+                      }
+                    }
+                  }
+                }
+              },
+              "directions": {
+                "type": "array",
+                "minItems": 1,
+                "maxItems": 50,
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "azimuth",
+                    "dip",
+                    "lag",
+                    "lag_tolerance",
+                    "n_lags"
+                  ],
+                  "properties": {
+                    "azimuth": {
+                      "type": "number"
+                    },
+                    "dip": {
+                      "type": "number"
+                    },
+                    "lag": {
+                      "type": "number"
+                    },
+                    "lag_tolerance": {
+                      "type": "number"
+                    },
+                    "n_lags": {
+                      "type": "integer",
+                      "minimum": 1
+                    }
+                  }
+                }
+              },
+              "anisotropy": {
+                "type": "object"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "validation"
+          }
+        },
+        "required": [
+          "kind"
+        ]
+      },
+      "then": {
+        "required": [
+          "disclosure"
+        ],
+        "properties": {
+          "disclosure": {
+            "required": [
+              "domain",
+              "sample_population",
+              "compositing",
+              "capping",
+              "metal_removed",
+              "declustering",
+              "transform",
+              "below_detection",
+              "assumptions",
+              "limitations"
+            ]
+          },
+          "parameters": {
+            "required": [
+              "subject"
+            ],
+            "properties": {
+              "subject": {
+                "type": [
+                  "string",
+                  "object"
+                ]
+              }
+            }
+          },
+          "checks": {
+            "minItems": 1
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "estimate_report"
+          }
+        },
+        "required": [
+          "kind"
+        ]
+      },
+      "then": {
+        "required": [
+          "disclosure"
+        ],
+        "properties": {
+          "disclosure": {
+            "required": [
+              "domain",
+              "sample_population",
+              "compositing",
+              "capping",
+              "metal_removed",
+              "declustering",
+              "transform",
+              "below_detection",
+              "assumptions",
+              "limitations"
+            ]
+          },
+          "parameters": {
+            "required": [
+              "domain",
+              "cutoffs",
+              "units"
+            ],
+            "properties": {
+              "domain": {
+                "type": [
+                  "string",
+                  "object"
+                ]
+              },
+              "cutoffs": {
+                "type": "array",
+                "maxItems": 100,
+                "items": {
+                  "type": "number"
+                }
+              },
+              "units": {
+                "type": [
+                  "string",
+                  "object"
+                ]
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
 }

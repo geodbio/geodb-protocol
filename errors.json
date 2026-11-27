@@ -801,8 +801,8 @@
     },
     "own_restore_door": {
       "http": 409,
-      "meaning": "The batch holds a record that comes back only through its own restore, one at a time (a mesh layer, a constraint set or a constraint; `offending.own_restore` names them). A batch restore never brings it back. Nothing was restored.",
-      "remedy": "Restore each such record one at a time with its own restore: {\"model\": \"MeshLayer\", \"ConstraintSet\" or \"Constraint\", \"intent\": \"restore\", \"records\": [{\"id\": <its id>}]} (a constraint set's restore brings back the constraints its removal took), or ask the user to press its Restore in the project's Trash.",
+      "meaning": "The batch holds a record that comes back only through its own restore, one at a time (a mesh layer, a constraint set, a constraint or a model run; `offending.own_restore` names them). A batch restore never brings it back. Nothing was restored.",
+      "remedy": "Restore each such record one at a time with its own restore: {\"model\": \"MeshLayer\", \"ConstraintSet\", \"Constraint\" or \"ModelRun\", \"intent\": \"restore\", \"records\": [{\"id\": <its id>}]} (a constraint set's restore brings back the constraints its removal took), or ask the user to press its Restore in the project's Trash.",
       "retry": "no"
     },
     "parent_not_found": {
@@ -1063,22 +1063,40 @@
       "remedy": "Correct the row as `detail` describes (GET /api/v2/records/describe/<Model>/ lists fields, keys and choices) and resend it; validate first with \"dry_run\": true.",
       "retry": "no"
     },
+    "run_environment_unpinned": {
+      "http": 400,
+      "meaning": "(per row) A model run (variogram, validation, estimate report) was refused because its environment is not pinned, so the recipe alone would not reproduce it (`offending.problems` lists each fault): the recipe has no PEP 723 header, the header lacks `requires-python` or holds a dependency that is not an exact pin, the manifest's `environment` lacks `python` or `packages`, or the header's pins and `environment.packages` are not the same packages at the same versions. Nothing was kept.",
+      "remedy": "Open the recipe with a PEP 723 block: a line \"# /// script\", then \"# requires-python = \\\">=3.12\\\"\" and \"# dependencies = [\\\"numpy==2.3.4\\\", ...]\" listing EVERY package the recipe imports at the exact version it ran with, then \"# ///\". Put the same names and versions in the manifest's `environment.packages`, with `environment.python`. Recompute `recipe.sha256` on the changed file and send again.",
+      "retry": "no"
+    },
     "run_hash_mismatch": {
       "http": 400,
-      "meaning": "(per row) A hash in the manifest is not the hash of the bytes geoDB holds (`offending.what`): the recipe text sent does not hash to `recipe.sha256`, or the output with role \"mesh\" does not hash to the stored .glb the layer draws (`offending.stated` and `offending.computed`). Also answered when the stored file could not be read, or changed while it was being read.",
+      "meaning": "(per row) A hash in the manifest is not the hash of the bytes geoDB holds (`offending.what`): the recipe text sent does not hash to `recipe.sha256`, the output with role \"mesh\" does not hash to the stored .glb the layer draws, or an output that names a `project_file` does not hash to that stored file (`what`: `output`, with its `index`; `offending.stated` and `offending.computed`). Also answered when the stored file could not be read, or changed while it was being read.",
       "remedy": "Hash the exact bytes: SHA-256 of the recipe file as you send it (UTF-8, same line endings, same final newline) and of the .glb file as you uploaded it, then put those values in the manifest and send again. If the mesh was rebuilt since the upload, upload the new file and name it in project_file. If the file could not be read, send the same write again. When you DOWNLOAD a filed recipe or manifest, check it against the run's recipe_sha256 / manifest_sha256 the same way before you use it.",
       "retry": "no"
     },
     "run_kind_unsupported": {
       "http": 400,
-      "meaning": "(per row) The manifest's `kind` is one the contract names but nothing takes yet (a variogram, a block model, an estimate report, a validation). A mesh layer's run is a grade_shell, a surface or a solid (`offending.accepted`).",
-      "remedy": "For a mesh, set `kind` to grade_shell, surface or solid. A run with no mesh cannot be filed yet: keep its files on your side or upload the result as an ordinary project file, and tell the user it is not stored as a run.",
+      "meaning": "(per row) The manifest's `kind` is one the contract names but this model does not take (`offending.accepted` lists what it takes): a block_model, which nothing takes yet; a variogram, validation or estimate_report sent as a mesh layer; or a grade_shell, surface or solid sent as a model run.",
+      "remedy": "File a mesh (grade_shell, surface, solid) with `model: MeshLayer`, and a variogram, validation or estimate_report with `model: ModelRun`. A block model cannot be filed yet: keep its files on your side or upload the result as an ordinary project file, and tell the user it is not stored as a run.",
       "retry": "no"
     },
     "run_manifest_invalid": {
       "http": 400,
-      "meaning": "(per row) The `run` sent with a mesh layer does not follow the model-run contract: `run` is not {manifest, recipe, recipe_name?}, the manifest breaks its published schema (`offending.problems` lists each `path` and what is wrong there), a number or text in it is not plain JSON, or `replaces` names no mesh layer of this project (on an update: anything but this layer).",
-      "remedy": "Fix what `offending.problems` names and send the write again. The contract is records/describe/MeshLayer/ (`run`) and guide topic 3d-meshes, \"Filing the run\": manifest_version 1, every required key present, no unknown top-level key, hashes as 64 lowercase hexadecimal characters, exactly one output with role \"mesh\".",
+      "meaning": "(per row) The `run` sent with a mesh layer or a model run does not follow the model-run contract: `run` is not {manifest, recipe, recipe_name?, log?}, the manifest breaks its published schema (`offending.problems` lists each `path` and what is wrong there; a variogram, a validation and an estimate report each state their own `parameters` and a `disclosure`), a number or text in it is not plain JSON, or it names something that is not there: `replaces` (no mesh layer, or no model run of the same kind, of this project; on an update: anything but this one), an input's `set` or `run`, an output's `project_file` (no live file of this project, or a snapshot that is not a Parquet file), a snapshot's `input` or `fingerprint`, or an estimate report with an input that has no snapshot (`offending.path`).",
+      "remedy": "Fix what `offending.problems` names and send the write again. The contract is records/describe/MeshLayer/ or records/describe/ModelRun/ (`run`) and guide topic 3d-meshes, \"Filing the run\": manifest_version 1, every required key present, no unknown top-level key, hashes as 64 lowercase hexadecimal characters, and for a mesh exactly one output with role \"mesh\".",
+      "retry": "no"
+    },
+    "run_package_busy": {
+      "http": 429,
+      "meaning": "geoDB is already building as many audit packages as it builds at once, so this one was not started. Nothing is wrong with the run or the request.",
+      "remedy": "Wait about half a minute (`offending.retry_after_seconds`) and ask once more; do not send the same request in a loop.",
+      "retry": "after"
+    },
+    "run_package_too_large": {
+      "http": 400,
+      "meaning": "The files of this model run are larger than one audit package holds (500 MB; `offending.limit`), so no package was built.",
+      "remedy": "Download the run's manifest, recipe and log one at a time (the ids are in the run's record: `project-files/{id}/download/`), and tell the user the whole package is too large to download in one file.",
       "retry": "no"
     },
     "run_recipe_has_secret": {
@@ -1089,7 +1107,7 @@
     },
     "run_too_large": {
       "http": 400,
-      "meaning": "(per row) The run is bigger than one may be (`offending.what`, `offending.limit`): a recipe over 256 KB, or a manifest over 64 KB, over 4,000 values or nested more than 8 levels deep. With `offending.what` = `batch`: this one request already had as many bytes of mesh files read to check their hashes as one request may (200 MB), so this row was not checked.",
+      "meaning": "(per row) The run is bigger than one may be (`offending.what`, `offending.limit`): a recipe over 256 KB, or a manifest over 64 KB, over 4,000 values or nested more than 8 levels deep, a run log over 256 KB, or an output file over 100 MB (`what`: `output`). With `offending.what` = `batch`: this one request already had as many bytes of mesh files read to check their hashes as one request may (200 MB), so this row was not checked.",
       "remedy": "Keep the recipe to the script itself (no embedded data: it pulls its data when it runs) and the manifest to the facts of the run (no data rows, no logs), then send again. For `batch`: nothing is wrong with the row; send it again in a request of its own (large meshes one or two to a request).",
       "retry": "no"
     },
@@ -1353,8 +1371,14 @@
     },
     "version_file_unavailable": {
       "http": 409,
-      "meaning": "(per row) The version asked to be made current cannot be drawn: the project file it drew is in the Trash, was removed, moved to another project, or its bytes changed after they were checked (`offending.version`, `offending.why`). Nothing was changed.",
+      "meaning": "(per row) The version asked to be made current cannot be drawn: the project file it drew is in the Trash, was removed, moved to another project, or its bytes changed after they were checked (`offending.version`, `offending.why`). For a model run: that version's manifest or recipe file is in the Trash or was removed. Nothing was changed.",
       "remedy": "Tell the user which version it is and why. If its file is in the Trash, a project member can restore it in Project Files and you can try again; otherwise choose another version, or file a new run as the next version.",
+      "retry": "no"
+    },
+    "version_pin_limit": {
+      "http": 400,
+      "meaning": "(per row) A model run keeps a bounded number of pinned versions (`offending.limit`); this pin would pass it. Nothing was changed.",
+      "remedy": "Tell the user the run already keeps the most pinned versions it may; ask which pinned version to release (`unpin_version`), then pin again.",
       "retry": "no"
     },
     "view_link_too_long": {
@@ -1510,7 +1534,7 @@
       "retry": "no"
     },
     "mesh_outside_project": {
-      "meaning": "(per-row warning) The mesh's own bounding box is far from the project's drill collars in the local grid. The layer was made as sent.",
+      "meaning": "(per-row warning) The mesh's own bounding box sits wholly outside the area the project's drill collars cover in the local grid (with a margin of 500 m or half the drilling's span, whichever is larger), or far from the collars. The layer was made as sent, and the 3D view's Scene list says so on its row.",
       "remedy": "Check the frame: vertices belong in the project's LOCAL GRID (projects/<id>/coordinate-system/: subtract the origin, apply the rotation), not in map coordinates. If it is wrong, fix the mesh, upload it and update the layer to draw the new file; if the model really sits there, tell the user it is far from the drilling.",
       "retry": "no"
     },
@@ -1559,6 +1583,16 @@
       "remedy": "Tell the user. If it is the same record, restore it and leave this row out: send the \"restore\" intent naming the removal the detail names (\"audit_batch_id\"; a person's key also reads it, with the restore request, as the record's \"trash\" on its list with include_trashed=true) as a dry run, show the user every record it brings back (the whole removal), then send it after their yes. A record removed without a batch record is restored in the web Trash. If it is a different record, send the row as it is. Nothing is restored automatically.",
       "retry": "no"
     },
+    "run_disclosure_incomplete": {
+      "meaning": "(per-row warning) The manifest of the run filed with a mesh layer has no `disclosure`, or one that leaves fields out (`detail` names them: domain, sample population, compositing, capping, metal removed, declustering, transform, below-detection treatment, assumptions, limitations; for a grade shell also the cutoff, who confirmed it, the interpolant and where its range and anisotropy came from). The layer was made as sent; the model run report prints \"not stated\" for each.",
+      "remedy": "State each missing field in the manifest's `disclosure` as it was done (\"none applied\" is an answer), then file the run again with an update of the layer. Ask the user for anything you do not know (who confirmed the cutoff); never invent it.",
+      "retry": "no"
+    },
+    "run_environment_unpinned": {
+      "meaning": "(per-row warning) The run filed with a mesh layer does not pin its environment (`detail` says how): the recipe has no PEP 723 header with exact pins, or the header and the manifest's `environment.packages` disagree. The layer was made as sent.",
+      "remedy": "Add the PEP 723 header to the recipe (`# /// script`, `requires-python`, `dependencies` as `name==version` for every package it imports, `# ///`), put the same packages and versions in the manifest's `environment.packages` with `environment.python`, and file the run again with an update of the layer.",
+      "retry": "no"
+    },
     "sample_link_changes": {
       "meaning": "(per-row warning, assay rename) An assay is linked to its sample by name, so renaming it moves its results: `from` is the sample of the old name, `to` the sample of the new one (null: no sample has that name and the assay is unlinked).",
       "remedy": "Tell the user which sample the results move to, or that they will be unlinked, before sending the rename; Undo puts the old name back.",
@@ -1577,6 +1611,11 @@
     "set_exists_derived_from_ignored": {
       "meaning": "(per-row warning) The request asked to create a set that already exists, so the rows went into that existing set and the \"derived_from\" sent with it was NOT recorded (an existing set's provenance is never rewritten).",
       "remedy": "If this is a new derived interpretation, send it into a NEW set name with \"create\": true and its \"derived_from\"; otherwise leave \"derived_from\" out.",
+      "retry": "no"
+    },
+    "spectral_class_label_differs": {
+      "meaning": "(per-row warning) A spectral class column names a class code the scheme already holds under a different label (the column says \"L01 smectite\", the scheme's L01 is \"kaolinite\"). The abundances were stored under the stored class and its label was kept. The detail names both labels.",
+      "remedy": "Tell the user which label was kept. If the column is the stored class, nothing more is needed; if it is a different mineral class, its abundances now sit under the stored class: Undo this write and ask the user how the classes should be named.",
       "retry": "no"
     },
     "stake_link_not_made": {
